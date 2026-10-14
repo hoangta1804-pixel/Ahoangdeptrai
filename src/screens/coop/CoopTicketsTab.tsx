@@ -27,6 +27,7 @@ function TicketCard({ ticket: t }: { ticket: Ticket }) {
   const { run } = useStore();
   const { coopActor, showToast } = useUi();
   const [text, setText] = useState('');
+  const [proposal, setProposal] = useState<'' | 'refund' | 'no_refund'>('');
   const closed = !['open', 'processing'].includes(t.status);
   return (
     <li className="space-y-2 rounded-2xl border border-stone-200 bg-white p-3.5 text-sm">
@@ -59,13 +60,27 @@ function TicketCard({ ticket: t }: { ticket: Ticket }) {
       </ul>
       {!closed && (
         <div className="space-y-2">
+          {t.requestRefund && (
+            <fieldset className="flex flex-wrap gap-2 text-sm">
+              <legend className="mb-1 font-semibold">Đề xuất của HTX (CSKH quyết định)</legend>
+              {(['refund', 'no_refund'] as const).map((p) => (
+                <label key={p} className={`flex min-h-11 items-center gap-2 rounded-xl border px-3 ${proposal === p ? 'border-emerald-700 bg-emerald-50' : 'border-stone-200'}`}>
+                  <input type="radio" name={`proposal-${t.id}`} checked={proposal === p} onChange={() => setProposal(p)} />
+                  {p === 'refund' ? 'Đề xuất hoàn tiền' : 'Đề xuất không hoàn'}
+                </label>
+              ))}
+            </fieldset>
+          )}
           <Textarea rows={2} aria-label="Phản hồi của HTX" placeholder="Nhập thông tin kiểm tra lô hàng, khâu đóng gói…" value={text} onChange={(e) => setText(e.target.value)} />
           <SecondaryButton
             className="w-full"
             onClick={() => {
-              const r = run((s, at) => coopReplyTicket(s, t.id, coopActor, text, at));
+              const r = run((s, at) => coopReplyTicket(s, t.id, coopActor, text, at, proposal || undefined));
               showToast(r.ok ? 'Đã gửi phản hồi cho CSKH.' : r.error);
-              if (r.ok) setText('');
+              if (r.ok) {
+                setText('');
+                setProposal('');
+              }
             }}
           >
             Gửi phản hồi

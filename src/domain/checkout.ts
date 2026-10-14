@@ -7,7 +7,7 @@
  * - Thứ tự tính mã ưu đãi (BR-KM): cộng tiền hàng hợp lệ → tính số giảm → chia vào từng đơn → cộng phí → tính cọc.
  * - Đơn lưu bản chốt lúc tạo (BR-DAT-06). Một lần bấm chỉ tạo một lần đặt (BR-DAT-07).
  */
-import { revalidateLines, validateDeliveryDate, type RevalidationNotice } from './cart';
+import { isOrderableIn, revalidateLines, validateDeliveryDate, type RevalidationNotice } from './cart';
 import { generateId, generateOrderCode } from './ids';
 import { initialStatus } from './orderStateMachine';
 import { snapshotParams } from './params';
@@ -168,6 +168,7 @@ export function planCheckout(state: DemoState, input: CheckoutInput, at: Date): 
       errors.push('Có sản phẩm không còn tồn tại.');
       continue;
     }
+    if (!isOrderableIn(state, product)) errors.push(`${product.name}: hiện không mở bán.`);
     const remaining = remainingFor(state, product);
     if (line.quantity > remaining) {
       errors.push(`${product.name}: chỉ còn ${remaining} ${product.unit}.`);

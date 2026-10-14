@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useUi } from '../../app/UiContext';
 import { BottomSheet } from '../../components/BottomSheet';
-import { DangerButton, Field, PrimaryButton, SecondaryButton, Select, Textarea } from '../../components/form';
+import { DangerButton, Field, Input, PrimaryButton, SecondaryButton, Select, Textarea } from '../../components/form';
+import { deliveryWindow } from '../../domain/cart';
+import { customerChangeAddress, customerChangeDeliveryDate, customerEditGift } from '../../domain/orderEdits';
 import { OrderStatusBadge, PaymentStatusBadge } from '../../components/StatusBadge';
 import { getOrderFor } from '../../domain/access';
 import { returnDeadline } from '../../domain/complaint';
@@ -16,7 +18,7 @@ import {
 } from '../../domain/orders';
 import { formatMoney } from '../../domain/pricing';
 import { depositRefundDeadline } from '../../domain/refund';
-import { formatDateKey, fromDateKey } from '../../domain/state';
+import { findProduct, formatDateKey, fromDateKey, snapshotAddress } from '../../domain/state';
 import { ORDER_KIND_LABEL, ORDER_STATUS_LABEL, REFUND_SOURCE_LABEL } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
 
@@ -28,6 +30,11 @@ export function OrderDetailSheet({ orderId, onClose }: { orderId: string; onClos
   const { customerActor, openModal, showToast } = useUi();
   const [cancelReason, setCancelReason] = useState('');
   const [cancelling, setCancelling] = useState(false);
+  const [editing, setEditing] = useState<null | 'address' | 'date' | 'gift'>(null);
+  const [newAddressId, setNewAddressId] = useState('');
+  const [newDate, setNewDate] = useState('');
+  const [giftMessage, setGiftMessage] = useState('');
+  const [recipient, setRecipient] = useState({ name: '', phone: '', wardId: '', street: '' });
   const found = getOrderFor(state, customerActor, orderId);
   if (!found.ok) return null;
   const order = found.value;
@@ -44,8 +51,15 @@ export function OrderDetailSheet({ orderId, onClose }: { orderId: string; onClos
   const act = (op: Parameters<typeof run>[0], success: string) => {
     const r = run(op);
     showToast(r.ok ? success : r.error);
+    if (r.ok) setEditing(null);
     return r.ok;
   };
+  const beforeHandover = ['awaiting_payment', 'awaiting_confirmation', 'confirmed', 'awaiting_harvest', 'preparing'].includes(order.status);
+  const beforePreparing = ['awaiting_payment', 'awaiting_confirmation', 'confirmed', 'awaiting_harvest'].includes(order.status);
+  const product0 = findProduct(state, order.items[0]?.productId ?? '');
+  const dateWindow = order.kind === 'preorder' && product0 ? deliveryWindow(product0, at, order.params) : null;
+  const myAddresses = state.addresses.filter((a) => a.customerId === order.customerId);
+  const reviewed = new Set(state.reviews.filter((r) => r.orderId === order.id).map((r) => r.productId));
 
   const doCancel = () => {
     const reason = cancelReason.trim();
@@ -127,6 +141,103 @@ export function OrderDetailSheet({ orderId, onClose }: { orderId: string; onClos
               {r.destination === 'bank_account' ? ' (chuyển khoản vào tài khoản đã khai)' : ' (về nguồn thanh toán ban đầu)'}
             </p>
           ))}
+        </section>
+      )}
+
+      {(beforeHandover || order.status === 'delivered') && (
+        <section className="space-y-2 rounded-2xl border border-stone-200 p-3">
+          <h4 className="text-sm font-bold text-stone-700">Sửa đơn</h4>
+          <div className="flex flex-wrap gap-2">
+            {beforeHandover && !order.gift?.sendToOther && (
+              <SecondaryButton onClick={() => setEditing('address')}>Đổi người nhận / địa chỉ</SecondaryButton>
+            )}
+            {order.kind === 'preorder' && beforePreparing && !order.deliveryDateChanged && (
+              <SecondaryButton onClick={() => (setNewDate(order.deliveryDate ?? ''), setEditing('date'))}>Đổi ngày giao (1 lần)</SecondaryButton>
+            )}
+            {order.gift && beforePreparing && (
+              <SecondaryButton
+                onClick={() => {
+                  setGiftMessage(order.gift!.message);
+                  setRecipient(order.gift!.recipient ?? { name: '', phone: '', wardId: '', street: '' });
+                  setEditing('gift');
+                }}
+              >
+                Sửa hộp quà
+              </SecondaryButton>
+            )}
+            {order.status === 'delivered' &&
+              order.items.map((i) =>
+                reviewed.has(i.productId) ? (
+                  <span key={i.productId} className="flex min-h-11 items-center rounded-2xl bg-emerald-50 px-3 text-sm text-emerald-900">
+                    Đã đánh giá {i.name}
+                  </span>
+                ) : (
+                  <SecondaryButton key={i.productId} onClick={() => openModal({ type: 'review', orderId: order.id, productId: i.productId })}>
+                    Đánh giá {i.name}
+                  </SecondaryButton>
+                ),
+              )}
+          </div>
+          {editing === 'address' && (
+            <div className="space-y-2">
+              <Field label="Chọn địa chỉ khác trong sổ địa chỉ">
+                <Select value={newAddressId} onChange={(e) => setNewAddressId(e.target.value)}>
+                  <option value="">— Chọn —</option>
+                  {myAddresses.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.label}: {a.receiverName} · {snapshotAddress(state, a).text}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <PrimaryButton className="w-full" onClick={() => act((s) => customerChangeAddress(s, customerActor, order.id, newAddressId), 'Đã đổi người nhận / địa chỉ.')}>
+                Lưu địa chỉ mới
+              </PrimaryButton>
+            </div>
+          )}
+          {editing === 'date' && (
+            <div className="space-y-2">
+              <Field label="Ngày giao mới" hint={dateWindow ? `Từ ${formatDateKey(dateWindow.min)} đến ${formatDateKey(dateWindow.max)}. Chỉ đổi được 1 lần.` : 'Không còn ngày nào hợp lệ.'}>
+                <Input type="date" min={dateWindow?.min} max={dateWindow?.max} value={newDate} onChange={(e) => setNewDate(e.target.value)} />
+              </Field>
+              <PrimaryButton className="w-full" onClick={() => act((s, t) => customerChangeDeliveryDate(s, customerActor, order.id, newDate, t), 'Đã đổi ngày giao.')}>
+                Lưu ngày giao
+              </PrimaryButton>
+            </div>
+          )}
+          {editing === 'gift' && order.gift && (
+            <div className="space-y-2">
+              <Field label="Lời nhắn" hint={`${giftMessage.length}/${order.params.giftMessageMaxLength} ký tự, không ghi link hay SĐT.`}>
+                <Textarea rows={2} maxLength={order.params.giftMessageMaxLength} value={giftMessage} onChange={(e) => setGiftMessage(e.target.value)} />
+              </Field>
+              {order.gift.sendToOther && (
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <Field label="Tên người nhận">
+                    <Input value={recipient.name} onChange={(e) => setRecipient({ ...recipient, name: e.target.value })} />
+                  </Field>
+                  <Field label="SĐT người nhận">
+                    <Input value={recipient.phone} onChange={(e) => setRecipient({ ...recipient, phone: e.target.value })} />
+                  </Field>
+                  <Field label="Phường/xã">
+                    <Select value={recipient.wardId} onChange={(e) => setRecipient({ ...recipient, wardId: e.target.value })}>
+                      <option value="">— Chọn —</option>
+                      {state.wards.map((w) => (
+                        <option key={w.id} value={w.id}>
+                          {w.name}
+                        </option>
+                      ))}
+                    </Select>
+                  </Field>
+                  <Field label="Số nhà, đường">
+                    <Input value={recipient.street} onChange={(e) => setRecipient({ ...recipient, street: e.target.value })} />
+                  </Field>
+                </div>
+              )}
+              <PrimaryButton className="w-full" onClick={() => act((s) => customerEditGift(s, customerActor, order.id, giftMessage, order.gift!.sendToOther ? recipient : undefined), 'Đã cập nhật hộp quà.')}>
+                Lưu hộp quà
+              </PrimaryButton>
+            </div>
+          )}
         </section>
       )}
 

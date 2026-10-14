@@ -57,8 +57,8 @@ export function makeState(): DemoState {
     ],
     customers: [{ id: 'cust-1', name: 'Khách 1', phone: '0900000001', refundAccount: { bankName: 'NH mẫu', accountNumber: '000000000001', holder: 'KHACH 1' } }],
     coops: [
-      { id: 'coop-x', name: 'HTX X', region: 'Vùng A', payoutAccountMasked: '**** 0101', status: 'active' },
-      { id: 'coop-y', name: 'HTX Y', region: 'Vùng B', payoutAccountMasked: '**** 0102', status: 'active' },
+      { id: 'coop-x', name: 'HTX X', region: 'Vùng A', payoutAccountMasked: '**** 0101', status: 'active', profileStatus: 'approved' },
+      { id: 'coop-y', name: 'HTX Y', region: 'Vùng B', payoutAccountMasked: '**** 0102', status: 'active', profileStatus: 'approved' },
     ],
     products: [
       product({ id: 'x-dry', coopId: 'coop-x', kind: 'ready', price: 770_000, stockOnHand: 10, expressApproved: true }),

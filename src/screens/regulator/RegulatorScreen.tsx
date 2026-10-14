@@ -4,6 +4,7 @@ import { regulatorOrderRows } from '../../domain/access';
 import { formatMoney } from '../../domain/pricing';
 import { ORDER_STATUS_LABEL } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
+import { ExportButtons } from '../../components/ExportButtons';
 import { StatsPanel } from '../admin/AdminOverviewTab';
 
 /**
@@ -23,6 +24,7 @@ export function RegulatorScreen() {
         <h2 className="text-lg font-bold">Số liệu tổng hợp</h2>
         <p className="text-sm text-sky-100">Số liệu tính từ dữ liệu demo hiện có. Không có dữ liệu cá nhân của khách hàng.</p>
       </div>
+      <ExportButtons />
       <StatsPanel />
       {rows.ok && (
         <div className="overflow-x-auto rounded-2xl border border-stone-200 bg-white">
@@ -51,7 +53,6 @@ export function RegulatorScreen() {
           </table>
         </div>
       )}
-      <p className="text-sm text-stone-600">Xuất báo cáo (FR-BCTK-02, 03) làm ở Giai đoạn 4.</p>
     </div>
   );
 }

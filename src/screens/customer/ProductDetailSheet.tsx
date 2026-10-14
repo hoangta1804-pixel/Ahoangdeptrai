@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { FileBadge, Minus, Plus } from 'lucide-react';
+import { BadgeCheck, FileBadge, Minus, Plus, Share2 } from 'lucide-react';
 import { useUi } from '../../app/UiContext';
 import { BottomSheet } from '../../components/BottomSheet';
 import { PreorderProgress } from '../../components/PreorderProgress';
+import { Stars } from '../../components/Stars';
+import { averageRating, publicReviews } from '../../domain/reviews';
 import { ProductImage } from '../../components/ProductImage';
-import { deliveryWindow, isOrderable } from '../../domain/cart';
+import { deliveryWindow, isOrderableIn } from '../../domain/cart';
 import { computeDeposit, formatMoney } from '../../domain/pricing';
 import { findProduct, formatDateKey, remainingFor } from '../../domain/state';
 import { CATEGORY_LABEL, ORDER_KIND_LABEL } from '../../domain/types';
@@ -13,7 +15,7 @@ import { useCartActions } from './useCartActions';
 
 export function ProductDetailSheet({ productId, onClose }: { productId: string; onClose: () => void }) {
   const { state, now } = useStore();
-  const { openModal } = useUi();
+  const { openModal, showToast } = useUi();
   const { add } = useCartActions();
   const [quantity, setQuantity] = useState(1);
   const product = findProduct(state, productId);
@@ -23,7 +25,7 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
   const coop = state.coops.find((c) => c.id === product.coopId);
   const remaining = remainingFor(state, product);
   const win = product.kind === 'preorder' ? deliveryWindow(product, now(), params) : null;
-  const blocked = !isOrderable(product)
+  const blocked = !isOrderableIn(state, product)
     ? 'Sản phẩm hiện không mở bán'
     : remaining <= 0
       ? 'Hết hàng'
@@ -31,6 +33,23 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
         ? 'Đã hết thời gian nhận đặt trước'
         : null;
   const qty = Math.min(quantity, Math.max(1, remaining));
+  const rating = averageRating(state, product.id);
+  const reviews = publicReviews(state, product.id);
+
+  // Chia sẻ link sản phẩm (FR-TKSP-05): dùng chia sẻ của thiết bị nếu có, không thì sao chép link.
+  const share = async () => {
+    const url = `${window.location.origin}${window.location.pathname}#/san-pham/${product.id}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: product.name, url });
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      showToast('Đã sao chép link sản phẩm.');
+    } catch {
+      showToast(`Link sản phẩm: ${url}`);
+    }
+  };
   const itemsTotal = product.price * qty;
   const deposit = computeDeposit(itemsTotal, 0, params.depositPercent, params.depositRoundingStep);
 
@@ -80,13 +99,27 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
         </button>
       </div>
 
-      <div className="flex items-baseline justify-between">
+      <div className="flex items-center justify-between gap-2">
         <span className="text-xl font-extrabold tabular-nums text-stone-900">
           {formatMoney(product.price)}
           <span className="text-sm font-normal text-stone-500">/{product.unit}</span>
         </span>
-        <span className="rounded-md bg-stone-100 px-2 py-0.5 text-xs font-semibold text-stone-700">{ORDER_KIND_LABEL[product.kind]}</span>
+        <span className="flex items-center gap-1">
+          <span className="rounded-md bg-stone-100 px-2 py-0.5 text-xs font-semibold text-stone-700">{ORDER_KIND_LABEL[product.kind]}</span>
+          <button onClick={share} aria-label="Chia sẻ link sản phẩm" className="flex h-11 w-11 items-center justify-center rounded-xl text-stone-700 hover:bg-stone-100">
+            <Share2 size={18} />
+          </button>
+        </span>
       </div>
+      <p className="flex items-center gap-2 text-sm text-stone-700">
+        {rating.average !== null ? (
+          <>
+            <Stars value={rating.average} /> {rating.average}/5 · {rating.count} đánh giá
+          </>
+        ) : (
+          'Chưa có đánh giá'
+        )}
+      </p>
 
       <p className="text-sm leading-relaxed text-stone-600">{product.description}</p>
 
@@ -111,6 +144,17 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
         </p>
       )}
 
+      {(product.certifications?.length ?? 0) > 0 && (
+        <ul className="space-y-1 text-sm">
+          {product.certifications!.map((c) => (
+            <li key={c.id} className="flex items-center gap-1.5 text-stone-700">
+              <BadgeCheck size={16} className="text-emerald-700" />
+              {c.label} · {c.issuer} · hiệu lực đến {c.validUntil.split('-').reverse().join('/')} (Admin đã xem hồ sơ – mô phỏng)
+            </li>
+          ))}
+        </ul>
+      )}
+
       <div className="flex items-center justify-between border-t border-stone-100 pt-3">
         <span className="text-sm font-semibold text-stone-700">
           Số lượng ({product.unit})
@@ -131,6 +175,28 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
           </button>
         </div>
       </div>
+      {reviews.length > 0 && (
+        <section className="space-y-2 border-t border-stone-100 pt-3">
+          <h4 className="text-sm font-bold text-stone-800">Đánh giá của khách</h4>
+          {reviews.map((r) => (
+            <div key={r.id} className="space-y-1 rounded-xl bg-stone-50 p-2.5 text-sm">
+              <p className="flex items-center gap-2">
+                <Stars value={r.stars} /> <span className="font-semibold">{r.reviewerName}</span>
+                <span className="text-xs text-stone-500">· đơn {r.orderRef}</span>
+              </p>
+              {r.comment && <p className="text-stone-700">{r.comment}</p>}
+              {r.photos.length > 0 && (
+                <div className="flex gap-1">
+                  {r.photos.map((src, i) => (
+                    <img key={i} src={src} alt={`Ảnh đánh giá ${i + 1}`} className="h-14 w-14 rounded-lg object-cover" />
+                  ))}
+                </div>
+              )}
+              {r.coopReply && <p className="border-l-2 border-emerald-700 pl-2 text-stone-700">HTX phản hồi: {r.coopReply}</p>}
+            </div>
+          ))}
+        </section>
+      )}
     </BottomSheet>
   );
 }

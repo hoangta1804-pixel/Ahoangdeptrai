@@ -31,6 +31,8 @@ export interface Voucher {
   usageLimit: number;
   /** Chỉ khách đặt lần đầu. */
   firstOrderOnly: boolean;
+  /** Admin tắt mã thì không dùng được nữa (mặc định bật). */
+  active?: boolean;
 }
 
 export interface VoucherLine {
@@ -77,6 +79,7 @@ export interface VoucherEvaluation {
 /** Xét điều kiện mã. Không đạt thì trả về lý do để hiển thị cạnh mã. */
 export function evaluateVoucher(voucher: Voucher, ctx: VoucherContext): Result<VoucherEvaluation> {
   const nowMs = ctx.now.getTime();
+  if (voucher.active === false) return fail('Mã đã ngừng áp dụng.');
   if (voucher.startsAt && nowMs < new Date(voucher.startsAt).getTime()) {
     return fail('Mã chưa đến thời gian áp dụng.');
   }

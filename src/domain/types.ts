@@ -70,13 +70,29 @@ export type GoodsGroup = 'fresh' | 'dry';
 
 export const goodsGroupOf = (category: Category): GoodsGroup => (category === 'fresh' ? 'fresh' : 'dry');
 
+/** Hồ sơ HTX (FR-TK-06/07): HTX sửa và gửi duyệt; Admin – Chất lượng duyệt (FR-TK-08/09). */
+export interface CoopProfile {
+  name: string;
+  region: string;
+  representative: string;
+  description: string;
+}
+
 export interface Coop {
   id: string;
   name: string;
   region: string;
+  representative?: string;
+  description?: string;
   /** Tài khoản nhận chi trả đối soát, luôn hiện dạng che. */
   payoutAccountMasked: string;
+  /** Quyền bán (FR-TK-13): tạm khoá thì sản phẩm của HTX không đặt được. */
   status: 'active' | 'suspended';
+  suspendReason?: string;
+  /** Tình trạng hồ sơ. */
+  profileStatus: 'approved' | 'pending' | 'rejected';
+  pendingProfile?: CoopProfile;
+  profileRejectReason?: string;
 }
 
 export interface PreorderConfig {
@@ -107,21 +123,64 @@ export interface Product {
   /** Cờ hoả tốc đã được duyệt. */
   expressApproved: boolean;
   preorder?: PreorderConfig;
-  status: 'active' | 'hidden';
+  /** Đang bán / HTX ẩn / chờ duyệt (sản phẩm mới) / bị từ chối. */
+  status: 'active' | 'hidden' | 'pending' | 'rejected';
   /** Ngưỡng tồn thấp riêng; không có thì dùng PAR-02. */
   lowStockThreshold?: number;
+  /** Chứng nhận HTX khai (FR-SP-08); chỉ hiện "đã xác minh" khi Admin – Chất lượng duyệt. */
+  certifications?: Certification[];
 }
+
+export interface Certification {
+  id: string;
+  label: string;
+  issuer: string;
+  /** Hạn hiệu lực, yyyy-mm-dd. */
+  validUntil: string;
+  photo?: string;
+  verified: boolean;
+}
+
+/** Nội dung sản phẩm HTX sửa được (cần duyệt). */
+export interface ProductContent {
+  name: string;
+  description: string;
+  unit: string;
+  category: Category;
+  region: string;
+}
+
+export const PRODUCT_STATUS_LABEL: Record<Product['status'], string> = {
+  active: 'Đang bán',
+  hidden: 'HTX đang ẩn',
+  pending: 'Chờ duyệt',
+  rejected: 'Bị từ chối',
+};
 
 export type ChangeRequestStatus = 'pending' | 'approved' | 'rejected';
 
-/** Yêu cầu thay đổi của HTX cần Admin – Chất lượng duyệt (FR-SP-04): đổi giá, báo thu hoạch / mở đặt trước. */
+export type ProductChangeType = 'new_product' | 'content' | 'price' | 'preorder' | 'express' | 'cert';
+
+export const PRODUCT_CHANGE_LABEL: Record<ProductChangeType, string> = {
+  new_product: 'Sản phẩm mới',
+  content: 'Sửa nội dung',
+  price: 'Đổi giá',
+  preorder: 'Báo thu hoạch / mở đặt trước',
+  express: 'Cờ giao hoả tốc',
+  cert: 'Chứng nhận',
+};
+
+/** Yêu cầu thay đổi của HTX cần Admin – Chất lượng duyệt (FR-SP-04). */
 export interface ProductChangeRequest {
   id: string;
   productId: string;
   coopId: string;
-  type: 'price' | 'preorder';
+  type: ProductChangeType;
   newPrice?: number;
   preorder?: PreorderConfig;
+  content?: ProductContent;
+  express?: boolean;
+  cert?: Certification;
   note?: string;
   status: ChangeRequestStatus;
   createdAt: string;
@@ -460,6 +519,8 @@ export interface Ticket {
   /** Ảnh thu nhỏ lưu trên trình duyệt (data URL). */
   photos: string[];
   requestRefund: boolean;
+  /** HTX chỉ xác nhận và đề xuất; Admin – CSKH quyết định (mục 5.7). */
+  coopProposal?: 'refund' | 'no_refund';
   priority: 'normal' | 'high';
   status: TicketStatus;
   createdAt: string;

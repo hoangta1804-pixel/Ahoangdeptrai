@@ -5,7 +5,7 @@ import { DangerButton, Input, PrimaryButton } from '../../components/form';
 import { formatMoney } from '../../domain/pricing';
 import { decideProductChange } from '../../domain/productChanges';
 import { findProduct, formatDateKey } from '../../domain/state';
-import type { ProductChangeRequest } from '../../domain/types';
+import { PRODUCT_CHANGE_LABEL, type ProductChangeRequest } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
 
 /** Admin – Chất lượng duyệt đổi giá và báo thu hoạch của HTX; từ chối bắt buộc lý do (FR-SP-04, L12). */
@@ -36,9 +36,21 @@ export function QualityChangesTab() {
 function describe(c: ProductChangeRequest, state: ReturnType<typeof useStore>['state']): string {
   const p = findProduct(state, c.productId);
   const coop = state.coops.find((x) => x.id === c.coopId);
-  return c.type === 'price'
-    ? `${coop?.name}: ${p?.name} – đổi giá ${formatMoney(p?.price ?? 0)} → ${formatMoney(c.newPrice!)}`
-    : `${coop?.name}: ${p?.name} – báo thu hoạch ${c.preorder?.totalSlots} suất, giao ${formatDateKey(c.preorder!.deliveryFrom)} – ${formatDateKey(c.preorder!.deliveryTo)}`;
+  const head = `${coop?.name}: ${p?.name} – ${PRODUCT_CHANGE_LABEL[c.type]}`;
+  switch (c.type) {
+    case 'price':
+      return `${head} ${formatMoney(p?.price ?? 0)} → ${formatMoney(c.newPrice!)}`;
+    case 'preorder':
+      return `${head}: ${c.preorder?.totalSlots} suất, giao ${formatDateKey(c.preorder!.deliveryFrom)} – ${formatDateKey(c.preorder!.deliveryTo)}`;
+    case 'new_product':
+      return `${head}: ${p?.unit}, ${formatMoney(p?.price ?? 0)}, vùng ${p?.region}. ${p?.description ?? ''}`;
+    case 'content':
+      return `${head}: tên "${c.content?.name}", quy cách "${c.content?.unit}", vùng "${c.content?.region}". ${c.content?.description ?? ''}`;
+    case 'express':
+      return `${head}: ${c.express ? 'bật' : 'tắt'}`;
+    case 'cert':
+      return `${head}: ${c.cert?.label} · ${c.cert?.issuer} · hiệu lực đến ${c.cert?.validUntil}`;
+  }
 }
 
 function ChangeRow({ req }: { req: ProductChangeRequest }) {
@@ -52,6 +64,7 @@ function ChangeRow({ req }: { req: ProductChangeRequest }) {
   return (
     <div className="space-y-2 rounded-2xl border border-stone-200 bg-white p-3 text-sm">
       <p className="font-semibold">{describe(req, state)}</p>
+      {req.cert?.photo && <img src={req.cert.photo} alt="Ảnh chứng nhận" className="h-24 rounded-lg border border-stone-200 object-cover" />}
       <p className="text-stone-500">Gửi lúc {new Date(req.createdAt).toLocaleString('vi-VN')}</p>
       <div className="flex flex-wrap items-end gap-2">
         <div className="min-w-48 flex-1">

@@ -8,6 +8,8 @@ import { CheckoutSheet } from '../screens/customer/CheckoutSheet';
 import { ComplaintSheet } from '../screens/customer/ComplaintSheet';
 import { OrderDetailSheet } from '../screens/customer/OrderDetailSheet';
 import { PaymentSheet } from '../screens/customer/PaymentSheet';
+import { ReviewSheet } from '../screens/customer/ReviewSheet';
+import { CoopProductFormSheet } from '../screens/coop/CoopProductFormSheet';
 import { ProductDetailSheet } from '../screens/customer/ProductDetailSheet';
 import { TraceLotSheet } from '../screens/customer/TraceLotSheet';
 import { useUi } from './UiContext';
@@ -39,6 +41,10 @@ export function ModalHost() {
       return <CoopOrderSheet key={modal.orderId} orderId={modal.orderId} onClose={closeModal} />;
     case 'demo_panel':
       return <DemoPanel onClose={closeModal} />;
+    case 'review':
+      return <ReviewSheet key={`${modal.orderId}-${modal.productId}`} orderId={modal.orderId} productId={modal.productId} onClose={closeModal} />;
+    case 'coop_product_form':
+      return <CoopProductFormSheet key={modal.productId ?? 'new'} productId={modal.productId} onClose={closeModal} />;
     case 'notifications':
       return <NotificationsSheet onClose={closeModal} />;
   }

@@ -10,6 +10,7 @@ import { formatMoney } from './pricing';
 import { iso, remainingFor, toDateKey } from './state';
 import {
   ORDER_STATUS_LABEL,
+  PRODUCT_CHANGE_LABEL,
   TICKET_STATUS_LABEL,
   type AdminSubGroup,
   type AppNotification,
@@ -133,7 +134,7 @@ export function deriveNotifications(prev: DemoState, next: DemoState, at: Date):
     for (const c of next.productChanges) {
       const before = prev.productChanges.find((x) => x.id === c.id);
       const name = next.products.find((p) => p.id === c.productId)?.name ?? c.productId;
-      const what = c.type === 'price' ? 'đổi giá' : 'báo thu hoạch';
+      const what = PRODUCT_CHANGE_LABEL[c.type].toLowerCase();
       const link: NotificationLink = { type: 'product', id: c.productId };
       if (!before) {
         drafts.push({ userIds: adminsOf(next, 'quality'), title: `Yêu cầu ${what} chờ duyệt`, body: name, link });
@@ -145,6 +146,30 @@ export function deriveNotifications(prev: DemoState, next: DemoState, at: Date):
           link,
         });
       }
+    }
+  }
+
+  // Đánh giá mới → HTX; HTX phản hồi đánh giá → khách.
+  if (prev.reviews !== next.reviews) {
+    for (const r of next.reviews) {
+      const before = prev.reviews.find((x) => x.id === r.id);
+      const order = next.orders.find((o) => o.id === r.orderId);
+      const name = next.products.find((p) => p.id === r.productId)?.name ?? '';
+      if (!before && order) drafts.push({ userIds: usersOfCoop(next, order.coopId), title: `Đánh giá mới ${r.stars}★`, body: name, link: { type: 'product', id: r.productId } });
+      if (before && !before.coopReply && r.coopReply) drafts.push({ userIds: usersOfCustomer(next, r.customerId), title: 'HTX đã phản hồi đánh giá của bạn', body: name });
+    }
+  }
+
+  // Hồ sơ HTX: chờ duyệt → Admin – Chất lượng; kết quả → HTX. Quyền bán đổi → HTX.
+  if (prev.coops !== next.coops) {
+    for (const c of next.coops) {
+      const before = prev.coops.find((x) => x.id === c.id);
+      if (!before) continue;
+      if (before.profileStatus !== 'pending' && c.profileStatus === 'pending') drafts.push({ userIds: adminsOf(next, 'quality'), title: 'Hồ sơ HTX chờ duyệt', body: c.name });
+      if (before.profileStatus === 'pending' && c.profileStatus !== 'pending')
+        drafts.push({ userIds: usersOfCoop(next, c.id), title: c.profileStatus === 'approved' ? 'Hồ sơ HTX đã được duyệt' : 'Hồ sơ HTX bị từ chối', body: c.profileRejectReason ?? '' });
+      if (before.status !== c.status)
+        drafts.push({ userIds: usersOfCoop(next, c.id), title: c.status === 'active' ? 'Đã kích hoạt quyền bán' : 'Quyền bán bị tạm khoá', body: c.suspendReason ?? '' });
     }
   }
 

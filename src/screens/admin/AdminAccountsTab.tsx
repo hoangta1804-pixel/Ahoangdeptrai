@@ -1,12 +1,15 @@
-import { ACCOUNT_ROLE_LABEL, ADMIN_GROUP_LABEL } from '../../domain/types';
+import { useUi } from '../../app/UiContext';
+import { rootSetAdminGroup } from '../../domain/account';
+import { ACCOUNT_ROLE_LABEL, ADMIN_GROUP_LABEL, type AdminSubGroup } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
 
-/** Danh sách tài khoản (Quản trị gốc). Phân quyền, cấp và khoá tài khoản (FR-TK-10..12) làm ở Giai đoạn 4. */
+/** Quản trị gốc: xem tài khoản và phân quyền nhóm Admin (FR-TK-11). Cấp và khoá tài khoản do Admin – Vận hành làm. */
 export function AdminAccountsTab() {
-  const { state } = useStore();
+  const { state, run } = useStore();
+  const { adminActor, showToast } = useUi();
   return (
     <div className="space-y-2">
-      <p className="text-sm text-stone-600">Chỉ xem. Cấp, khoá tài khoản và phân quyền làm ở Giai đoạn 4.</p>
+      <p className="text-sm text-stone-600">Đổi nhóm quyền của tài khoản Admin ở cột "Đơn vị / nhóm quyền". Cấp và khoá tài khoản do Admin – Vận hành thực hiện.</p>
       <div className="overflow-x-auto rounded-2xl border border-stone-200 bg-white">
         <table className="w-full min-w-[640px] text-left text-sm">
           <thead className="bg-stone-50 text-xs text-stone-500">
@@ -24,7 +27,31 @@ export function AdminAccountsTab() {
                 <td className="px-3 py-2">{u.name}</td>
                 <td className="px-3 py-2 font-mono">{u.phone}</td>
                 <td className="px-3 py-2">{ACCOUNT_ROLE_LABEL[u.role]}</td>
-                <td className="px-3 py-2">{u.coopId ? state.coops.find((c) => c.id === u.coopId)?.name : u.adminGroup ? ADMIN_GROUP_LABEL[u.adminGroup] : '—'}</td>
+                <td className="px-3 py-2">
+                  {u.role === 'admin' && u.adminGroup && u.adminGroup !== 'root' && u.id !== adminActor.userId ? (
+                    <select
+                      aria-label={`Nhóm quyền của ${u.name}`}
+                      value={u.adminGroup}
+                      onChange={(e) => {
+                        const r = run((s, at) => rootSetAdminGroup(s, adminActor, u.id, e.target.value as AdminSubGroup, at));
+                        showToast(r.ok ? 'Đã đổi nhóm quyền.' : r.error);
+                      }}
+                      className="min-h-11 rounded-xl border border-stone-300 px-2"
+                    >
+                      {(['operations', 'quality', 'cskh', 'finance'] as AdminSubGroup[]).map((g) => (
+                        <option key={g} value={g}>
+                          {ADMIN_GROUP_LABEL[g]}
+                        </option>
+                      ))}
+                    </select>
+                  ) : u.coopId ? (
+                    state.coops.find((c) => c.id === u.coopId)?.name
+                  ) : u.adminGroup ? (
+                    ADMIN_GROUP_LABEL[u.adminGroup]
+                  ) : (
+                    '—'
+                  )}
+                </td>
                 <td className="px-3 py-2">{u.status === 'active' ? 'Đang hoạt động' : 'Đang khoá'}</td>
               </tr>
             ))}

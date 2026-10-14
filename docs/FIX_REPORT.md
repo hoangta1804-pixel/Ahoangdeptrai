@@ -7,7 +7,7 @@ Tài liệu này cập nhật sau mỗi giai đoạn của `PROMPT_SUA_APP.md`. 
 | 1 | Hợp nhất mã nguồn, sửa cấu hình build | **Xong** |
 | 2 | Sửa lỗi L1–L18 | **Xong** |
 | 3 | Dữ liệu dùng chung và đăng nhập | **Xong** |
-| 4 | Chức năng mức Must theo vai trò | Chưa làm |
+| 4 | Chức năng mức Must theo vai trò | **Xong** |
 | 5 | Nội dung và dữ liệu mẫu | Chưa làm |
 | 6 | Giao diện | Chưa làm |
 
@@ -21,14 +21,133 @@ npm run lint     # kiểm tra kiểu TypeScript
 npm test         # unit test vitest cho src/domain
 ```
 
-### Kết quả lần chạy cuối (Giai đoạn 3)
+### Kết quả lần chạy cuối (Giai đoạn 4)
 
 | Lệnh | Kết quả |
 |---|---|
 | `npm run lint` | Không lỗi |
-| `npm test` | 11 file, 59 test, tất cả đạt |
-| `npm run build` | Thành công |
-| Kiểm thử trình duyệt (Playwright, chặn mọi request ngoài localhost, 2 tab cùng lúc) | Đạt. Không lỗi JS |
+| `npm test` | 12 file, 68 test, tất cả đạt |
+| `npm run build` | Thành công, không còn cảnh báo kích thước. Phần chung 424 kB (gzip 124 kB); màn HTX, Admin, QLNN tải riêng theo vai trò |
+| Luồng 1 và Luồng 2 (mục 11.2) bằng Playwright, chặn mọi request ngoài localhost | Đạt trọn vẹn. Không lỗi JS |
+
+---
+
+## Giai đoạn 4 – Chức năng mức Must theo vai trò
+
+### Tình trạng từng FR
+
+Quy ước tình trạng:
+- **Đã làm:** chức năng chạy thật trên dữ liệu demo.
+- **Mô phỏng:** có màn hình và luồng đầy đủ, nhưng phần bên ngoài (OTP, cổng thanh toán, ngân hàng, ĐVVC) là giả lập, có nhãn "Mô phỏng".
+- **Chưa làm:** kèm lý do.
+
+**Khách hàng**
+
+| FR | Nội dung | Tình trạng | Ghi chú |
+|---|---|---|---|
+| TK-01 | Đăng ký | Mô phỏng | SĐT + OTP mô phỏng `123456` |
+| TK-02 | Đăng nhập | Mô phỏng | SĐT + OTP mô phỏng; có danh sách tài khoản demo |
+| TK-03 | Thông tin cá nhân | Đã làm | Sửa họ tên; khai / đổi tài khoản nhận hoàn (hiện dạng che). SĐT là tên đăng nhập, không đổi tại đây |
+| TK-04 | Sổ địa chỉ | Đã làm | Tối đa 10, mặc định, sửa, xoá; phường/xã theo danh mục |
+| TKSP-01 | Danh mục | Đã làm | Lọc theo nhóm hàng |
+| TKSP-02 | Tìm kiếm | Đã làm | Không phân biệt dấu, hoa/thường |
+| TKSP-03 | Lọc | Đã làm | Vùng (sinh từ dữ liệu), nhóm hàng; màn rỗng có nút xoá lọc |
+| TKSP-04 | Chi tiết sản phẩm | Đã làm | Kèm điểm đánh giá, đánh giá công khai, chứng nhận đã xác minh, nguồn gốc |
+| TKSP-05 | Chia sẻ link | Đã làm | Link `#/san-pham/<mã>`. Dùng chia sẻ của thiết bị nếu có, không thì sao chép link. Mở link khi chưa đăng nhập thì mở sản phẩm sau khi đăng nhập |
+| MHTT-01 | Giỏ hàng 2 nhóm | Đã làm | |
+| MHTT-02 | Đặt mua sẵn | Đã làm | |
+| MHTT-03 | Đặt trước | Đã làm | |
+| MHTT-04 | Hộp quà | Đã làm | |
+| MHTT-05 | Thanh toán | Mô phỏng | Cổng thanh toán mô phỏng |
+| MHTT-07 | Trả phần còn lại | Mô phỏng | Trả qua cổng mô phỏng hoặc đổi sang COD 1 lần |
+| DH-01 | Danh sách đơn theo tab trạng thái | Đã làm | |
+| DH-02 | Đổi người nhận và địa chỉ trước khi bàn giao | Đã làm | Kèm đổi ngày giao D 1 lần (BR-DAT-08) và sửa lời nhắn, người nhận quà trước Đang chuẩn bị (BR-DAT-09) |
+| DH-03 | Huỷ đơn | Đã làm | Huỷ ngay hoặc gửi yêu cầu theo trạng thái |
+| DH-04 | Yêu cầu trả hàng | Đã làm | |
+| DH-13 | Chi tiết đơn kèm lịch sử trạng thái | Đã làm | |
+| DH-15 | Xác nhận đã nhận hàng | Đã làm | |
+| CSKH-01 | Gửi ticket | Đã làm | Ảnh thu nhỏ, chỉ lưu trên trình duyệt |
+| CSKH-04 | Đánh giá | Đã làm | 1–5 sao; 1–2 sao cần ≥ 20 ký tự; ≤ 500 ký tự; ≤ 5 ảnh; mỗi sản phẩm / đơn 1 lần |
+| CSKH-10 | Thông báo | Đã làm | |
+
+**HTX**
+
+| FR | Nội dung | Tình trạng | Ghi chú |
+|---|---|---|---|
+| TK-06/07 | Hồ sơ HTX, gửi duyệt, theo dõi kết quả | Đã làm | Trong lúc chờ duyệt vẫn hiện hồ sơ cũ |
+| SP-02..06 | Tạo, sửa, ẩn sản phẩm, gửi duyệt | Đã làm | Tạo mới và sửa nội dung → Chờ duyệt; ẩn / hiện có hiệu lực ngay |
+| SP-07 | Tồn kho và giá | Đã làm | Tồn kho có hiệu lực ngay; giá chờ duyệt |
+| SP-08 | Chứng nhận | Đã làm | Khai kèm ảnh → Admin – Chất lượng xác minh; chỉ chứng nhận đã xác minh mới hiện cho khách |
+| SP-09 | Cấu hình đặt trước và hoả tốc | Đã làm | Báo thu hoạch / mở đặt trước và cờ hoả tốc đều chờ duyệt |
+| DH-07 | Danh sách đơn | Đã làm | |
+| DH-08 | Xác nhận / từ chối đơn | Đã làm | |
+| DH-09 | Đóng gói, bàn giao | Đã làm | Phiếu đóng gói; quà gửi người khác không in giá |
+| DH-10 | Xử lý trả hàng, nhận hàng hoàn | Đã làm | HTX đề xuất hoàn / không hoàn; CSKH quyết định |
+| DH-16 | Xử lý yêu cầu huỷ | Đã làm | |
+| DH-17 | Báo sẵn sàng / không cung cấp được | Đã làm | |
+| CSKH-05/08 | Phản hồi ticket và đánh giá | Đã làm | Không sửa, không xoá đánh giá |
+| DT-01..03 | Doanh thu và đối soát | Đã làm | |
+
+**Admin**
+
+| Nhóm | FR | Nội dung | Tình trạng | Ghi chú |
+|---|---|---|---|---|
+| Vận hành | TK-10/12 | Cấp, khoá tài khoản | Đã làm | Không tự khoá chính mình; khoá phải ghi lý do; phiên đang mở bị đăng xuất |
+| Vận hành | HT-02 | Tham số | Đã làm | Sửa kèm lý do, lưu lịch sử, chỉ áp cho đơn mới; có cột Tình trạng |
+| Vận hành | HT-04 | Danh mục dùng chung | Đã làm | Phường/xã (có khoảng cách mẫu), 2–3 loại hộp quà, bậc phụ phí hoả tốc |
+| Vận hành | – | Mô phỏng ĐVVC | Mô phỏng | Chờ OI-01 |
+| Chất lượng | TK-08/09 | Duyệt hồ sơ HTX | Đã làm | |
+| Chất lượng | SP-04 | Duyệt sản phẩm và giá | Đã làm | Sản phẩm mới, nội dung, giá, báo thu hoạch, hoả tốc, chứng nhận |
+| Chất lượng | TK-13 | Kích hoạt / tạm khoá quyền bán | Đã làm | Khoá phải ghi lý do; sản phẩm hiện "Tạm ngừng bán", không đặt được |
+| CSKH | CSKH-07..09 | Ticket | Đã làm | |
+| CSKH | CSKH-06 | Kiểm duyệt đánh giá | Đã làm | Ẩn phải chọn lý do trong danh sách; không có lý do "sao thấp" |
+| CSKH | DH-11 | Duyệt trả hàng | Đã làm | |
+| Tài chính | DH-12 | Ghi nhận hoàn tiền | Mô phỏng | Ngân hàng mô phỏng |
+| Tài chính | DT-02..03 | Đối soát, chốt kỳ | Đã làm | |
+| Tài chính | DT-04 | Chi trả | Mô phỏng | Chi trả mô phỏng |
+| Quản trị gốc | TK-11 | Phân quyền | Đã làm | |
+| Quản trị gốc | HT-03 | Nhật ký | Đã làm | |
+| (Vận hành) | HT-01 | Mã ưu đãi | Đã làm | Tạo mã theo mức chi tối thiểu, nhóm hàng, HTX, khách lần đầu, hạn, số lượt; bật / tắt mã |
+| Mọi nhóm | BCTK-01 | Dashboard | Đã làm | Tính từ store; có nút xuất CSV |
+
+**Cơ quan QLNN**
+
+| FR | Nội dung | Tình trạng | Ghi chú |
+|---|---|---|---|
+| BCTK-01 | Dashboard tổng hợp | Đã làm | |
+| BCTK-02, 03 | Xuất báo cáo | Đã làm | CSV tổng hợp và CSV đơn ẩn danh; không có dữ liệu cá nhân |
+
+### Thay đổi khác
+
+- **Tách mã theo vai trò** (lazy load). Màn HTX, Admin, QLNN chỉ tải khi đăng nhập vai trò đó. Bản build không còn cảnh báo vượt 500 kB, và khách trên điện thoại tải ít hơn.
+- **Sửa câu thông báo** khi trả phần còn lại của đơn đặt trước (trước đây báo nhầm "Chờ xác nhận").
+
+### Kiểm thử Giai đoạn 4
+
+- **Unit test** `phase4.test.ts` (9 test):
+  - T19 và các quy tắc đánh giá;
+  - cấp / khoá tài khoản, phân quyền;
+  - hồ sơ HTX, khoá quyền bán;
+  - sản phẩm mới chờ duyệt, ẩn sản phẩm;
+  - tham số áp cho đơn mới (BR-DAT-06);
+  - hộp quà 2–3 loại; tạo, tắt mã ưu đãi;
+  - đổi ngày giao 1 lần, đổi địa chỉ;
+  - xuất báo cáo không có dữ liệu cá nhân.
+- **Trình duyệt:** chạy từng chức năng ở trên cho đủ các vai trò, và chạy trọn **Luồng 1** của mục 11.2:
+  1. Khách 1 đặt mật ong (mua sẵn, hộp quà gửi người khác nên COD bị khoá) và mận (đặt trước, tick điều kiện huỷ). Nút ghi "trả ngay 359.000đ"; thanh toán thành công.
+  2. HTX mẫu Bắc Hà thấy đúng 2 đơn. Phiếu đóng gói của đơn quà không in giá. HTX xác nhận và bàn giao đơn mua sẵn; với đơn đặt trước thì báo sẵn sàng → khách trả phần còn lại → HTX bàn giao.
+  3. Admin – Vận hành mô phỏng ĐVVC giao thành công.
+  4. Khách bấm Đã nhận, đánh giá 4 sao, gửi khiếu nại kèm ảnh và yêu cầu hoàn.
+  5. Admin – CSKH kết luận và duyệt hoàn.
+  6. Admin – Tài chính: Bắt đầu hoàn → ngân hàng mô phỏng xác nhận.
+  7. QLNN thấy "Tổng số đơn 4", "Giá trị hàng đã giao 475.000đ" (gạo 390.000đ + mận 85.000đ; đơn mật ong đang Trả hàng – hoàn tiền nên không tính).
+- **Luồng 2:** đã đạt từ Giai đoạn 2.
+
+### Còn tồn tại sau Giai đoạn 4
+
+- **HTX chưa đổi được tài khoản nhận chi trả trên giao diện.** Đây là dữ liệu nhạy cảm nên cần quy trình riêng, hiện vẫn hiện dạng che `**** 01xx`. Chờ nhóm quyết định.
+- **Chưa có:** đổi SĐT đăng nhập; quên / khoá đăng nhập do nhập sai OTP nhiều lần. SRS trích trong yêu cầu không nêu chi tiết.
+- **Nội dung, ảnh, danh mục sản phẩm vẫn là bộ cũ;** Giai đoạn 5 thay. **Màu sắc, cỡ chữ, trợ năng;** Giai đoạn 6.
 
 ---
 
@@ -124,7 +243,7 @@ Thông báo do `deriveNotifications()` sinh: hàm so dữ liệu trước và sa
 
 ### Còn tồn tại sau Giai đoạn 3
 
-- **Còn thiếu các chức năng tài khoản thuộc Giai đoạn 4:** thông tin cá nhân (TK-03), hồ sơ HTX (TK-06/07), cấp và khoá tài khoản (TK-10/12), phân quyền (TK-11). Màn "Tài khoản" của Quản trị gốc hiện chỉ xem.
+- ~~**Còn thiếu các chức năng tài khoản thuộc Giai đoạn 4**~~ – đã làm ở Giai đoạn 4.
 - **Công cụ demo** hiện cho mọi tài khoản và cả ở màn đăng nhập, vì đây là bản demo. Nếu nhóm muốn chỉ Admin thấy thì sửa ở `AppShell`.
 
 ---
@@ -223,8 +342,8 @@ Chưa chạy được, chờ giai đoạn sau:
 ### Còn tồn tại sau Giai đoạn 2
 
 - ~~**Danh tính tạm thời** (khách cố định, chọn HTX và nhóm quyền bằng ô chọn)~~ – đã thay bằng đăng nhập ở Giai đoạn 3.
-- **Chưa có:** đổi ngày giao D 1 lần sau khi đặt; đổi người nhận / địa chỉ trước bàn giao; trung tâm thông báo; đánh giá. Các mục này thuộc Giai đoạn 3–4.
-- **Màn Tham số chỉ đọc.** Phần sửa kèm lý do làm ở Giai đoạn 4; hàm `updateParam` đã có.
+- ~~**Chưa có:** đổi ngày giao D 1 lần sau khi đặt; đổi người nhận / địa chỉ trước bàn giao; trung tâm thông báo; đánh giá~~ – đã làm ở Giai đoạn 3–4.
+- ~~**Màn Tham số chỉ đọc**~~ – đã cho sửa kèm lý do ở Giai đoạn 4.
 - **Sản phẩm, mô tả, ảnh Unsplash vẫn là bộ cũ**, chỉ đã sửa nhóm hàng và mã HTX. Giai đoạn 5 thay theo danh mục của nhóm.
 
 ---
@@ -265,7 +384,7 @@ Chưa chạy được, chờ giai đoạn sau:
 | T16 | Đạt | `payment.test.ts` |
 | T17 | Đạt | `refund.test.ts`, `flow.test.ts` |
 | T18 | Đạt | `flow.test.ts` |
-| T19 | Chưa làm | Đánh giá làm ở Giai đoạn 4 |
+| T19 | Đạt | `phase4.test.ts` |
 | T20 | Đạt | `text.test.ts` |
 | T21 | Đạt | `access.test.ts`, `flow.test.ts` |
 | T22 | Đạt | `access.test.ts`, `payment.test.ts` |
@@ -276,10 +395,6 @@ Ngoài các ca trên còn có test cho:
 - COD bị ẩn, hoả tốc sau 14:00, lời nhắn hộp quà;
 - quá hạn xác nhận, trả phần còn lại và quá hạn PAR-24, tự chuyển Đã giao sau PAR-26, chuyển hoàn sau PAR-27;
 - đối soát, số liệu tổng hợp.
-
-## Chức năng Giai đoạn 4
-
-Chưa bắt đầu. Bảng FR theo vai trò sẽ được điền khi làm Giai đoạn 4.
 
 ## Giả định đã dùng
 
@@ -308,7 +423,18 @@ Chưa bắt đầu. Bảng FR theo vai trò sẽ được điền khi làm Giai 
 23. **Nhật ký thao tác chỉ Quản trị gốc xem** (FR-HT-03); các nhóm Admin khác không xem.
 24. **Thông báo không gửi lại cho chính bên vừa thao tác** (ví dụ HTX tự xác nhận đơn thì chỉ khách nhận thông báo).
 25. **Tồn thấp khi tồn khả dụng ≤ ngưỡng** (PAR-02 hoặc ngưỡng riêng của sản phẩm), kể cả lúc khách vừa tạo đơn và hàng đang được giữ.
-26. **Khách hàng đăng ký mới** bằng SĐT + OTP mô phỏng, chưa yêu cầu thêm thông tin nào khác. Thông tin cá nhân (TK-03) làm ở Giai đoạn 4.
+26. **Khách hàng đăng ký mới** bằng SĐT + OTP mô phỏng, chưa yêu cầu thêm thông tin nào khác.
+27. **Mã ưu đãi (HT-01) do Admin – Vận hành tạo,** vì yêu cầu không ghi rõ nhóm quyền.
+28. **Đơn hoả tốc chỉ đổi được địa chỉ khi phụ phí không đổi.** Nếu phụ phí đổi, khách liên hệ CSKH; app không tự thu thêm hay hoàn bớt.
+29. **Sản phẩm mới ở trạng thái Chờ duyệt** cho tới khi Admin – Chất lượng duyệt; bị từ chối thì ở trạng thái "Bị từ chối". **Sửa nội dung** chờ duyệt và trong lúc chờ khách thấy nội dung cũ. **Ẩn / hiện** có hiệu lực ngay.
+30. **Chỉ chứng nhận đã được Admin – Chất lượng xác minh mới hiện cho khách,** ghi "Admin đã xem hồ sơ – mô phỏng". Nhãn `certLabel` của dữ liệu mẫu cũ còn hiện ở trang nguồn gốc; Giai đoạn 5 sẽ bỏ.
+31. **Đánh giá công khai** hiện tên rút gọn (ví dụ "Khách 1.") và 3 ký tự cuối của mã đơn.
+32. **Danh sách lý do được phép ẩn đánh giá** gồm: thông tin cá nhân, ngôn từ xúc phạm, quảng cáo / spam / link, không liên quan sản phẩm. Không có lý do "sao thấp".
+33. **Giới hạn khi khoá tài khoản và phân quyền:**
+    - Admin – Vận hành không khoá được chính mình và không khoá được Quản trị gốc.
+    - Quản trị gốc không tự đổi nhóm quyền của mình và không cấp thêm quyền Quản trị gốc.
+34. **HTX bị tạm khoá quyền bán:** sản phẩm vẫn hiện trong danh mục kèm nhãn "Tạm ngừng bán" nhưng không đặt được. Các đơn đã có vẫn xử lý bình thường.
+35. **Báo cáo CSV** mã hoá UTF-8 có BOM để Excel hiển thị đúng tiếng Việt.
 
 ## Vấn đề chờ nhóm chốt
 

@@ -41,9 +41,15 @@ export function isOrderable(product: Product): boolean {
   return true;
 }
 
+/** Như isOrderable, thêm điều kiện HTX đang có quyền bán (FR-TK-13). */
+export function isOrderableIn(state: DemoState, product: Product): boolean {
+  const coop = state.coops.find((c) => c.id === product.coopId);
+  return isOrderable(product) && coop?.status !== 'suspended';
+}
+
 export function addToCart(state: DemoState, customerId: string, productId: string, quantity: number, now: Date): Result<DemoState> {
   const product = findProduct(state, productId);
-  if (!product || !isOrderable(product)) return fail('Sản phẩm hiện không mở bán.');
+  if (!product || !isOrderableIn(state, product)) return fail('Sản phẩm hiện không mở bán.');
   if (!Number.isInteger(quantity) || quantity < 1) return fail('Số lượng phải từ 1 trở lên.');
   const remaining = remainingFor(state, product);
   const cart = state.carts[customerId] ?? [];
@@ -103,7 +109,7 @@ export function revalidateLines(state: DemoState, lines: CartLine[]): Revalidati
   const out: CartLine[] = [];
   for (const line of lines) {
     const product = findProduct(state, line.productId);
-    if (!product || !isOrderable(product)) {
+    if (!product || !isOrderableIn(state, product)) {
       notices.push({ type: 'removed', productId: line.productId, name: product?.name ?? 'Sản phẩm', reason: 'không còn mở bán' });
       continue;
     }

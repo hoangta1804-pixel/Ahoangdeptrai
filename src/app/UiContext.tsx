@@ -24,6 +24,8 @@ export type ModalState =
   | { type: 'complaint'; orderId?: string }
   | { type: 'coop_order'; orderId: string }
   | { type: 'notifications' }
+  | { type: 'review'; orderId: string; productId: string }
+  | { type: 'coop_product_form'; productId?: string }
   | { type: 'demo_panel' };
 
 const NO_ACTOR: Actor = { kind: 'system', name: 'Chưa đăng nhập' };

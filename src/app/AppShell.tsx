@@ -1,14 +1,17 @@
+import { lazy, Suspense, useEffect } from 'react';
 import { Bell, FlaskConical, LogOut } from 'lucide-react';
 import { Toast } from '../components/Toast';
 import { ACCOUNT_ROLE_LABEL, ADMIN_GROUP_LABEL } from '../domain/types';
-import { AdminScreen } from '../screens/admin/AdminScreen';
-import { CoopScreen } from '../screens/coop/CoopScreen';
 import { CustomerScreen } from '../screens/customer/CustomerScreen';
-import { RegulatorScreen } from '../screens/regulator/RegulatorScreen';
 import { useStore } from '../store/AppDataContext';
 import { LoginScreen } from './LoginScreen';
 import { ModalHost } from './ModalHost';
 import { useUi } from './UiContext';
+
+// Màn HTX, Admin, QLNN tải riêng theo vai trò, để khách trên điện thoại không phải tải mã của các màn này.
+const CoopScreen = lazy(() => import('../screens/coop/CoopScreen').then((m) => ({ default: m.CoopScreen })));
+const AdminScreen = lazy(() => import('../screens/admin/AdminScreen').then((m) => ({ default: m.AdminScreen })));
+const RegulatorScreen = lazy(() => import('../screens/regulator/RegulatorScreen').then((m) => ({ default: m.RegulatorScreen })));
 
 /**
  * Khung app. Không có thanh chuyển vai trò công khai: vai trò theo tài khoản đăng nhập (mục 5.9).
@@ -20,6 +23,21 @@ export function AppShell() {
   const wide = user?.role === 'admin' || user?.role === 'regulator';
   const unread = user ? state.notifications.filter((n) => n.userId === user.id && !n.read).length : 0;
   const width = wide ? 'max-w-7xl' : 'max-w-[640px]';
+
+  // Link chia sẻ sản phẩm (FR-TKSP-05): #/san-pham/<mã>. Chưa đăng nhập thì giữ link, mở sau khi khách đăng nhập.
+  useEffect(() => {
+    const open = () => {
+      const m = window.location.hash.match(/^#\/san-pham\/([\w-]+)$/);
+      if (!m || user?.role !== 'customer') return;
+      if (state.products.some((p) => p.id === m[1] && p.status === 'active')) openModal({ type: 'product_detail', productId: m[1] });
+      else showToast('Sản phẩm trong link không còn mở bán.');
+      history.replaceState(null, '', window.location.pathname + window.location.search);
+    };
+    open();
+    window.addEventListener('hashchange', open);
+    return () => window.removeEventListener('hashchange', open);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   return (
     <div className="flex min-h-dvh flex-col bg-[#F5F4F0] text-stone-800">
@@ -70,11 +88,13 @@ export function AppShell() {
       </header>
 
       <main className={`mx-auto flex w-full flex-1 flex-col bg-[#FAF8F5] ${width}`}>
-        {!user && <LoginScreen />}
-        {user?.role === 'customer' && <CustomerScreen />}
-        {user?.role === 'coop' && <CoopScreen />}
-        {user?.role === 'regulator' && <RegulatorScreen />}
-        {user?.role === 'admin' && <AdminScreen />}
+        <Suspense fallback={<p className="p-6 text-center text-sm text-stone-600">Đang tải…</p>}>
+          {!user && <LoginScreen />}
+          {user?.role === 'customer' && <CustomerScreen />}
+          {user?.role === 'coop' && <CoopScreen />}
+          {user?.role === 'regulator' && <RegulatorScreen />}
+          {user?.role === 'admin' && <AdminScreen />}
+        </Suspense>
       </main>
 
       <ModalHost />

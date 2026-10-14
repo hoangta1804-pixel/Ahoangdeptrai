@@ -91,14 +91,16 @@ export function submitComplaint(state: DemoState, actor: Actor, input: Complaint
   return ok({ state: next, ticket });
 }
 
-/** HTX phản hồi ticket của HTX mình (FR-CSKH-05). */
-export function coopReplyTicket(state: DemoState, ticketId: string, actor: Actor, text: string, at: Date): Result<DemoState> {
+/** HTX phản hồi ticket của HTX mình (FR-CSKH-05); với yêu cầu trả hàng, HTX chỉ xác nhận và đề xuất (FR-DH-10). */
+export function coopReplyTicket(state: DemoState, ticketId: string, actor: Actor, text: string, at: Date, proposal?: 'refund' | 'no_refund'): Result<DemoState> {
   const ticket = state.tickets.find((t) => t.id === ticketId);
   if (!ticket) return fail('Không tìm thấy ticket.');
   if (actor.kind !== 'coop' || actor.id !== ticket.coopId) return fail('HTX chỉ phản hồi ticket của HTX mình.');
   if (!text.trim()) return fail('Vui lòng nhập nội dung phản hồi.');
   if (['resolved', 'rejected', 'closed'].includes(ticket.status)) return fail('Ticket đã kết thúc.');
-  const updated: Ticket = { ...ticket, history: [...ticket.history, { at: iso(at), actor, action: 'HTX phản hồi', note: text.trim() }] };
+  if (proposal && !ticket.requestRefund) return fail('Ticket không có yêu cầu hoàn tiền để đề xuất.');
+  const action = proposal ? `HTX phản hồi, đề xuất ${proposal === 'refund' ? 'hoàn tiền' : 'không hoàn tiền'}` : 'HTX phản hồi';
+  const updated: Ticket = { ...ticket, coopProposal: proposal ?? ticket.coopProposal, history: [...ticket.history, { at: iso(at), actor, action, note: text.trim() }] };
   const next = { ...state, tickets: state.tickets.map((t) => (t.id === ticketId ? updated : t)) };
   return ok(audit(next, actor, 'Phản hồi ticket', ticketId, at, text.trim()));
 }

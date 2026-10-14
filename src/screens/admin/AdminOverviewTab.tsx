@@ -1,3 +1,4 @@
+import { ExportButtons } from '../../components/ExportButtons';
 import { formatMoney } from '../../domain/pricing';
 import { aggregateStats } from '../../domain/stats';
 import { ORDER_STATUS_LABEL, ORDER_STATUSES } from '../../domain/types';
@@ -84,5 +85,10 @@ export function StatsPanel() {
 }
 
 export function AdminOverviewTab() {
-  return <StatsPanel />;
+  return (
+    <div className="space-y-4">
+      <ExportButtons />
+      <StatsPanel />
+    </div>
+  );
 }

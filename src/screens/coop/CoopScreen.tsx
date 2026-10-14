@@ -3,15 +3,19 @@ import { useUi } from '../../app/UiContext';
 import { useStore } from '../../store/AppDataContext';
 import { CoopOrdersTab } from './CoopOrdersTab';
 import { CoopProductsTab } from './CoopProductsTab';
+import { CoopProfileTab } from './CoopProfileTab';
+import { CoopReviewsTab } from './CoopReviewsTab';
 import { CoopTicketsTab } from './CoopTicketsTab';
 import { CoopWalletTab } from './CoopWalletTab';
 
-type CoopTab = 'orders' | 'products' | 'tickets' | 'wallet';
+type CoopTab = 'orders' | 'products' | 'tickets' | 'reviews' | 'wallet' | 'profile';
 const TABS: { key: CoopTab; label: string }[] = [
   { key: 'orders', label: 'Đơn hàng' },
   { key: 'products', label: 'Sản phẩm' },
   { key: 'tickets', label: 'Khiếu nại' },
+  { key: 'reviews', label: 'Đánh giá' },
   { key: 'wallet', label: 'Đối soát' },
+  { key: 'profile', label: 'Hồ sơ' },
 ];
 
 export function CoopScreen() {
@@ -31,7 +35,7 @@ export function CoopScreen() {
         </p>
       </div>
 
-      <div className="grid grid-cols-4 gap-1 rounded-2xl bg-stone-200/70 p-1 text-sm font-medium" role="tablist">
+      <div className="grid grid-cols-3 gap-1 rounded-2xl bg-stone-200/70 p-1 text-sm font-medium" role="tablist">
         {TABS.map((t) => (
           <button key={t.key} role="tab" aria-selected={tab === t.key} onClick={() => setTab(t.key)} className={`min-h-11 rounded-xl ${tab === t.key ? 'bg-white font-bold text-stone-900 shadow-xs' : 'text-stone-700'}`}>
             {t.label}
@@ -43,7 +47,9 @@ export function CoopScreen() {
       {tab === 'orders' && <CoopOrdersTab />}
       {tab === 'products' && <CoopProductsTab />}
       {tab === 'tickets' && <CoopTicketsTab />}
+      {tab === 'reviews' && <CoopReviewsTab />}
       {tab === 'wallet' && <CoopWalletTab />}
+      {tab === 'profile' && <CoopProfileTab />}
     </div>
   );
 }

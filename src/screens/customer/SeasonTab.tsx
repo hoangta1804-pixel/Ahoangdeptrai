@@ -3,7 +3,7 @@ import { useUi } from '../../app/UiContext';
 import { EmptyState } from '../../components/EmptyState';
 import { PreorderProgress } from '../../components/PreorderProgress';
 import { ProductImage } from '../../components/ProductImage';
-import { deliveryWindow, isOrderable } from '../../domain/cart';
+import { deliveryWindow, isOrderableIn } from '../../domain/cart';
 import { computeDeposit, formatMoney } from '../../domain/pricing';
 import { remainingFor } from '../../domain/state';
 import { useStore } from '../../store/AppDataContext';
@@ -35,7 +35,7 @@ export function SeasonTab() {
             const coop = state.coops.find((c) => c.id === p.coopId);
             const remaining = remainingFor(state, p);
             const win = deliveryWindow(p, now(), params);
-            const blocked = !isOrderable(p) ? 'Chưa mở đặt trước' : remaining <= 0 ? 'Hết suất' : !win ? 'Đã hết thời gian nhận đặt trước' : null;
+            const blocked = !isOrderableIn(state, p) ? 'Chưa mở đặt trước' : remaining <= 0 ? 'Hết suất' : !win ? 'Đã hết thời gian nhận đặt trước' : null;
             return (
               <div key={p.id} className="space-y-3 rounded-3xl border border-stone-200 bg-white p-3.5 shadow-xs">
                 <div className="flex gap-3">

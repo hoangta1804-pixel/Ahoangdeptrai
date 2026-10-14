@@ -8,7 +8,12 @@ import { AdminOrdersTab } from './AdminOrdersTab';
 import { AdminOverviewTab } from './AdminOverviewTab';
 import { AdminParamsTab } from './AdminParamsTab';
 import { CarrierSimTab } from './CarrierSimTab';
+import { CskhReviewsTab } from './CskhReviewsTab';
 import { CskhTicketsTab } from './CskhTicketsTab';
+import { OpsAccountsTab } from './OpsAccountsTab';
+import { QualityCoopsTab } from './QualityCoopsTab';
+import { SharedCatalogTab } from './SharedCatalogTab';
+import { VouchersTab } from './VouchersTab';
 import { FinanceRefundsTab } from './FinanceRefundsTab';
 import { FinanceSettlementTab } from './FinanceSettlementTab';
 import { QualityChangesTab } from './QualityChangesTab';
@@ -23,10 +28,21 @@ const TABS: Record<AdminSubGroup, TabDef[]> = {
     OVERVIEW,
     { key: 'orders', label: 'Đơn hàng', render: () => <AdminOrdersTab /> },
     { key: 'carrier', label: 'Mô phỏng ĐVVC', render: () => <CarrierSimTab /> },
+    { key: 'accounts', label: 'Cấp & khoá tài khoản', render: () => <OpsAccountsTab /> },
     { key: 'params', label: 'Tham số', render: () => <AdminParamsTab /> },
+    { key: 'catalog', label: 'Danh mục dùng chung', render: () => <SharedCatalogTab /> },
+    { key: 'vouchers', label: 'Mã ưu đãi', render: () => <VouchersTab /> },
   ],
-  quality: [OVERVIEW, { key: 'changes', label: 'Duyệt sản phẩm & giá', render: () => <QualityChangesTab /> }],
-  cskh: [OVERVIEW, { key: 'tickets', label: 'Ticket khiếu nại', render: () => <CskhTicketsTab /> }],
+  quality: [
+    OVERVIEW,
+    { key: 'changes', label: 'Duyệt sản phẩm & giá', render: () => <QualityChangesTab /> },
+    { key: 'coops', label: 'Hồ sơ HTX & quyền bán', render: () => <QualityCoopsTab /> },
+  ],
+  cskh: [
+    OVERVIEW,
+    { key: 'tickets', label: 'Ticket khiếu nại', render: () => <CskhTicketsTab /> },
+    { key: 'reviews', label: 'Kiểm duyệt đánh giá', render: () => <CskhReviewsTab /> },
+  ],
   finance: [
     OVERVIEW,
     { key: 'refunds', label: 'Hoàn tiền', render: () => <FinanceRefundsTab /> },
@@ -35,7 +51,7 @@ const TABS: Record<AdminSubGroup, TabDef[]> = {
   ],
   root: [
     OVERVIEW,
-    { key: 'accounts', label: 'Tài khoản', render: () => <AdminAccountsTab /> },
+    { key: 'accounts', label: 'Phân quyền', render: () => <AdminAccountsTab /> },
     { key: 'audit', label: 'Nhật ký', render: () => <AdminAuditTab /> },
   ],
 };

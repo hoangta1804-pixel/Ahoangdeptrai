@@ -4,7 +4,7 @@ import { useUi } from '../../app/UiContext';
 import { EmptyState } from '../../components/EmptyState';
 import { PreorderProgress } from '../../components/PreorderProgress';
 import { ProductImage } from '../../components/ProductImage';
-import { isOrderable } from '../../domain/cart';
+import { isOrderableIn } from '../../domain/cart';
 import { formatMoney } from '../../domain/pricing';
 import { remainingFor } from '../../domain/state';
 import { matchesSearch } from '../../domain/text';
@@ -104,7 +104,7 @@ export function ExploreTab() {
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {visible.map((p) => {
             const remaining = remainingFor(state, p);
-            const soldOut = remaining <= 0 || !isOrderable(p);
+            const soldOut = remaining <= 0 || !isOrderableIn(state, p);
             const coop = state.coops.find((c) => c.id === p.coopId);
             return (
               <div
@@ -116,7 +116,7 @@ export function ExploreTab() {
                   <ProductImage product={p} className="h-full w-full" />
                   <div className="absolute top-2 left-2 flex flex-col items-start gap-1">
                     {p.kind === 'preorder' && <span className="rounded-md bg-amber-600 px-1.5 py-0.5 text-xs font-bold text-white">Đặt trước</span>}
-                    {soldOut && <span className="rounded-md bg-stone-900/85 px-1.5 py-0.5 text-xs font-bold text-white">Hết hàng</span>}
+                    {soldOut && <span className="rounded-md bg-stone-900/85 px-1.5 py-0.5 text-xs font-bold text-white">{isOrderableIn(state, p) ? 'Hết hàng' : 'Tạm ngừng bán'}</span>}
                   </div>
                 </div>
                 <div className="flex flex-1 flex-col justify-between gap-2 p-2.5">

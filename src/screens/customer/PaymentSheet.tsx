@@ -28,7 +28,12 @@ export function PaymentSheet({ txId, onClose }: { txId: string; onClose: () => v
     const r = run(
       (s, t) => applyGatewayResult(s, tx.id, result, generateId('GW'), t),
       (v) => {
-        message = GATEWAY_OUTCOME_MESSAGE[v.outcome];
+        message =
+          tx.kind === 'remaining' && v.outcome === 'paid'
+            ? 'Đã trả phần còn lại. Đơn chuyển sang Đang chuẩn bị nếu HTX đã báo hàng sẵn sàng.'
+            : tx.kind === 'remaining' && (v.outcome === 'failed' || v.outcome === 'cancelled')
+              ? 'Trả phần còn lại chưa thành công. Bạn có thể thử lại trước hạn; hạn không được gia hạn.'
+              : GATEWAY_OUTCOME_MESSAGE[v.outcome];
         return v.state;
       },
     );
