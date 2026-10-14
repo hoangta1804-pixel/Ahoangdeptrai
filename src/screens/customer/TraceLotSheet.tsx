@@ -20,8 +20,15 @@ export function TraceLotSheet({ productId, onClose }: { productId: string; onClo
     ['Nhóm hàng', CATEGORY_LABEL[product.category]],
     ['Loại đơn', ORDER_KIND_LABEL[product.kind]],
     ['Quy cách', product.unit],
-    ['Chứng nhận', product.certLabel],
-    ['Khoảng ngày giao', product.preorder ? `${formatDateKey(product.preorder.deliveryFrom)} – ${formatDateKey(product.preorder.deliveryTo)}` : undefined],
+    // Chỉ hiện chứng nhận Admin – Chất lượng đã xem hồ sơ (FR-SP-08); không có mã chứng nhận mẫu (mục 9.3).
+    ['Chứng nhận', product.certifications?.filter((c) => c.verified).map((c) => `${c.label} · ${c.issuer}`).join('; ') || undefined],
+    ['Ghi chú hồ sơ', product.sample?.dossierNote],
+    [
+      'Khoảng ngày giao',
+      product.preorder
+        ? `${formatDateKey(product.preorder.deliveryFrom)} – ${formatDateKey(product.preorder.deliveryTo)}${product.sample?.deliveryWindowIsSample ? ' (mẫu, chờ HTX xác nhận)' : ''}`
+        : undefined,
+    ],
   ];
   return (
     <BottomSheet title="Thông tin nguồn gốc" onClose={onClose}>
@@ -44,7 +51,8 @@ export function TraceLotSheet({ productId, onClose }: { productId: string; onClo
       </dl>
       <p className="text-sm leading-relaxed text-stone-600">{product.description}</p>
       <p className="rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm leading-relaxed text-amber-950">
-        Thông tin lô (mã lô, ngày thu hoạch, ngày đóng gói) do HTX khai khi tạo lô hàng. Dữ liệu trên là dữ liệu mẫu, chờ HTX xác nhận.
+        Thông tin lô (mã lô, ngày thu hoạch, ngày đóng gói) do HTX khai khi tạo lô hàng.
+        {product.sample && ' Dữ liệu trên là dữ liệu mẫu, chờ HTX xác nhận.'}
       </p>
     </BottomSheet>
   );

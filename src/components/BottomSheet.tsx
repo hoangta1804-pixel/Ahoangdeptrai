@@ -4,6 +4,7 @@
  */
 import { useEffect, type ReactNode } from 'react';
 import { X } from 'lucide-react';
+import { DemoBand } from './DemoBand';
 
 interface BottomSheetProps {
   title: ReactNode;
@@ -32,10 +33,11 @@ export function BottomSheet({ title, onClose, children, footer, closeLabel = 'Đ
       onClick={onClose}
       role="presentation"
     >
+      <DemoBand className="pointer-events-none absolute inset-x-0 top-0" />
       <div
         role="dialog"
         aria-modal="true"
-        className="flex max-h-[90dvh] w-full max-w-[640px] flex-col rounded-t-[32px] bg-white shadow-2xl md:rounded-[32px]"
+        className="flex max-h-[min(90dvh,calc(100dvh-3.5rem))] w-full max-w-[640px] flex-col rounded-t-[32px] bg-white shadow-2xl md:rounded-[32px]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3 px-5 pt-4 pb-2">

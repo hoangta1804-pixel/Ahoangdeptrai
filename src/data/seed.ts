@@ -1,9 +1,15 @@
 /**
- * Dữ liệu mẫu ban đầu theo mô hình nghiệp vụ mới (Giai đoạn 2).
+ * Dữ liệu mẫu ban đầu (Giai đoạn 5, mục 9).
  *
- * - Sản phẩm vẫn là 5 sản phẩm của src/App.tsx cũ, đã sửa nhóm hàng và mỗi HTX một mã riêng (L16).
- *   Giai đoạn 5 thay bằng danh mục của nhóm (mục 9).
- * - Tên HTX, khách hàng, SĐT, tài khoản đều là dữ liệu mẫu rõ ràng là giả.
+ * - Danh mục là 9 sản phẩm trong danh sách của nhóm. Mỗi sản phẩm có `sample` để trang chi tiết hiện
+ *   nhãn "Dữ liệu mẫu – chờ HTX xác nhận", khoảng giá nhóm khảo sát, và ghi chú hồ sơ nếu bảng có ghi.
+ * - Giá mẫu chọn trong khoảng giá bán lẻ Hà Nội nhóm khảo sát; Cốm Tú Lệ và Bưởi Đại Minh chưa có giá nên ghi "giá mẫu".
+ * - Không gắn mã chứng nhận. Chỉ Bưởi Đại Minh ghi OCOP, kèm "theo hồ sơ nhóm, chờ xác minh".
+ * - Mô tả chỉ ghi điều bảng của nhóm có; phần còn lại ghi "chờ HTX xác nhận".
+ *   Không dùng tên chỉ dẫn địa lý, "thảo quả rừng", "mật bản địa", "Séng cù xanh".
+ * - Không đưa vào giai đoạn 1: mật ong hoa bạc hà, đào Sa Pa, cá hồi, cá tầm, thịt gác bếp, rượu.
+ * - Không có ảnh: app tự sinh ảnh giữ chỗ SVG theo tên và nhóm hàng (src/components/ProductImage.tsx).
+ * - Tên HTX dạng "HTX mẫu …"; khách hàng, SĐT (0900 000 xxx), tài khoản (**** xxxx) đều rõ ràng là giả.
  * - Phường/xã ghi "(mẫu)" cho đến khi nhóm nạp danh mục chính thức. Khoảng cách là số mẫu.
  * - Đơn mẫu được tạo qua chính các hàm trong src/domain để dữ liệu luôn nhất quán.
  */
@@ -17,95 +23,139 @@ import type { Voucher } from '../domain/voucher';
 
 const dateFromNow = (now: Date, days: number) => toDateKey(addMs(now, days * DAY_MS));
 
+/** Nhãn của sản phẩm mẫu chưa có giá khảo sát. */
+export const SAMPLE_PRICE_LABEL = 'giá mẫu';
+
 function products(now: Date): Product[] {
+  // Mận tam hoa: khoảng ngày giao mẫu tháng 5–6 của mùa tới (bảng của nhóm ghi 05–06/2027).
+  const plumYear = now.getFullYear() + (now.getMonth() >= 4 ? 1 : 0);
+  // Cốm Tú Lệ, Bưởi Đại Minh: chưa có khoảng ngày giao, lấy mốc sớm nhất theo PAR-08 rồi ghi "chờ HTX xác nhận".
+  const lead = DEFAULT_PARAMS.preorderMinLeadDays;
+  const ready = { kind: 'ready' as const, status: 'active' as const };
+  const preorder = { kind: 'preorder' as const, stockOnHand: 0, expressApproved: false, status: 'active' as const };
   return [
     {
-      id: 'prod-man',
-      coopId: 'coop-bacha',
-      name: 'Mận Tam Hoa Bắc Hà',
-      category: 'fresh',
-      region: 'Bắc Hà',
-      unit: 'kg',
-      price: 85_000,
-      description: 'Mận hái chọn từng quả tại sườn núi Bắc Hà, quả to đều, thịt giòn, phấn trắng tự nhiên bọc quanh vỏ.',
-      image: 'https://images.unsplash.com/photo-1559181567-c3190ca9959b?auto=format&fit=crop&w=600&q=80',
-      fallbackGradient: 'from-rose-700 to-amber-800',
-      certLabel: 'OCOP 4 Sao (HTX khai, chờ xác minh)',
-      kind: 'preorder',
-      stockOnHand: 0,
-      expressApproved: false,
-      preorder: { totalSlots: 100, deliveryFrom: dateFromNow(now, 6), deliveryTo: dateFromNow(now, 20), open: true },
-      status: 'active',
-    },
-    {
-      id: 'prod-gao',
-      coopId: 'coop-muongkhuong',
-      name: 'Gạo Séng Cù Mường Khương',
+      ...ready,
+      id: 'prod-che',
+      coopId: 'coop-suoigiang',
+      name: 'Chè Shan tuyết',
       category: 'dry',
-      region: 'Mường Khương',
-      unit: 'túi 5kg',
-      price: 195_000,
-      description: 'Gạo lúa nương gieo trồng ở thung lũng Mường Khương, hạt dài đều, cơm dẻo thơm.',
-      image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=600&q=80',
-      fallbackGradient: 'from-amber-600 to-yellow-800',
-      certLabel: 'OCOP 5 Sao (HTX khai, chờ xác minh)',
-      kind: 'ready',
-      stockOnHand: 40,
-      expressApproved: true,
-      status: 'active',
-    },
-    {
-      id: 'prod-cahoi',
-      coopId: 'coop-sapa-ts',
-      name: 'Cá Hồi Vân Sa Pa Nguyên Con',
-      category: 'fresh',
-      region: 'Sa Pa',
-      unit: 'kg',
-      price: 340_000,
-      description: 'Cá hồi nuôi tại vùng nước lạnh Sa Pa, thịt đỏ cam, thớ săn chắc.',
-      image: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?auto=format&fit=crop&w=600&q=80',
-      fallbackGradient: 'from-orange-600 to-teal-800',
-      certLabel: 'VietGAP (HTX khai, chờ xác minh)',
-      kind: 'preorder',
-      stockOnHand: 0,
+      region: 'Suối Giàng, Bản Liền',
+      unit: 'gói 100 g',
+      price: 80_000,
+      description: 'Chè Shan tuyết loại phổ thông – trung cấp, gói 100 g. Vùng nguyên liệu, cách chế biến và hạn dùng chờ HTX xác nhận.',
+      stockOnHand: 30,
       expressApproved: false,
-      preorder: { totalSlots: 50, deliveryFrom: dateFromNow(now, 4), deliveryTo: dateFromNow(now, 14), open: true },
-      status: 'active',
+      sample: { surveyedPrice: '400.000–1.500.000đ/kg (loại phổ thông – trung cấp)' },
     },
     {
-      id: 'prod-dao',
-      coopId: 'coop-sapa-caq',
-      name: 'Đào Sa Pa',
-      category: 'fresh',
-      region: 'Sa Pa',
-      unit: 'kg',
-      price: 120_000,
-      description: 'Đào trồng tại các bản người Mông ở Sa Pa, giòn, ngọt thanh.',
-      image: 'https://images.unsplash.com/photo-1629828874514-c1e5103f2150?auto=format&fit=crop&w=600&q=80',
-      fallbackGradient: 'from-rose-400 to-amber-700',
-      certLabel: 'OCOP 4 Sao (HTX khai, chờ xác minh)',
-      kind: 'preorder',
-      stockOnHand: 0,
+      ...ready,
+      id: 'prod-thaoqua',
+      coopId: 'coop-sapa',
+      name: 'Thảo quả khô',
+      category: 'dry',
+      region: 'Sa Pa, Bát Xát',
+      unit: 'gói 200 g',
+      price: 70_000,
+      description: 'Thảo quả sấy khô, gói 200 g, dùng làm gia vị. Vụ thu hoạch và hạn dùng chờ HTX xác nhận.',
+      stockOnHand: 25,
       expressApproved: false,
-      preorder: { totalSlots: 80, deliveryFrom: dateFromNow(now, 10), deliveryTo: dateFromNow(now, 30), open: true },
-      status: 'active',
+      sample: { surveyedPrice: '250.000–450.000đ/kg' },
     },
     {
-      id: 'prod-matong',
+      ...ready,
+      id: 'prod-mutman',
       coopId: 'coop-bacha',
-      name: 'Mật Ong Bắc Hà',
+      name: 'Mứt / ô mai mận tam hoa',
       category: 'processed',
       region: 'Bắc Hà',
-      unit: 'chai 500ml',
-      price: 290_000,
-      description: 'Mật ong khai thác tại cao nguyên Bắc Hà.',
-      image: 'https://images.unsplash.com/photo-1587049352847-4a222e784d38?auto=format&fit=crop&w=600&q=80',
-      fallbackGradient: 'from-amber-500 to-emerald-800',
-      certLabel: 'OCOP 4 Sao (HTX khai, chờ xác minh)',
-      kind: 'ready',
+      unit: 'hộp 300 g',
+      price: 135_000,
+      description: 'Mứt, ô mai làm từ mận tam hoa, hộp 300 g. Thành phần và hạn dùng chờ HTX xác nhận.',
+      stockOnHand: 20,
+      expressApproved: false,
+      sample: { surveyedPrice: '350.000–550.000đ/kg' },
+    },
+    {
+      ...ready,
+      id: 'prod-matong',
+      coopId: 'coop-baoha',
+      name: 'Mật ong Thanh Xuân',
+      category: 'processed',
+      region: 'Bảo Hà',
+      unit: 'chai 500 ml',
+      price: 175_000,
+      description: 'Mật ong đóng chai 500 ml. Nguồn hoa, mùa khai thác và hạn dùng chờ HTX xác nhận.',
       stockOnHand: 12,
       expressApproved: true,
-      status: 'active',
+      sample: { surveyedPrice: '250.000–450.000đ/lít' },
+    },
+    {
+      ...ready,
+      id: 'prod-gao',
+      coopId: 'coop-muongkhuong',
+      name: 'Gạo Séng Cù',
+      category: 'dry',
+      region: 'Mường Khương, Bát Xát',
+      unit: 'túi 2 kg',
+      price: 120_000,
+      description: 'Gạo Séng Cù, túi 2 kg. Vụ thu hoạch và ngày đóng gói chờ HTX xác nhận.',
+      stockOnHand: 40,
+      expressApproved: true,
+      sample: { surveyedPrice: '45.000–70.000đ/kg' },
+    },
+    {
+      ...ready,
+      id: 'prod-phohong',
+      coopId: 'coop-bacha',
+      name: 'Phở hồng Bắc Hà',
+      category: 'processed',
+      region: 'Bắc Hà',
+      unit: 'gói 500 g',
+      price: 65_000,
+      description: 'Phở hồng Bắc Hà, gói 500 g. Thành phần, cách dùng và hạn dùng chờ HTX xác nhận.',
+      stockOnHand: 30,
+      expressApproved: false,
+      sample: { surveyedPrice: 'khoảng 130.000đ/kg' },
+    },
+    {
+      ...preorder,
+      id: 'prod-man',
+      coopId: 'coop-bacha',
+      name: 'Mận tam hoa tươi',
+      category: 'fresh',
+      region: 'Bắc Hà',
+      unit: 'thùng 3 kg',
+      price: 210_000,
+      description: 'Mận tam hoa tươi, đóng thùng 3 kg chống dập. Mùa bán tháng 5–7; đặt trước để giữ suất, giao trong khoảng ngày HTX khai.',
+      preorder: { totalSlots: 100, deliveryFrom: `${plumYear}-05-01`, deliveryTo: `${plumYear}-06-30`, open: true },
+      sample: { surveyedPrice: '50.000–90.000đ/kg', deliveryWindowIsSample: true },
+    },
+    {
+      ...preorder,
+      id: 'prod-com',
+      coopId: 'coop-tule',
+      name: 'Cốm Tú Lệ',
+      category: 'processed',
+      region: 'Tú Lệ',
+      unit: 'gói 500 g',
+      price: 110_000,
+      description: 'Cốm do người Thái ở Tú Lệ làm. Quy cách gói 500 g là quy cách mẫu.',
+      preorder: { totalSlots: 60, deliveryFrom: dateFromNow(now, lead), deliveryTo: dateFromNow(now, lead + 28), open: true },
+      sample: { deliveryWindowIsSample: true },
+    },
+    {
+      ...preorder,
+      id: 'prod-buoi',
+      coopId: 'coop-thacba',
+      name: 'Bưởi Đại Minh',
+      category: 'fresh',
+      region: 'Vùng hồ Thác Bà',
+      unit: 'thùng 5 kg',
+      price: 200_000,
+      description: 'Bưởi Đại Minh vùng hồ Thác Bà. Quy cách thùng 5 kg là quy cách mẫu.',
+      preorder: { totalSlots: 80, deliveryFrom: dateFromNow(now, lead + 7), deliveryTo: dateFromNow(now, lead + 45), open: true },
+      sample: { deliveryWindowIsSample: true, dossierNote: 'OCOP 4 sao năm 2025 (theo hồ sơ nhóm, chờ xác minh)' },
     },
   ];
 }
@@ -129,8 +179,11 @@ export const DEMO_USERS: Omit<UserAccount, 'createdAt'>[] = [
   { id: 'u-kh2', phone: '0900000002', name: 'Khách hàng mẫu 2', role: 'customer', customerId: 'cust-2', status: 'active' },
   { id: 'u-htx-bacha', phone: '0900000101', name: 'HTX mẫu Bắc Hà', role: 'coop', coopId: 'coop-bacha', status: 'active' },
   { id: 'u-htx-mk', phone: '0900000102', name: 'HTX mẫu Mường Khương', role: 'coop', coopId: 'coop-muongkhuong', status: 'active' },
-  { id: 'u-htx-sapats', phone: '0900000103', name: 'HTX mẫu Sa Pa (thuỷ sản)', role: 'coop', coopId: 'coop-sapa-ts', status: 'active' },
-  { id: 'u-htx-sapacaq', phone: '0900000104', name: 'HTX mẫu Sa Pa (cây ăn quả)', role: 'coop', coopId: 'coop-sapa-caq', status: 'active' },
+  { id: 'u-htx-suoigiang', phone: '0900000103', name: 'HTX mẫu Suối Giàng', role: 'coop', coopId: 'coop-suoigiang', status: 'active' },
+  { id: 'u-htx-sapa', phone: '0900000104', name: 'HTX mẫu Sa Pa', role: 'coop', coopId: 'coop-sapa', status: 'active' },
+  { id: 'u-htx-baoha', phone: '0900000105', name: 'HTX mẫu Bảo Hà', role: 'coop', coopId: 'coop-baoha', status: 'active' },
+  { id: 'u-htx-tule', phone: '0900000106', name: 'HTX mẫu Tú Lệ', role: 'coop', coopId: 'coop-tule', status: 'active' },
+  { id: 'u-htx-thacba', phone: '0900000107', name: 'HTX mẫu Thác Bà', role: 'coop', coopId: 'coop-thacba', status: 'active' },
   { id: 'u-ad-vh', phone: '0900000201', name: 'Admin – Vận hành (mẫu)', role: 'admin', adminGroup: 'operations', status: 'active' },
   { id: 'u-ad-cl', phone: '0900000202', name: 'Admin – Chất lượng (mẫu)', role: 'admin', adminGroup: 'quality', status: 'active' },
   { id: 'u-ad-cskh', phone: '0900000203', name: 'Admin – CSKH (mẫu)', role: 'admin', adminGroup: 'cskh', status: 'active' },
@@ -150,8 +203,11 @@ function baseState(now: Date): DemoState {
     coops: [
       { id: 'coop-bacha', name: 'HTX mẫu Bắc Hà', region: 'Bắc Hà', payoutAccountMasked: '**** 0101', status: 'active', profileStatus: 'approved' },
       { id: 'coop-muongkhuong', name: 'HTX mẫu Mường Khương', region: 'Mường Khương', payoutAccountMasked: '**** 0102', status: 'active', profileStatus: 'approved' },
-      { id: 'coop-sapa-ts', name: 'HTX mẫu Sa Pa (thuỷ sản)', region: 'Sa Pa', payoutAccountMasked: '**** 0103', status: 'active', profileStatus: 'approved' },
-      { id: 'coop-sapa-caq', name: 'HTX mẫu Sa Pa (cây ăn quả)', region: 'Sa Pa', payoutAccountMasked: '**** 0104', status: 'active', profileStatus: 'approved' },
+      { id: 'coop-suoigiang', name: 'HTX mẫu Suối Giàng', region: 'Suối Giàng', payoutAccountMasked: '**** 0103', status: 'active', profileStatus: 'approved' },
+      { id: 'coop-sapa', name: 'HTX mẫu Sa Pa', region: 'Sa Pa', payoutAccountMasked: '**** 0104', status: 'active', profileStatus: 'approved' },
+      { id: 'coop-baoha', name: 'HTX mẫu Bảo Hà', region: 'Bảo Hà', payoutAccountMasked: '**** 0105', status: 'active', profileStatus: 'approved' },
+      { id: 'coop-tule', name: 'HTX mẫu Tú Lệ', region: 'Tú Lệ', payoutAccountMasked: '**** 0106', status: 'active', profileStatus: 'approved' },
+      { id: 'coop-thacba', name: 'HTX mẫu Thác Bà', region: 'Vùng hồ Thác Bà', payoutAccountMasked: '**** 0107', status: 'active', profileStatus: 'approved' },
     ],
     products: products(now),
     productChanges: [],
@@ -199,7 +255,7 @@ function must(r: { ok: true; value: DemoState } | { ok: false; error: string }):
   return r.value;
 }
 
-/** Tạo dữ liệu mẫu: 1 đơn đã giao (để demo khiếu nại, đối soát) và 1 đơn đã thanh toán đang chờ HTX xác nhận. */
+/** Tạo dữ liệu mẫu: 1 đơn đã giao (để demo khiếu nại, đối soát) và 1 đơn đã thanh toán mô phỏng đang chờ HTX xác nhận. */
 export function createSeedState(now: Date): DemoState {
   let s = baseState(now);
   const cust2: Actor = { kind: 'customer', id: 'cust-2', userId: 'u-kh2', name: 'Khách hàng mẫu 2' };
@@ -213,7 +269,7 @@ export function createSeedState(now: Date): DemoState {
     s,
     {
       customerId: 'cust-2',
-      lines: [{ productId: 'prod-gao', quantity: 2, seenPrice: 195_000 }],
+      lines: [{ productId: 'prod-gao', quantity: 2, seenPrice: 120_000 }],
       addressId: 'addr-3',
       note: '',
       groupOptions: { [groupKey('coop-muongkhuong', 'ready')]: { shipping: 'standard', paymentMethod: 'cod' } },
@@ -237,13 +293,13 @@ export function createSeedState(now: Date): DemoState {
   s = must(carrierSimulate(s, o1, opsSystem, 'delivered_reported', '', day(-2, 10)));
   s = must(customerConfirmReceived(s, o1, cust2, day(-2, 11)));
 
-  // Đơn 2: Khách 1 mua 1 chai mật ong, thanh toán online thành công 1 giờ trước, chờ HTX xác nhận.
+  // Đơn 2: Khách 1 mua 1 hộp mứt mận, thanh toán online (mô phỏng) thành công 1 giờ trước, chờ HTX Bắc Hà xác nhận.
   const t2 = addMs(now, -1 * HOUR_MS);
   const p2 = placeCheckout(
     s,
     {
       customerId: 'cust-1',
-      lines: [{ productId: 'prod-matong', quantity: 1, seenPrice: 290_000 }],
+      lines: [{ productId: 'prod-mutman', quantity: 1, seenPrice: 135_000 }],
       addressId: 'addr-1',
       note: 'Gọi trước khi giao.',
       groupOptions: { [groupKey('coop-bacha', 'ready')]: { shipping: 'standard', paymentMethod: 'online' } },

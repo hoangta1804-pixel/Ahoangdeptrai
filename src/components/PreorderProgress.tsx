@@ -19,6 +19,7 @@ export function PreorderProgress({ product }: { product: Product }) {
         {product.preorder && (
           <span>
             Giao {formatDateKey(product.preorder.deliveryFrom)} – {formatDateKey(product.preorder.deliveryTo)}
+            {product.sample?.deliveryWindowIsSample && ' (mẫu, chờ HTX xác nhận)'}
           </span>
         )}
       </div>

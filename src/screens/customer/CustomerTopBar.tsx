@@ -11,7 +11,7 @@ export function CustomerTopBar() {
   const cartCount = (state.carts[customerActor.id!] ?? []).reduce((s, l) => s + l.quantity, 0);
 
   return (
-    <div className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-stone-200/60 bg-white/95 px-4 py-1.5 backdrop-blur-md">
+    <div className="sticky top-[var(--app-header-h,0px)] z-30 flex items-center justify-between gap-2 border-b border-stone-200/60 bg-white/95 px-4 py-1.5 backdrop-blur-md">
       <button onClick={() => openModal({ type: 'address_book' })} className="flex min-h-11 min-w-0 flex-1 items-center gap-1.5 text-left">
         <MapPin size={16} className="shrink-0 text-emerald-700" />
         <span className="min-w-0">

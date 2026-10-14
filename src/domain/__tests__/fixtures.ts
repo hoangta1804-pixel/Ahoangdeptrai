@@ -22,7 +22,6 @@ const product = (p: Partial<Product> & Pick<Product, 'id' | 'coopId' | 'kind' | 
   region: 'Vùng A',
   unit: 'gói',
   description: '',
-  fallbackGradient: '',
   stockOnHand: 0,
   expressApproved: false,
   status: 'active',

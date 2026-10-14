@@ -8,7 +8,7 @@ Tài liệu này cập nhật sau mỗi giai đoạn của `PROMPT_SUA_APP.md`. 
 | 2 | Sửa lỗi L1–L18 | **Xong** |
 | 3 | Dữ liệu dùng chung và đăng nhập | **Xong** |
 | 4 | Chức năng mức Must theo vai trò | **Xong** |
-| 5 | Nội dung và dữ liệu mẫu | Chưa làm |
+| 5 | Nội dung và dữ liệu mẫu | **Xong** |
 | 6 | Giao diện | Chưa làm |
 
 ## Chạy local
@@ -18,19 +18,150 @@ npm install
 npm run dev      # http://localhost:3000
 npm run build    # ra thư mục dist/ (Vercel dùng thư mục này)
 npm run lint     # kiểm tra kiểu TypeScript
-npm test         # unit test vitest cho src/domain
+npm test         # unit test vitest cho src/domain và dữ liệu mẫu
 ```
 
-### Kết quả lần chạy cuối (Giai đoạn 4)
+### Kết quả lần chạy cuối (Giai đoạn 5)
 
 | Lệnh | Kết quả |
 |---|---|
 | `npm run lint` | Không lỗi |
-| `npm test` | 12 file, 68 test, tất cả đạt |
-| `npm run build` | Thành công, không còn cảnh báo kích thước. Phần chung 424 kB (gzip 124 kB); màn HTX, Admin, QLNN tải riêng theo vai trò |
-| Luồng 1 và Luồng 2 (mục 11.2) bằng Playwright, chặn mọi request ngoài localhost | Đạt trọn vẹn. Không lỗi JS |
+| `npm test` | 13 file, 100 test, tất cả đạt |
+| `npm run build` | Thành công, không cảnh báo. Phần chung 429 kB (gzip 126 kB); màn HTX, Admin, QLNN tải riêng theo vai trò |
+| Luồng 1 và Luồng 2 (mục 11.2) bằng Playwright trên danh mục mới, chặn mọi request ngoài localhost | Đạt trọn vẹn. Không có request ra ngoài, không lỗi JS |
 
 ---
+
+## Giai đoạn 5 – Nội dung và dữ liệu mẫu
+
+### Gỡ nội dung (mục 9.1)
+
+Quét toàn bộ `src/` (kể cả file tạm ẩn `_pending-OI-01`). Phần lớn nội dung cấm đã không còn từ Giai đoạn 1–2, khi bản `index.html` cũ được chuyển vào `legacy/` (không build, không deploy).
+
+| Nội dung | Tình trạng |
+|---|---|
+| "CQQLNN bảo chứng / tài trợ", "Đã xác thực chữ ký số CQQLNN" | **Đã làm** – không còn trong `src/` |
+| "GS1/EPCIS Blockchain", "OCOP 5 Sao Quốc Gia", "Quỹ xúc tiến thương mại tỉnh hỗ trợ" | **Đã làm** – không còn. Nhãn `certLabel` ("OCOP 5 Sao (HTX khai…)", "VietGAP…") bị xoá khỏi kiểu dữ liệu, dữ liệu mẫu và trang nguồn gốc |
+| Nút "Xác nhận đạt chuẩn xuất xưởng" phía khách | **Đã làm** – không còn |
+| Đồng hồ "Giá mùa vụ ưu đãi" | **Đã làm** – không còn |
+| "Đã bán 2.8k", điểm đánh giá bịa | **Đã làm** – điểm đánh giá chỉ tính từ đánh giá thật trong dữ liệu; chưa có thì ghi "Chưa có đánh giá" |
+| Tên nông hộ, GPS, độ cao, máy in Bluetooth, biển số xe, tên nhà xe | **Đã làm** – bỏ tên shipper "Trần Văn Mạnh" còn sót trong `ShipperScreen.tsx` (file tạm ẩn chờ OI-01) |
+| Cảnh báo thời tiết đèo Khau Phạ, nhiệt độ cảm biến | **Đã làm** – không còn |
+| "Hoả tốc 2H", "giao kịp bữa tối" | **Đã làm** – không còn. Thời gian và phí giao hiện theo tham số (PAR-08, PAR-21, FEE-01, FEE-02) và loại đơn |
+| Ảnh Unsplash | **Đã làm** – bỏ hết, thay bằng ảnh giữ chỗ SVG tự sinh |
+
+`src/data/__tests__/seed.test.ts` quét mọi file `.ts`, `.tsx`, `.css`, `.md` trong `src/` và báo lỗi nếu các cụm trên quay lại.
+
+### Dải "Bản demo" (mục 9.2)
+
+- Câu "Bản demo – dữ liệu mẫu. Thanh toán, giao hàng và OTP là mô phỏng." nằm ở dòng đầu của header cố định (`src/components/DemoBand.tsx`). Header hiện ở mọi màn: đăng nhập, khách, HTX, Admin, QLNN.
+- Khi mở bottom sheet, dải được lặp lại ở mép trên lớp phủ, nên không bị che. Sheet chừa chỗ cho dải.
+- Header cao lên (dải xuống 2 dòng trên điện thoại hẹp). App đo chiều cao header để thanh "Giao tới / Giỏ hàng" của khách dính ngay dưới header. Trước đây thanh này bị header che khi cuộn.
+
+### Danh mục mẫu (mục 9.3)
+
+9 sản phẩm theo bảng của nhóm. Trang chi tiết có khung **"Dữ liệu mẫu – chờ HTX xác nhận"**, ghi khoảng giá nhóm khảo sát hoặc "giá mẫu". Không sản phẩm nào có mã chứng nhận.
+
+| Sản phẩm | Loại đơn | Nhóm hàng | Vùng | HTX mẫu | Giá mẫu | Quy đổi | Khoảng nhóm khảo sát |
+|---|---|---|---|---|---|---|---|
+| Chè Shan tuyết (gói 100 g) | Mua sẵn | Hàng khô | Suối Giàng, Bản Liền | HTX mẫu Suối Giàng | 80.000đ | 800.000đ/kg | 400.000–1.500.000đ/kg |
+| Thảo quả khô (gói 200 g) | Mua sẵn | Hàng khô | Sa Pa, Bát Xát | HTX mẫu Sa Pa | 70.000đ | 350.000đ/kg | 250.000–450.000đ/kg |
+| Mứt / ô mai mận tam hoa (hộp 300 g) | Mua sẵn | Chế biến | Bắc Hà | HTX mẫu Bắc Hà | 135.000đ | 450.000đ/kg | 350.000–550.000đ/kg |
+| Mật ong Thanh Xuân (chai 500 ml) | Mua sẵn | Chế biến | Bảo Hà | HTX mẫu Bảo Hà | 175.000đ | 350.000đ/lít | 250.000–450.000đ/lít |
+| Gạo Séng Cù (túi 2 kg) | Mua sẵn | Hàng khô | Mường Khương, Bát Xát | HTX mẫu Mường Khương | 120.000đ | 60.000đ/kg | 45.000–70.000đ/kg |
+| Phở hồng Bắc Hà (gói 500 g) | Mua sẵn | Chế biến | Bắc Hà | HTX mẫu Bắc Hà | 65.000đ | 130.000đ/kg | khoảng 130.000đ/kg |
+| Mận tam hoa tươi (thùng 3 kg) | Đặt trước | Nông sản tươi | Bắc Hà | HTX mẫu Bắc Hà | 210.000đ | 70.000đ/kg | 50.000–90.000đ/kg |
+| Cốm Tú Lệ (gói 500 g, quy cách mẫu) | Đặt trước | Chế biến | Tú Lệ | HTX mẫu Tú Lệ | 110.000đ – **giá mẫu** | – | chưa có giá |
+| Bưởi Đại Minh (thùng 5 kg, quy cách mẫu) | Đặt trước | Nông sản tươi | Vùng hồ Thác Bà | HTX mẫu Thác Bà | 200.000đ – **giá mẫu** | – | chưa có giá |
+
+Ghi chú bắt buộc trong bảng của nhóm:
+
+- **Chè Shan tuyết:** tên sản phẩm không kèm tên chỉ dẫn địa lý, không có logo OCOP.
+- **Thảo quả:** không có chữ "thảo quả rừng".
+- **Mật ong:** không có chữ "mật bản địa".
+- **Gạo:** không có chữ "Séng cù xanh".
+- **Mận tam hoa tươi:**
+  - mô tả ghi "đóng thùng 3 kg chống dập" và "mùa bán tháng 5–7";
+  - khoảng ngày giao mẫu 01/05/2027 – 30/06/2027, ghi "(mẫu, chờ HTX xác nhận)".
+- **Cốm Tú Lệ:**
+  - mô tả ghi "do người Thái ở Tú Lệ làm";
+  - giá ghi "giá mẫu";
+  - khoảng ngày giao lấy từ cấu hình: từ hôm nay + PAR-08, dài 4 tuần. Ghi "(mẫu, chờ HTX xác nhận)".
+- **Bưởi Đại Minh:** giá ghi "giá mẫu". Trang chi tiết và trang nguồn gốc ghi "OCOP 4 sao năm 2025 (theo hồ sơ nhóm, chờ xác minh)". Đây là sản phẩm duy nhất có nhắc OCOP.
+- **Không đưa vào:** mật ong hoa bạc hà, đào Sa Pa, cá hồi, cá tầm, thịt gác bếp, rượu. Các sản phẩm cá hồi, đào Sa Pa của dữ liệu cũ đã bị xoá.
+
+Dữ liệu đi kèm cũng đổi theo:
+
+- **HTX:** 7 HTX mẫu, mỗi vùng một HTX; tài khoản nhận chi trả che dạng `**** 0101` … `**** 0107`.
+- **Tài khoản HTX:** cũ có 4, nay có 7 (xem bảng tài khoản demo).
+- **Đơn mẫu:**
+  - Khách 2 mua 2 túi gạo, trả COD, đơn đã giao;
+  - Khách 1 mua 1 hộp mứt mận, thanh toán mô phỏng thành công, đơn chờ HTX Bắc Hà xác nhận.
+- **Mã ưu đãi:** giữ nguyên 4 mã. CHEBIEN10 áp cho nhóm Chế biến (mứt mận, mật ong, phở hồng, cốm).
+- **Bộ lọc vùng:** sản phẩm ghi nhiều địa danh (vd. "Sa Pa, Bát Xát") hiện ở từng địa danh. Chọn "Bát Xát" thấy cả thảo quả và gạo.
+- **Phiên bản dữ liệu `localStorage`:** tăng lên 4. Trình duyệt còn dữ liệu cũ sẽ tự nạp lại danh mục mới.
+
+### Ảnh giữ chỗ (mục 9.4)
+
+`src/components/ProductImage.tsx` tự vẽ ảnh SVG. Ảnh có dải núi làm nền và mang màu theo nhóm hàng:
+
+| Nhóm hàng | Màu |
+|---|---|
+| Hàng khô | Nâu |
+| Chế biến | Đỏ mận |
+| Nông sản tươi | Xanh rừng |
+
+Nội dung ảnh theo kích thước:
+
+| Kích thước | Nội dung |
+|---|---|
+| Thẻ sản phẩm | Tên sản phẩm |
+| Ảnh lớn ở trang chi tiết | Tên sản phẩm và dòng "Ảnh giữ chỗ – chờ HTX cung cấp ảnh" |
+| Ảnh nhỏ (giỏ hàng, vụ mùa, danh sách HTX) | Hình lá / hũ / quả theo nhóm hàng, vì chữ ở cỡ đó quá nhỏ để đọc. Tên sản phẩm luôn hiện ngay bên cạnh và có trong `aria-label` |
+
+Ảnh do HTX tự tải lên (nếu có) vẫn được ưu tiên hiện.
+
+### Số điện thoại và tài khoản (mục 9.5)
+
+- **Số điện thoại:** mọi SĐT dạng `0900 000 xxx`. Không có hotline 1900.
+- **Tài khoản:**
+  - tài khoản nhận hoàn của khách là số mẫu `000000000001` và chỉ hiện dạng che;
+  - tài khoản HTX hiện dạng `**** 01xx`.
+- **Test:** kiểm tra mọi SĐT trong dữ liệu mẫu khớp `0900000xxx`.
+
+### Kiểm thử Giai đoạn 5
+
+- **Unit test mới `src/data/__tests__/seed.test.ts`** (32 test):
+  - đúng 9 sản phẩm, đúng loại đơn và nhóm hàng;
+  - giá mẫu quy đổi ra đ/kg (đ/lít) nằm trong khoảng nhóm khảo sát;
+  - Cốm và Bưởi là "giá mẫu";
+  - không ảnh ngoài, không mã chứng nhận;
+  - chỉ Bưởi có OCOP, kèm "chờ xác minh";
+  - không có cụm từ hay sản phẩm bị loại;
+  - khoảng ngày giao mận 05–06/2027; cốm lấy mốc từ PAR-08;
+  - mỗi sản phẩm thuộc một "HTX mẫu …" có tài khoản;
+  - SĐT giả, tài khoản che;
+  - quét `src/` không còn nội dung cấm.
+- **Trình duyệt** (Playwright, chặn mọi request ngoài localhost; không có request nào bị chặn):
+  - dải demo hiện ở màn đăng nhập, khách, HTX, Admin, QLNN và trong bottom sheet;
+  - màn 320px không cuộn ngang;
+  - trang chi tiết Bưởi, Chè, Cốm hiện đúng khung dữ liệu mẫu;
+  - trang nguồn gốc Bưởi không còn dòng chứng nhận mẫu.
+- **Luồng 1 trên danh mục mới:**
+  - Khách 1 đặt mứt mận (mua sẵn, hộp quà gửi người khác) và mận tươi (đặt trước); nút ghi "trả ngay 241.000đ";
+  - HTX mẫu Bắc Hà xử lý 2 đơn; ĐVVC mô phỏng giao; khách nhận, đánh giá, khiếu nại kèm ảnh;
+  - CSKH duyệt hoàn; Tài chính hoàn mô phỏng;
+  - QLNN thấy "Tổng số đơn" từ 2 lên 4 và "Giá trị hàng đã giao" từ 240.000đ lên 450.000đ. Đơn mứt mận đang trả hàng – hoàn tiền nên không tính.
+- **Luồng 2:**
+  - Khách 2 mua ngay 1 gói chè, không trả: tồn còn đặt được từ 30 xuống 29;
+  - tua 15 phút: đơn tự huỷ, tồn về 30.
+
+### Còn tồn tại sau Giai đoạn 5
+
+- **Danh mục phường/xã giao hàng và loại hộp quà** vẫn là danh sách mẫu. Phường/xã có ghi "(mẫu)"; chờ nhóm nạp danh mục chính thức.
+- **Mô tả sản phẩm** chỉ ghi điều có trong bảng của nhóm; các thông tin khác ghi "chờ HTX xác nhận". **Quy cách của Cốm Tú Lệ và Bưởi Đại Minh** là quy cách mẫu.
+- **Thư mục `legacy/`** vẫn giữ bản `index.html` cũ, có các nội dung bị gỡ, để nhóm đối chiếu. Thư mục này không được build hay deploy. Nhóm có thể xoá khi không cần nữa.
+- **Màu sắc, cỡ chữ, trợ năng:** làm ở Giai đoạn 6.
 
 ## Giai đoạn 4 – Chức năng mức Must theo vai trò
 
@@ -147,7 +278,7 @@ Quy ước tình trạng:
 
 - **HTX chưa đổi được tài khoản nhận chi trả trên giao diện.** Đây là dữ liệu nhạy cảm nên cần quy trình riêng, hiện vẫn hiện dạng che `**** 01xx`. Chờ nhóm quyết định.
 - **Chưa có:** đổi SĐT đăng nhập; quên / khoá đăng nhập do nhập sai OTP nhiều lần. SRS trích trong yêu cầu không nêu chi tiết.
-- **Nội dung, ảnh, danh mục sản phẩm vẫn là bộ cũ;** Giai đoạn 5 thay. **Màu sắc, cỡ chữ, trợ năng;** Giai đoạn 6.
+- **Nội dung, ảnh, danh mục sản phẩm vẫn là bộ cũ** (đã thay ở Giai đoạn 5). **Màu sắc, cỡ chữ, trợ năng:** Giai đoạn 6.
 
 ---
 
@@ -293,7 +424,7 @@ Phần lớn lỗi L1–L18 bắt nguồn từ việc app không có mô hình �
 | L13 | Đã làm | Ví HTX tính theo mục 5.10: hoa hồng COM-01 5% trên tiền hàng thực giữ lại, không tính phí giao, kỳ tuần. Bỏ nút rút tiền, bỏ dòng thuế TNCN, bỏ "8%", "T+3". Admin – Tài chính chốt kỳ (kỳ đã chốt bị khoá) và ghi nhận chi trả (mô phỏng) vào tài khoản HTX | Test L13 |
 | L14 | Đã làm | Form địa chỉ: Hà Nội cố định, phường/xã chọn từ danh sách "(mẫu)", không có quận/huyện, chung cư bắt buộc toà–căn, nhà mặt đất bắt buộc số nhà. Thêm, sửa, xoá, đặt mặc định, tối đa 10. Đã bỏ nút GPS | Trình duyệt: thiếu toà → "Chung cư bắt buộc nhập toà và căn hộ." |
 | L15 | Đã làm | Ô ghi chú trống, có placeholder; nội dung lưu vào đơn và hiện trên phiếu đóng gói của HTX | Trình duyệt |
-| L16 | Đã làm | Gạo Séng Cù thuộc "Hàng khô"; mỗi HTX một mã riêng (4 HTX mẫu). Danh mục đầy đủ của nhóm thay ở Giai đoạn 5 | Dữ liệu mẫu |
+| L16 | Đã làm | Gạo Séng Cù thuộc "Hàng khô"; mỗi HTX một mã riêng. Giai đoạn 5 đã thay bằng danh mục của nhóm: 9 sản phẩm, 7 HTX mẫu | Dữ liệu mẫu |
 | L17 | Đã làm | Admin – Tổng quan và màn QLNN tính từ store (`aggregateStats`). Màn QLNN không có tên, SĐT, địa chỉ khách | Test L17; trình duyệt: QLNN không chứa "Khách hàng mẫu" hay "0900" |
 | L18 | Đã làm | Thông báo nổi xuống dòng được, đặt ở đáy phía trên thanh tab, không chặn thao tác bấm | Trình duyệt |
 
@@ -344,7 +475,7 @@ Chưa chạy được, chờ giai đoạn sau:
 - ~~**Danh tính tạm thời** (khách cố định, chọn HTX và nhóm quyền bằng ô chọn)~~ – đã thay bằng đăng nhập ở Giai đoạn 3.
 - ~~**Chưa có:** đổi ngày giao D 1 lần sau khi đặt; đổi người nhận / địa chỉ trước bàn giao; trung tâm thông báo; đánh giá~~ – đã làm ở Giai đoạn 3–4.
 - ~~**Màn Tham số chỉ đọc**~~ – đã cho sửa kèm lý do ở Giai đoạn 4.
-- **Sản phẩm, mô tả, ảnh Unsplash vẫn là bộ cũ**, chỉ đã sửa nhóm hàng và mã HTX. Giai đoạn 5 thay theo danh mục của nhóm.
+- **Sản phẩm, mô tả, ảnh Unsplash vẫn là bộ cũ**, chỉ đã sửa nhóm hàng và mã HTX. Giai đoạn 5 thay theo danh mục của nhóm (đã thay).
 
 ---
 
@@ -427,7 +558,7 @@ Ngoài các ca trên còn có test cho:
 27. **Mã ưu đãi (HT-01) do Admin – Vận hành tạo,** vì yêu cầu không ghi rõ nhóm quyền.
 28. **Đơn hoả tốc chỉ đổi được địa chỉ khi phụ phí không đổi.** Nếu phụ phí đổi, khách liên hệ CSKH; app không tự thu thêm hay hoàn bớt.
 29. **Sản phẩm mới ở trạng thái Chờ duyệt** cho tới khi Admin – Chất lượng duyệt; bị từ chối thì ở trạng thái "Bị từ chối". **Sửa nội dung** chờ duyệt và trong lúc chờ khách thấy nội dung cũ. **Ẩn / hiện** có hiệu lực ngay.
-30. **Chỉ chứng nhận đã được Admin – Chất lượng xác minh mới hiện cho khách,** ghi "Admin đã xem hồ sơ – mô phỏng". Nhãn `certLabel` của dữ liệu mẫu cũ còn hiện ở trang nguồn gốc; Giai đoạn 5 sẽ bỏ.
+30. **Chỉ chứng nhận đã được Admin – Chất lượng xác minh mới hiện cho khách,** ghi "Admin đã xem hồ sơ – mô phỏng". Nhãn `certLabel` của dữ liệu mẫu cũ đã bị xoá ở Giai đoạn 5.
 31. **Đánh giá công khai** hiện tên rút gọn (ví dụ "Khách 1.") và 3 ký tự cuối của mã đơn.
 32. **Danh sách lý do được phép ẩn đánh giá** gồm: thông tin cá nhân, ngôn từ xúc phạm, quảng cáo / spam / link, không liên quan sản phẩm. Không có lý do "sao thấp".
 33. **Giới hạn khi khoá tài khoản và phân quyền:**
@@ -435,6 +566,12 @@ Ngoài các ca trên còn có test cho:
     - Quản trị gốc không tự đổi nhóm quyền của mình và không cấp thêm quyền Quản trị gốc.
 34. **HTX bị tạm khoá quyền bán:** sản phẩm vẫn hiện trong danh mục kèm nhãn "Tạm ngừng bán" nhưng không đặt được. Các đơn đã có vẫn xử lý bình thường.
 35. **Báo cáo CSV** mã hoá UTF-8 có BOM để Excel hiển thị đúng tiếng Việt.
+36. **Mỗi vùng trong bảng sản phẩm có một HTX mẫu riêng.** Lý do: nhóm chưa cung cấp tên HTX. Như vậy có 7 HTX; Bắc Hà bán 3 sản phẩm. Sản phẩm ghi 2 địa danh (vd. "Mường Khương, Bát Xát") vẫn chỉ gắn 1 HTX.
+37. **Giá mẫu chọn gần giữa khoảng nhóm khảo sát.** Chè lấy mức phổ thông – trung cấp 800.000đ/kg. Cốm Tú Lệ 110.000đ/gói 500 g và Bưởi Đại Minh 200.000đ/thùng 5 kg là giá và quy cách tự đặt, ghi "giá mẫu".
+38. **Khoảng ngày giao của mận tươi** là 01/05 – 30/06 của mùa kế tiếp, tức 2027 khi chạy demo năm 2026. Theo bảng của nhóm: mùa bán tháng 5–7, khoảng giao mẫu 05–06/2027.
+39. **"Khoảng ngày giao lấy từ cấu hình"** của Cốm Tú Lệ được hiểu là ngày giao sớm nhất bằng hôm nay + PAR-08, kéo dài 4 tuần. Bưởi Đại Minh chưa có khoảng ngày giao nên dùng cách tương tự: bắt đầu sau mốc PAR-08 thêm 1 tuần. Cả hai đều ghi "(mẫu, chờ HTX xác nhận)".
+40. **Bộ lọc vùng tách theo dấu phẩy:** mỗi địa danh trong ô "Vùng" thành một lựa chọn lọc. Số liệu QLNN theo vùng vẫn dùng nguyên chuỗi vùng của sản phẩm.
+41. **Nhãn "Dữ liệu mẫu – chờ HTX xác nhận" chỉ gắn cho sản phẩm trong danh mục mẫu.** Sản phẩm HTX tự tạo trong demo thì do chính HTX khai, nên không có nhãn này. Dải "Bản demo" vẫn hiện trên mọi màn.
 
 ## Vấn đề chờ nhóm chốt
 
@@ -460,10 +597,13 @@ Tài liệu yêu cầu không mô tả nội dung của OI-02, OI-04, OI-05, OI-
 |---|---|---|
 | Khách hàng mẫu 1 | 0900 000 001 | Khách hàng (có tài khoản nhận hoàn, có 1 đơn mẫu Chờ xác nhận) |
 | Khách hàng mẫu 2 | 0900 000 002 | Khách hàng (có 1 đơn mẫu Đã giao) |
-| HTX mẫu Bắc Hà | 0900 000 101 | HTX (mận, mật ong) |
-| HTX mẫu Mường Khương | 0900 000 102 | HTX (gạo) |
-| HTX mẫu Sa Pa (thuỷ sản) | 0900 000 103 | HTX (cá hồi) |
-| HTX mẫu Sa Pa (cây ăn quả) | 0900 000 104 | HTX (đào) |
+| HTX mẫu Bắc Hà | 0900 000 101 | HTX (mứt / ô mai mận, phở hồng, mận tươi đặt trước; có 1 đơn mẫu Chờ xác nhận) |
+| HTX mẫu Mường Khương | 0900 000 102 | HTX (gạo Séng Cù; có 1 đơn mẫu Đã giao) |
+| HTX mẫu Suối Giàng | 0900 000 103 | HTX (chè Shan tuyết) |
+| HTX mẫu Sa Pa | 0900 000 104 | HTX (thảo quả khô) |
+| HTX mẫu Bảo Hà | 0900 000 105 | HTX (mật ong Thanh Xuân) |
+| HTX mẫu Tú Lệ | 0900 000 106 | HTX (cốm Tú Lệ, đặt trước) |
+| HTX mẫu Thác Bà | 0900 000 107 | HTX (bưởi Đại Minh, đặt trước) |
 | Admin – Vận hành (mẫu) | 0900 000 201 | Admin – Vận hành |
 | Admin – Chất lượng (mẫu) | 0900 000 202 | Admin – Chất lượng |
 | Admin – CSKH (mẫu) | 0900 000 203 | Admin – CSKH |

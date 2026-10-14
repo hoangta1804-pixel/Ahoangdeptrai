@@ -5,7 +5,7 @@ import { PreorderProgress } from '../../components/PreorderProgress';
 import { ProductImage } from '../../components/ProductImage';
 import { deliveryWindow, isOrderableIn } from '../../domain/cart';
 import { computeDeposit, formatMoney } from '../../domain/pricing';
-import { remainingFor } from '../../domain/state';
+import { isSamplePrice, remainingFor } from '../../domain/state';
 import { useStore } from '../../store/AppDataContext';
 
 /** Tab Vụ mùa: danh sách hàng đặt trước (chuyển từ bản index.html cũ). */
@@ -48,6 +48,7 @@ export function SeasonTab() {
                       <span className="font-extrabold tabular-nums text-emerald-900">
                         {formatMoney(p.price)}/{p.unit}
                       </span>{' '}
+                      {isSamplePrice(p) && <span className="text-xs font-semibold text-amber-800">(giá mẫu) </span>}
                       <span className="text-xs text-amber-800">
                         · cọc từ {formatMoney(computeDeposit(p.price, 0, params.depositPercent, params.depositRoundingStep))}
                       </span>

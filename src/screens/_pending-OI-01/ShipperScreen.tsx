@@ -35,7 +35,7 @@ export function ShipperScreen({ orders, setOrders, showToast }: ShipperScreenPro
             <span className="text-[10px] font-bold uppercase tracking-wider text-amber-200">
               Đội Vận Chuyển Hà Nội
             </span>
-            <h3 className="text-base font-bold">Shipper: Trần Văn Mạnh</h3>
+            <h3 className="text-base font-bold">Shipper (mẫu)</h3>
             <p className="text-xs text-amber-100">Khu vực phân công: Nam Từ Liêm & Cầu Giấy</p>
           </div>
           <button

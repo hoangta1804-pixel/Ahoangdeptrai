@@ -8,7 +8,7 @@ import { averageRating, publicReviews } from '../../domain/reviews';
 import { ProductImage } from '../../components/ProductImage';
 import { deliveryWindow, isOrderableIn } from '../../domain/cart';
 import { computeDeposit, formatMoney } from '../../domain/pricing';
-import { findProduct, formatDateKey, remainingFor } from '../../domain/state';
+import { findProduct, formatDateKey, isSamplePrice, remainingFor } from '../../domain/state';
 import { CATEGORY_LABEL, ORDER_KIND_LABEL } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
 import { useCartActions } from './useCartActions';
@@ -89,7 +89,7 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
       }
     >
       <div className="relative h-44 overflow-hidden rounded-2xl border border-stone-200 sm:h-56">
-        <ProductImage product={product} className="h-full w-full" />
+        <ProductImage product={product} variant="cover" className="h-full w-full" />
         <button
           onClick={() => openModal({ type: 'trace_lot', productId: product.id })}
           className="absolute right-2 bottom-2 flex min-h-10 items-center gap-1 rounded-lg bg-black/75 px-3 text-sm font-semibold text-white hover:bg-black/90"
@@ -103,9 +103,10 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
         <span className="text-xl font-extrabold tabular-nums text-stone-900">
           {formatMoney(product.price)}
           <span className="text-sm font-normal text-stone-500">/{product.unit}</span>
+          {isSamplePrice(product) && <span className="ml-1.5 text-sm font-semibold text-amber-800">(giá mẫu)</span>}
         </span>
         <span className="flex items-center gap-1">
-          <span className="rounded-md bg-stone-100 px-2 py-0.5 text-xs font-semibold text-stone-700">{ORDER_KIND_LABEL[product.kind]}</span>
+          <span className="whitespace-nowrap rounded-md bg-stone-100 px-2 py-0.5 text-xs font-semibold text-stone-700">{ORDER_KIND_LABEL[product.kind]}</span>
           <button onClick={share} aria-label="Chia sẻ link sản phẩm" className="flex h-11 w-11 items-center justify-center rounded-xl text-stone-700 hover:bg-stone-100">
             <Share2 size={18} />
           </button>
@@ -122,6 +123,19 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
       </p>
 
       <p className="text-sm leading-relaxed text-stone-600">{product.description}</p>
+
+      {product.sample && (
+        <div role="note" className="space-y-1 rounded-2xl border border-stone-300 bg-stone-50 p-3 text-sm text-stone-700">
+          <p className="font-bold text-stone-900">Dữ liệu mẫu – chờ HTX xác nhận</p>
+          <p>
+            {product.sample.surveyedPrice
+              ? `Giá mẫu, chọn trong khoảng giá bán lẻ tại Hà Nội nhóm đã khảo sát: ${product.sample.surveyedPrice}.`
+              : 'Giá mẫu: nhóm chưa có giá khảo sát cho sản phẩm này.'}
+          </p>
+          {product.sample.deliveryWindowIsSample && <p>Khoảng ngày giao là mẫu, chờ HTX xác nhận.</p>}
+          {product.sample.dossierNote && <p>{product.sample.dossierNote}.</p>}
+        </div>
+      )}
 
       {product.kind === 'preorder' ? (
         <>

@@ -86,7 +86,6 @@ export function coopCreateProduct(state: DemoState, actor: Actor, input: NewProd
     unit: input.unit.trim(),
     price: input.price,
     description: input.description.trim(),
-    fallbackGradient: input.category === 'fresh' ? 'from-emerald-700 to-lime-800' : input.category === 'dry' ? 'from-amber-700 to-stone-800' : 'from-rose-800 to-amber-800',
     kind: input.kind,
     stockOnHand: input.kind === 'ready' ? input.stockOnHand : 0,
     expressApproved: false,

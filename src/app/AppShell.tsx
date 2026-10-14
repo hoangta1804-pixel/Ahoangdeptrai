@@ -1,5 +1,6 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect, useRef } from 'react';
 import { Bell, FlaskConical, LogOut } from 'lucide-react';
+import { DemoBand } from '../components/DemoBand';
 import { Toast } from '../components/Toast';
 import { ACCOUNT_ROLE_LABEL, ADMIN_GROUP_LABEL } from '../domain/types';
 import { CustomerScreen } from '../screens/customer/CustomerScreen';
@@ -24,6 +25,18 @@ export function AppShell() {
   const unread = user ? state.notifications.filter((n) => n.userId === user.id && !n.read).length : 0;
   const width = wide ? 'max-w-7xl' : 'max-w-[640px]';
 
+  // Chiều cao header (có dải demo, có thể xuống 2 dòng trên điện thoại) để thanh dính bên dưới nằm ngay dưới header.
+  const headerRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const sync = () => document.documentElement.style.setProperty('--app-header-h', `${el.offsetHeight}px`);
+    sync();
+    const ro = new ResizeObserver(sync);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   // Link chia sẻ sản phẩm (FR-TKSP-05): #/san-pham/<mã>. Chưa đăng nhập thì giữ link, mở sau khi khách đăng nhập.
   useEffect(() => {
     const open = () => {
@@ -41,7 +54,8 @@ export function AppShell() {
 
   return (
     <div className="flex min-h-dvh flex-col bg-[#F5F4F0] text-stone-800">
-      <header className="sticky top-0 z-40 border-b border-stone-800 bg-stone-900 text-stone-200">
+      <header ref={headerRef} className="sticky top-0 z-40 border-b border-stone-800 bg-stone-900 text-stone-200">
+        <DemoBand />
         <div className={`mx-auto flex w-full items-center gap-1 px-3 py-1.5 ${width}`}>
           <div className="min-w-0 flex-1">
             {user ? (

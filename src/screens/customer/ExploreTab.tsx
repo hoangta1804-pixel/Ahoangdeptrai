@@ -6,7 +6,7 @@ import { PreorderProgress } from '../../components/PreorderProgress';
 import { ProductImage } from '../../components/ProductImage';
 import { isOrderableIn } from '../../domain/cart';
 import { formatMoney } from '../../domain/pricing';
-import { remainingFor } from '../../domain/state';
+import { isSamplePrice, regionsOf, remainingFor } from '../../domain/state';
 import { matchesSearch } from '../../domain/text';
 import { CATEGORY_LABEL, type Category } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
@@ -23,12 +23,12 @@ export function ExploreTab() {
   const [category, setCategory] = useState<Category | typeof ALL>(ALL);
 
   const listed = state.products.filter((p) => p.status === 'active');
-  // Bộ lọc vùng sinh từ dữ liệu sản phẩm, cùng một cấp (L9).
-  const regions = useMemo(() => [...new Set(listed.map((p) => p.region))].sort((a, b) => a.localeCompare(b, 'vi')), [listed]);
+  // Bộ lọc vùng sinh từ dữ liệu sản phẩm, cùng một cấp (L9). Sản phẩm ghi nhiều địa danh thì có ở từng địa danh.
+  const regions = useMemo(() => [...new Set(listed.flatMap(regionsOf))].sort((a, b) => a.localeCompare(b, 'vi')), [listed]);
   const categories = useMemo(() => (Object.keys(CATEGORY_LABEL) as Category[]).filter((c) => listed.some((p) => p.category === c)), [listed]);
 
   const visible = listed
-    .filter((p) => region === ALL || p.region === region)
+    .filter((p) => region === ALL || regionsOf(p).includes(region))
     .filter((p) => category === ALL || p.category === category)
     .filter((p) => matchesSearch(query, [p.name, p.region, state.coops.find((c) => c.id === p.coopId)?.name]));
 
@@ -113,7 +113,7 @@ export function ExploreTab() {
                 className="flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-stone-200/70 bg-white shadow-[0_4px_20px_rgb(0,0,0,0.03)]"
               >
                 <div className="relative h-28 w-full bg-stone-100">
-                  <ProductImage product={p} className="h-full w-full" />
+                  <ProductImage product={p} variant="card" className="h-full w-full" />
                   <div className="absolute top-2 left-2 flex flex-col items-start gap-1">
                     {p.kind === 'preorder' && <span className="rounded-md bg-amber-600 px-1.5 py-0.5 text-xs font-bold text-white">Đặt trước</span>}
                     {soldOut && <span className="rounded-md bg-stone-900/85 px-1.5 py-0.5 text-xs font-bold text-white">{isOrderableIn(state, p) ? 'Hết hàng' : 'Tạm ngừng bán'}</span>}
@@ -132,6 +132,7 @@ export function ExploreTab() {
                     <div>
                       <span className="text-sm font-extrabold tabular-nums text-stone-900">{formatMoney(p.price)}</span>
                       <span className="text-xs text-stone-500">/{p.unit}</span>
+                      {isSamplePrice(p) && <span className="block text-xs font-semibold text-amber-800">Giá mẫu</span>}
                     </div>
                     <button
                       disabled={soldOut}

@@ -113,10 +113,8 @@ export interface Product {
   unit: string;
   price: number;
   description: string;
+  /** Ảnh HTX tải lên (data URL). Không có thì hiện ảnh giữ chỗ SVG tự sinh theo tên và nhóm hàng. */
   image?: string;
-  fallbackGradient: string;
-  /** Chứng nhận HTX khai (chưa xác minh). */
-  certLabel?: string;
   kind: OrderKind;
   /** Tồn kho (hàng mua sẵn). Tồn khả dụng = tồn kho − số đang giữ. */
   stockOnHand: number;
@@ -129,6 +127,21 @@ export interface Product {
   lowStockThreshold?: number;
   /** Chứng nhận HTX khai (FR-SP-08); chỉ hiện "đã xác minh" khi Admin – Chất lượng duyệt. */
   certifications?: Certification[];
+  /** Có khi sản phẩm thuộc danh mục mẫu của nhóm (Giai đoạn 5, mục 9). */
+  sample?: SampleInfo;
+}
+
+/**
+ * Ghi chú của sản phẩm mẫu. Trang chi tiết hiện nhãn "Dữ liệu mẫu – chờ HTX xác nhận" kèm các ghi chú này.
+ * Không chứa mã chứng nhận; số sao OCOP chỉ ghi ở sản phẩm có ghi chú trong bảng của nhóm.
+ */
+export interface SampleInfo {
+  /** Khoảng giá bán lẻ Hà Nội nhóm khảo sát. Không có nghĩa là nhóm chưa có giá, giá đang dùng là "giá mẫu". */
+  surveyedPrice?: string;
+  /** Khoảng ngày giao là mẫu, chờ HTX xác nhận. */
+  deliveryWindowIsSample?: boolean;
+  /** Thông tin theo hồ sơ nhóm, chưa xác minh. */
+  dossierNote?: string;
 }
 
 export interface Certification {

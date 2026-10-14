@@ -44,6 +44,13 @@ export function addLedger(state: DemoState, entry: Omit<LedgerEntry, 'id' | 'at'
 }
 
 export const findProduct = (state: DemoState, id: string): Product | undefined => state.products.find((p) => p.id === id);
+
+/** Các địa danh trong vùng sản xuất, vd. "Sa Pa, Bát Xát" → ["Sa Pa", "Bát Xát"] (bộ lọc vùng, L9). */
+export const regionsOf = (product: Pick<Product, 'region'>): string[] =>
+  product.region.split(',').map((r) => r.trim()).filter(Boolean);
+
+/** Sản phẩm mẫu chưa có giá khảo sát: giá đang hiện là "giá mẫu" (mục 9.3). */
+export const isSamplePrice = (product: Pick<Product, 'sample'>): boolean => !!product.sample && !product.sample.surveyedPrice;
 export const findOrder = (state: DemoState, id: string): Order | undefined => state.orders.find((o) => o.id === id);
 export const findWard = (state: DemoState, id: string): Ward | undefined => state.wards.find((w) => w.id === id);
 
