@@ -5,6 +5,10 @@
 @theme {
   /* Bảng màu nhận diện (Giai đoạn 6, mục 10.1). Nhóm đổi màu ở đây, mọi màn đổi theo. */
   --color-ivory: #FAF7F0;
+  /* Nền giấy ấm cho khung ảnh minh hoạ và thẻ nổi bật. */
+  --color-paper: #F4ECDD;
+  /* Phông tiêu đề: có chân, dùng cho tên sản phẩm và đề mục; chữ nội dung vẫn là Plus Jakarta Sans. */
+  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
   --color-ink: #1C1B18;
   /* Chữ phụ: đậm hơn stone-500 một chút để đạt AA trên nền trắng ngà và nền xám nhạt. */
   --color-muted: #6B655F;

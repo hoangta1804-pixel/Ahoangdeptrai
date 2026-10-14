@@ -1,6 +1,7 @@
 import { Wheat } from 'lucide-react';
 import { useUi } from '../../app/UiContext';
 import { EmptyState } from '../../components/EmptyState';
+import { LandscapeArt } from '../../components/LandscapeArt';
 import { PreorderProgress } from '../../components/PreorderProgress';
 import { ProductImage } from '../../components/ProductImage';
 import { deliveryWindow, isOrderableIn } from '../../domain/cart';
@@ -17,15 +18,18 @@ export function SeasonTab() {
 
   return (
     <div className="space-y-4 p-4">
-      <div className="space-y-1 rounded-3xl bg-gradient-to-r from-forest-900 to-forest-700 p-4 text-white shadow-sm">
-        <div className="flex items-center gap-2">
-          <Wheat size={20} className="text-champagne-300" />
-          <h2 className="text-base font-bold">Nông sản theo mùa – Đặt trước</h2>
+      <section className="relative overflow-hidden rounded-[28px] bg-forest-900 text-white shadow-sm">
+        <LandscapeArt className="absolute inset-0 h-full w-full" />
+        <div className="relative space-y-2 px-5 pt-6 pb-24">
+          <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-champagne-300">
+            <Wheat size={16} aria-hidden /> Đặt trước theo mùa
+          </p>
+          <h2 className="font-display text-[1.6rem] font-semibold leading-tight text-balance">Giữ suất trước mùa thu hoạch</h2>
+          <p className="max-w-md text-sm leading-relaxed text-forest-100">
+            Cọc {params.depositPercent}% khi đặt; phần còn lại trả khi hàng sẵn sàng hoặc khi nhận hàng. Đơn đặt trước không có giao hoả tốc.
+          </p>
         </div>
-        <p className="text-sm leading-relaxed text-forest-100">
-          Giữ suất trước mùa thu hoạch. Cọc {params.depositPercent}% khi đặt; phần còn lại trả khi hàng sẵn sàng hoặc khi nhận hàng. Đơn đặt trước không có giao hoả tốc.
-        </p>
-      </div>
+      </section>
 
       {preorders.length === 0 ? (
         <EmptyState>Hiện chưa có sản phẩm nào mở đặt trước.</EmptyState>
@@ -37,13 +41,20 @@ export function SeasonTab() {
             const win = deliveryWindow(p, now(), params);
             const blocked = !isOrderableIn(state, p) ? 'Chưa mở đặt trước' : remaining <= 0 ? 'Hết suất' : !win ? 'Đã hết thời gian nhận đặt trước' : null;
             return (
-              <div key={p.id} className="space-y-3 rounded-3xl border border-stone-200 bg-white p-3.5 shadow-xs">
-                <div className="flex gap-3">
-                  <ProductImage product={p} className="h-20 w-20 shrink-0 rounded-2xl" />
-                  <div className="min-w-0 flex-1">
-                    <span className="rounded bg-champagne-100 px-1.5 py-0.5 text-xs font-bold text-champagne-900">{p.region}</span>
-                    <h3 className="mt-1 line-clamp-2 text-sm font-bold text-ink">{p.name}</h3>
-                    <p className="truncate text-xs text-muted">{coop?.name}</p>
+              <article key={p.id} className="overflow-hidden rounded-3xl bg-white shadow-[0_1px_2px_rgb(0,0,0,0.04),0_10px_28px_rgb(31,77,58,0.07)] ring-1 ring-stone-200/60">
+                <button
+                  type="button"
+                  onClick={() => openModal({ type: 'product_detail', productId: p.id })}
+                  aria-label={`Xem ${p.name}`}
+                  className="block aspect-[16/9] w-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-600"
+                >
+                  <ProductImage product={p} variant="card" className="h-full w-full" />
+                </button>
+                <div className="space-y-3 p-4">
+                  <div className="min-w-0">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-champagne-700">{p.region}</span>
+                    <h3 className="font-display text-xl font-semibold leading-snug text-ink">{p.name}</h3>
+                    <p className="truncate text-sm text-muted">{coop?.name}</p>
                     <p className="mt-1 text-sm">
                       <span className="font-extrabold tabular-nums text-forest-800">
                         {formatMoney(p.price)}/{p.unit}
@@ -54,27 +65,27 @@ export function SeasonTab() {
                       </span>
                     </p>
                   </div>
+                  <PreorderProgress product={p} />
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => openModal({ type: 'trace_lot', productId: p.id })}
+                      className="min-h-11 rounded-2xl border border-stone-200 bg-white text-sm font-bold text-stone-800 hover:bg-stone-50"
+                    >
+                      Nguồn gốc
+                    </button>
+                    <button
+                      disabled={!!blocked}
+                      onClick={() =>
+                        win &&
+                        openModal({ type: 'checkout', source: { type: 'buy_now', line: { productId: p.id, quantity: 1, deliveryDate: win.min, seenPrice: p.price } } })
+                      }
+                      className="min-h-11 rounded-2xl bg-forest-800 text-sm font-bold text-white hover:bg-forest-700 disabled:bg-stone-300 disabled:text-stone-600"
+                    >
+                      {blocked ?? 'Đặt trước'}
+                    </button>
+                  </div>
                 </div>
-                <PreorderProgress product={p} />
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => openModal({ type: 'trace_lot', productId: p.id })}
-                    className="min-h-11 rounded-2xl border border-stone-200 bg-white text-sm font-bold text-stone-800 hover:bg-stone-50"
-                  >
-                    Nguồn gốc
-                  </button>
-                  <button
-                    disabled={!!blocked}
-                    onClick={() =>
-                      win &&
-                      openModal({ type: 'checkout', source: { type: 'buy_now', line: { productId: p.id, quantity: 1, deliveryDate: win.min, seenPrice: p.price } } })
-                    }
-                    className="min-h-11 rounded-2xl bg-forest-800 text-sm font-bold text-white hover:bg-forest-700 disabled:bg-stone-300 disabled:text-stone-600"
-                  >
-                    {blocked ?? 'Đặt trước'}
-                  </button>
-                </div>
-              </div>
+              </article>
             );
           })}
         </div>

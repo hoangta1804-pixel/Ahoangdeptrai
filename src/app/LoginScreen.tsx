@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ShieldCheck } from 'lucide-react';
 import { SimBadge } from '../components/EmptyState';
+import { LandscapeArt } from '../components/LandscapeArt';
 import { Field, Input, PrimaryButton, SecondaryButton } from '../components/form';
 import { DEMO_OTP, registerCustomer, requestOtp, verifyLogin } from '../domain/auth';
 import { formatPhone, PHONE_RULE } from '../domain/phone';
@@ -64,9 +65,13 @@ export function LoginScreen() {
 
   return (
     <div className="mx-auto w-full max-w-[640px] space-y-5 p-4">
-      <div className="space-y-1 rounded-3xl bg-forest-900 p-5 text-white">
-        <h1 className="text-xl font-bold">Đặc Sản Số Lào Cai</h1>
-        <p className="text-sm text-forest-100">Đăng nhập bằng số điện thoại và mã OTP.</p>
+      <div className="relative overflow-hidden rounded-[28px] bg-forest-900 text-white">
+        <LandscapeArt className="absolute inset-0 h-full w-full" />
+        <div className="relative space-y-1.5 px-5 pt-6 pb-24">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-champagne-300">Đặc sản vùng cao, giao tại Hà Nội</p>
+          <h1 className="font-display text-3xl font-semibold leading-tight">Đặc Sản Số Lào Cai</h1>
+          <p className="text-sm text-forest-100">Đăng nhập bằng số điện thoại và mã OTP.</p>
+        </div>
       </div>
 
       <section className="space-y-3 rounded-3xl border border-stone-200 bg-white p-4">

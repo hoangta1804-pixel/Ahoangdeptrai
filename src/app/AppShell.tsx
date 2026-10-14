@@ -38,6 +38,9 @@ export function AppShell() {
     return () => ro.disconnect();
   }, []);
 
+  // Đăng nhập, đăng xuất thì về đầu trang (màn đăng nhập dài, không giữ vị trí cuộn sang màn mới).
+  useEffect(() => window.scrollTo({ top: 0 }), [user?.id]);
+
   // Link chia sẻ sản phẩm (FR-TKSP-05): #/san-pham/<mã>. Chưa đăng nhập thì giữ link, mở sau khi khách đăng nhập.
   useEffect(() => {
     const open = () => {
@@ -65,7 +68,7 @@ export function AppShell() {
                 <span className="block truncate text-xs text-forest-200">{user.role === 'admin' && user.adminGroup ? `Admin – ${ADMIN_GROUP_LABEL[user.adminGroup]}` : ACCOUNT_ROLE_LABEL[user.role]}</span>
               </>
             ) : (
-              <span className="text-sm font-bold text-white">Đặc Sản Số Lào Cai</span>
+              <span className="font-display text-base font-semibold text-white">Đặc Sản Số Lào Cai</span>
             )}
           </div>
           {user && (
