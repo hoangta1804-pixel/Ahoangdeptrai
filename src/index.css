@@ -1,14 +1,84 @@
-@import "tailwindcss";
+@import "tailwindcss" source(none);
+@source "../index.html";
+@source "./";
 
+@theme {
+  /* Bảng màu nhận diện (Giai đoạn 6, mục 10.1). Nhóm đổi màu ở đây, mọi màn đổi theo. */
+  --color-ivory: #FAF7F0;
+  --color-ink: #1C1B18;
+  /* Chữ phụ: đậm hơn stone-500 một chút để đạt AA trên nền trắng ngà và nền xám nhạt. */
+  --color-muted: #6B655F;
+  --color-forest-50: #F2F8F5;
+  --color-forest-100: #E1EFE9;
+  --color-forest-200: #C4DED3;
+  --color-forest-300: #97C3B1;
+  --color-forest-400: #64A68A;
+  --color-forest-500: #37795E;
+  --color-forest-600: #2C684F;
+  --color-forest-700: #255B44;
+  --color-forest-800: #1F4D3A;
+  --color-forest-900: #173A2C;
+  --color-forest-950: #0E251B;
+  --color-champagne-50: #FCF9F3;
+  --color-champagne-100: #F7F0E3;
+  --color-champagne-200: #EDE1C9;
+  --color-champagne-300: #DFCBA4;
+  --color-champagne-400: #C9A96E;
+  --color-champagne-500: #B89451;
+  --color-champagne-600: #876A33;
+  --color-champagne-700: #745A2A;
+  --color-champagne-800: #5E4921;
+  --color-champagne-900: #493818;
+  --color-champagne-950: #2F230F;
+}
+
+/* Giữ hành vi mặc định giống Tailwind v3 (bản CDN cũ) để giao diện không đổi */
 @layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentColor);
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-muted);
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
   body {
+    margin: 0;
+    background-color: var(--color-ivory);
+    color: var(--color-ink);
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    -webkit-tap-highlight-color: transparent;
+    overflow-x: hidden;
+  }
+  /* Bỏ trễ 300ms khi chạm trên mobile */
+  button, a, input, select, textarea, [role="button"] {
+    touch-action: manipulation;
+  }
+  img {
+    max-width: 100%;
   }
 }
 
-/* Custom scrollbar hiding for native mobile app feel */
+.price-num, .tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* Ẩn thanh cuộn cho cảm giác app native */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -21,7 +91,20 @@
   0% { transform: translateY(-100%); }
   100% { transform: translateY(100%); }
 }
-
 .animate-scanline {
   animation: scanline 2s linear infinite;
+}
+
+.hero-shade {
+  background: linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.75) 100%);
+}
+
+/* Tôn trọng thiết lập giảm chuyển động của người dùng */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
