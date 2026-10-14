@@ -74,7 +74,7 @@ function AccountTable({ users }: { users: UserAccount[] }) {
   return (
     <div className="overflow-x-auto rounded-2xl border border-stone-200 bg-white">
       <table className="w-full min-w-[760px] text-left text-sm">
-        <thead className="bg-stone-50 text-xs text-stone-500">
+        <thead className="bg-stone-50 text-xs text-muted">
           <tr>
             <th className="px-3 py-2">Tên</th>
             <th className="px-3 py-2">SĐT</th>
@@ -84,6 +84,13 @@ function AccountTable({ users }: { users: UserAccount[] }) {
           </tr>
         </thead>
         <tbody className="divide-y divide-stone-100">
+          {users.length === 0 && (
+            <tr>
+              <td colSpan={5} className="px-3 py-6 text-center text-stone-600">
+                Chưa có tài khoản nào.
+              </td>
+            </tr>
+          )}
           {users.map((u) => (
             <LockRow key={u.id} user={u} />
           ))}

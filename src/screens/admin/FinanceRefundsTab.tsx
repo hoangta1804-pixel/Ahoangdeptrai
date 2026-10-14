@@ -23,7 +23,7 @@ export function FinanceRefundsTab() {
       </p>
       <div className="overflow-x-auto rounded-2xl border border-stone-200 bg-white">
         <table className="w-full min-w-[760px] text-left text-sm">
-          <thead className="bg-stone-50 text-xs text-stone-500">
+          <thead className="bg-stone-50 text-xs text-muted">
             <tr>
               <th className="px-3 py-2">Đơn</th>
               <th className="px-3 py-2">Nguồn</th>
@@ -41,7 +41,7 @@ export function FinanceRefundsTab() {
                   <td className="px-3 py-2 font-mono">{r.orderId}</td>
                   <td className="px-3 py-2">
                     {REFUND_SOURCE_LABEL[r.source]}
-                    <span className="block text-xs text-stone-500">{r.reason}</span>
+                    <span className="block text-xs text-muted">{r.reason}</span>
                   </td>
                   <td className="px-3 py-2 text-right tabular-nums">{formatMoney(r.amount)}</td>
                   <td className="px-3 py-2">
@@ -58,7 +58,7 @@ export function FinanceRefundsTab() {
           </tbody>
         </table>
       </div>
-      <p className="text-xs text-stone-500">Số tài khoản khách hiện đầy đủ chỉ trong màn của Admin – Tài chính.</p>
+      <p className="text-sm text-stone-600">Số tài khoản khách hiện đầy đủ chỉ trong màn của Admin – Tài chính.</p>
     </div>
   );
 }

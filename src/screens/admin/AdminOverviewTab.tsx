@@ -22,7 +22,7 @@ export function StatsPanel() {
         {tiles.map(([label, value]) => (
           <div key={label} className="rounded-2xl border border-stone-200 bg-white p-3">
             <p className="text-sm text-stone-600">{label}</p>
-            <p className="text-xl font-extrabold tabular-nums text-stone-900">{value}</p>
+            <p className="text-xl font-extrabold tabular-nums text-ink">{value}</p>
           </div>
         ))}
       </div>
@@ -41,7 +41,7 @@ export function StatsPanel() {
         <div className="space-y-4">
           <table className="w-full rounded-2xl border border-stone-200 bg-white text-left text-sm">
             <caption className="p-2 text-left font-bold">Theo vùng</caption>
-            <thead className="text-xs text-stone-500">
+            <thead className="text-xs text-muted">
               <tr>
                 <th className="px-3">Vùng</th>
                 <th className="px-3 text-right">Số đơn</th>
@@ -51,7 +51,7 @@ export function StatsPanel() {
             <tbody className="divide-y divide-stone-100">
               {s.byRegion.length === 0 ? (
                 <tr>
-                  <td colSpan={3} className="px-3 py-2 text-stone-500">
+                  <td colSpan={3} className="px-3 py-2 text-muted">
                     Chưa có đơn.
                   </td>
                 </tr>

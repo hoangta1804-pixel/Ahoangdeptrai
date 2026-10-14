@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useUi } from '../../app/UiContext';
-import { EmptyState } from '../../components/EmptyState';
+import { EmptyState, ErrorState } from '../../components/EmptyState';
 import { SecondaryButton, Textarea } from '../../components/form';
 import { listTicketsFor } from '../../domain/access';
 import { coopReplyTicket } from '../../domain/complaint';
@@ -12,7 +12,8 @@ export function CoopTicketsTab() {
   const { state } = useStore();
   const { coopActor } = useUi();
   const listed = listTicketsFor(state, coopActor);
-  const mine = listed.ok ? listed.value : [];
+  if (!listed.ok) return <ErrorState>{listed.error}</ErrorState>;
+  const mine = listed.value;
   if (mine.length === 0) return <EmptyState>Chưa có khiếu nại nào.</EmptyState>;
   return (
     <ul className="space-y-3">
@@ -64,7 +65,7 @@ function TicketCard({ ticket: t }: { ticket: Ticket }) {
             <fieldset className="flex flex-wrap gap-2 text-sm">
               <legend className="mb-1 font-semibold">Đề xuất của HTX (CSKH quyết định)</legend>
               {(['refund', 'no_refund'] as const).map((p) => (
-                <label key={p} className={`flex min-h-11 items-center gap-2 rounded-xl border px-3 ${proposal === p ? 'border-emerald-700 bg-emerald-50' : 'border-stone-200'}`}>
+                <label key={p} className={`flex min-h-11 items-center gap-2 rounded-xl border px-3 ${proposal === p ? 'border-forest-600 bg-forest-50' : 'border-stone-200'}`}>
                   <input type="radio" name={`proposal-${t.id}`} checked={proposal === p} onChange={() => setProposal(p)} />
                   {p === 'refund' ? 'Đề xuất hoàn tiền' : 'Đề xuất không hoàn'}
                 </label>

@@ -41,11 +41,11 @@ export function NotificationsSheet({ onClose }: { onClose: () => void }) {
                 <button
                   disabled={!clickable}
                   onClick={() => open(n)}
-                  className={`w-full rounded-2xl border p-3 text-left text-sm ${unreadIds.includes(n.id) ? 'border-emerald-700 bg-emerald-50' : 'border-stone-200 bg-white'} disabled:cursor-default`}
+                  className={`w-full rounded-2xl border p-3 text-left text-sm ${unreadIds.includes(n.id) ? 'border-forest-600 bg-forest-50' : 'border-stone-200 bg-white'} disabled:cursor-default`}
                 >
-                  <span className="block font-bold text-stone-900">{n.title}</span>
+                  <span className="block font-bold text-ink">{n.title}</span>
                   {n.body && <span className="block text-stone-700">{n.body}</span>}
-                  <span className="block text-xs text-stone-500">{new Date(n.at).toLocaleString('vi-VN')}</span>
+                  <span className="block text-xs text-muted">{new Date(n.at).toLocaleString('vi-VN')}</span>
                 </button>
               </li>
             );

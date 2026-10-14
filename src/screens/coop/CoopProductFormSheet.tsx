@@ -92,7 +92,7 @@ export function CoopProductFormSheet({ productId, onClose }: { productId?: strin
             <legend className="text-sm font-semibold text-stone-700">Loại đơn</legend>
             <div className="grid grid-cols-2 gap-2">
               {(['ready', 'preorder'] as OrderKind[]).map((k) => (
-                <label key={k} className={`flex min-h-11 items-center justify-center rounded-xl border text-sm ${form.kind === k ? 'border-emerald-700 bg-emerald-50 font-bold' : 'border-stone-200'}`}>
+                <label key={k} className={`flex min-h-11 items-center justify-center rounded-xl border text-sm ${form.kind === k ? 'border-forest-600 bg-forest-50 font-bold' : 'border-stone-200'}`}>
                   <input type="radio" className="sr-only" checked={form.kind === k} onChange={() => set({ kind: k })} />
                   {k === 'ready' ? 'Mua sẵn' : 'Đặt trước'}
                 </label>
@@ -125,7 +125,7 @@ export function CoopProductFormSheet({ productId, onClose }: { productId?: strin
           )}
         </>
       )}
-      <p className="text-xs text-stone-500">Sản phẩm mới và nội dung sửa đều cần Admin – Chất lượng duyệt trước khi hiện cho khách.</p>
+      <p className="text-sm text-stone-600">Sản phẩm mới và nội dung sửa đều cần Admin – Chất lượng duyệt trước khi hiện cho khách.</p>
     </BottomSheet>
   );
 }

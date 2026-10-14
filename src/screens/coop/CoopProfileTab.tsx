@@ -56,7 +56,7 @@ export function CoopProfileTab() {
         >
           {coop.profileStatus === 'pending' ? 'Hồ sơ đang chờ duyệt' : 'Gửi duyệt hồ sơ'}
         </PrimaryButton>
-        <p className="text-xs text-stone-500">Trong lúc chờ duyệt, khách vẫn thấy thông tin hồ sơ cũ.</p>
+        <p className="text-sm text-stone-600">Trong lúc chờ duyệt, khách vẫn thấy thông tin hồ sơ cũ.</p>
       </section>
     </div>
   );

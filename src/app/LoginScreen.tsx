@@ -64,13 +64,13 @@ export function LoginScreen() {
 
   return (
     <div className="mx-auto w-full max-w-[640px] space-y-5 p-4">
-      <div className="space-y-1 rounded-3xl bg-emerald-950 p-5 text-white">
+      <div className="space-y-1 rounded-3xl bg-forest-900 p-5 text-white">
         <h1 className="text-xl font-bold">Đặc Sản Số Lào Cai</h1>
-        <p className="text-sm text-emerald-100">Đăng nhập bằng số điện thoại và mã OTP.</p>
+        <p className="text-sm text-forest-100">Đăng nhập bằng số điện thoại và mã OTP.</p>
       </div>
 
       <section className="space-y-3 rounded-3xl border border-stone-200 bg-white p-4">
-        <p className="flex flex-wrap items-center gap-2 rounded-xl border-2 border-dashed border-stone-400 bg-amber-50 p-2.5 text-sm text-stone-900">
+        <p className="flex flex-wrap items-center gap-2 rounded-xl border-2 border-dashed border-stone-400 bg-champagne-50 p-2.5 text-sm text-ink">
           <SimBadge /> OTP mô phỏng: không gửi tin nhắn thật, mã luôn là <strong className="font-mono">{DEMO_OTP}</strong>
         </p>
 
@@ -142,8 +142,8 @@ export function LoginScreen() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="flex items-center gap-2 text-base font-bold text-stone-900">
-          <ShieldCheck size={18} className="text-emerald-700" /> Tài khoản demo
+        <h2 className="flex items-center gap-2 text-base font-bold text-ink">
+          <ShieldCheck size={18} className="text-forest-600" /> Tài khoản demo
         </h2>
         <p className="text-sm text-stone-600">Bấm một tài khoản để điền sẵn số điện thoại, sau đó nhập OTP mô phỏng. Đổi vai trò bằng cách đăng xuất rồi đăng nhập tài khoản khác.</p>
         {groups.map((g) => (
@@ -155,9 +155,9 @@ export function LoginScreen() {
                   <button
                     disabled={u.status !== 'active'}
                     onClick={() => sendOtp(u.phone)}
-                    className="flex min-h-14 w-full flex-col items-start justify-center rounded-2xl border border-stone-200 bg-white px-3 py-2 text-left hover:border-emerald-700 disabled:opacity-50"
+                    className="flex min-h-14 w-full flex-col items-start justify-center rounded-2xl border border-stone-200 bg-white px-3 py-2 text-left hover:border-forest-600 disabled:opacity-50"
                   >
-                    <span className="text-sm font-bold text-stone-900">{u.name}</span>
+                    <span className="text-sm font-bold text-ink">{u.name}</span>
                     <span className="text-xs text-stone-600">
                       {roleLabel(u)} · {formatPhone(u.phone)}
                       {u.status !== 'active' ? ' · đang khoá' : ''}

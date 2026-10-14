@@ -9,7 +9,7 @@ Tài liệu này cập nhật sau mỗi giai đoạn của `PROMPT_SUA_APP.md`. 
 | 3 | Dữ liệu dùng chung và đăng nhập | **Xong** |
 | 4 | Chức năng mức Must theo vai trò | **Xong** |
 | 5 | Nội dung và dữ liệu mẫu | **Xong** |
-| 6 | Giao diện | Chưa làm |
+| 6 | Giao diện | **Xong** |
 
 ## Chạy local
 
@@ -18,17 +18,106 @@ npm install
 npm run dev      # http://localhost:3000
 npm run build    # ra thư mục dist/ (Vercel dùng thư mục này)
 npm run lint     # kiểm tra kiểu TypeScript
-npm test         # unit test vitest cho src/domain và dữ liệu mẫu
+npm test         # unit test vitest: src/domain, dữ liệu mẫu, quy ước giao diện
 ```
 
-### Kết quả lần chạy cuối (Giai đoạn 5)
+### Kết quả lần chạy cuối (Giai đoạn 6)
 
 | Lệnh | Kết quả |
 |---|---|
 | `npm run lint` | Không lỗi |
-| `npm test` | 13 file, 100 test, tất cả đạt |
-| `npm run build` | Thành công, không cảnh báo. Phần chung 429 kB (gzip 126 kB); màn HTX, Admin, QLNN tải riêng theo vai trò |
-| Luồng 1 và Luồng 2 (mục 11.2) bằng Playwright trên danh mục mới, chặn mọi request ngoài localhost | Đạt trọn vẹn. Không có request ra ngoài, không lỗi JS |
+| `npm test` | 14 file, 105 test, tất cả đạt |
+| `npm run build` | Thành công, không cảnh báo. Phần chung 431 kB (gzip 127 kB); màn HTX, Admin, QLNN tải riêng theo vai trò |
+| Luồng 1 và Luồng 2 (mục 11.2) bằng Playwright, chặn mọi request ngoài localhost | Đạt trọn vẹn. Không có request ra ngoài, không lỗi JS |
+| Kiểm tra giao diện tự động trên mọi màn và trong Luồng 1 (axe-core 4.10 + đo vùng bấm và cỡ chữ) | 0 lỗi tương phản AA, 0 nút thiếu tên, 0 vùng bấm dưới 44×44, 0 chữ dưới 12px |
+
+---
+
+## Giai đoạn 6 – Giao diện
+
+### Bảng màu (mục 10.1)
+
+- **Token trong theme Tailwind** (`@theme` trong `src/index.css`). Nhóm đổi màu ở đây thì mọi màn đổi theo.
+
+  | Token | Giá trị |
+  |---|---|
+  | `forest-800` (xanh rừng) | `#1F4D3A` |
+  | `champagne-400` (vàng champagne) | `#C9A96E` |
+  | `ivory` (trắng ngà) | `#FAF7F0` |
+  | `ink` (chữ chính) | `#1C1B18` |
+  | `muted` (chữ phụ) | `#6B655F` |
+
+  - Hai màu xanh rừng và champagne có đủ dải 50–950, tính sẵn để chữ và nền đạt AA.
+  - `stone-500` của Tailwind chỉ đạt 4,4:1 trên nền trắng ngà, nên chữ phụ dùng token `muted` đạt AA.
+- **Áp dụng:**
+  - nút chính, thanh trên cùng, thẻ đầu màn HTX / Admin / QLNN dùng xanh rừng;
+  - nhãn đặt trước, cảnh báo, dải demo dùng champagne;
+  - nền trang trắng ngà, chữ chính `ink`.
+- **Đã bỏ:**
+  - toàn bộ lớp màu `emerald` / `amber` / `orange` cũ. Nhãn trạng thái "Trả hàng – hoàn tiền" và "Đang chuyển hoàn" đổi từ cam sang hồng đất;
+  - chữ "Gian Hàng Chính Hãng" ở tiêu đề trang, nay là "Đặc Sản Số Lào Cai – Bản demo".
+- **Không có:** màu `#EE4D2D`, logo, icon hay bố cục đặc trưng của Shopee.
+
+### Cỡ chữ (mục 10.2)
+
+- Không còn chữ 10–11px: nhãn "Mô phỏng" và các chữ 10px trong file tạm ẩn `ShipperScreen.tsx` đổi lên 12px.
+- Các câu giải thích, lưu ý (điều kiện mã ưu đãi, thời hạn thanh toán, lý do không có COD hay hoả tốc, quy định đánh giá, khiếu nại, tài khoản hoàn…) đổi từ 12px lên 14px. 12px chỉ còn dùng cho nhãn phụ.
+- Ô nhập dùng chữ 16px trên điện thoại (14px từ màn `md`). Nhờ đó iOS không tự phóng to khi bấm vào ô, nay đã cho phép phóng to.
+
+### Cho phép thao tác (mục 10.3)
+
+- Thẻ viewport bỏ `maximum-scale=1.0, user-scalable=no`; người dùng phóng to được.
+- Không còn `select-none` hay `user-select: none`, nên copy được mã đơn.
+
+### Trợ năng (mục 10.4)
+
+- **Nút chỉ có icon** đều có `aria-label`. Bảng thêm tên ẩn "Thao tác" cho cột nút.
+- **Bottom sheet** có `aria-labelledby` trỏ vào tiêu đề.
+- **Vùng bấm tối thiểu 44×44**, đã nâng các chỗ còn thiếu:
+  - chip lọc, nút "+" thêm vào giỏ, nút tăng giảm số lượng;
+  - nút sửa / xoá địa chỉ, nút "Xem nguồn gốc", nút xoá ảnh;
+  - mọi ô nhập và ô chọn.
+- **Kiểm tra bằng axe-core 4.10** (các quy tắc color-contrast, button-name, link-name, label, select-name, image-alt, aria-dialog-name, nested-interactive) và một script đo kích thước vùng bấm, cỡ chữ.
+  - Chạy trên mọi màn của 5 nhóm Admin, Khách, HTX, QLNN, Công cụ demo; cả ở màn 390px và 1280px.
+  - Chạy cả trong Luồng 1 (sheet HTX có nút thao tác, cổng thanh toán, ĐVVC, ticket, hoàn tiền, QLNN).
+  - Kết quả: không còn lỗi.
+
+### Bố cục (mục 10.5)
+
+- **Bottom sheet:** mọi sheet dùng chung `BottomSheet`, rộng tối đa 640px. Có test kiểm tra không có hộp thoại nào khác.
+- **Trạng thái rỗng:** các danh sách còn thiếu đã có: tài khoản (Vận hành, Quản trị gốc), mã ưu đãi, hồ sơ HTX, phường/xã, hộp quà, yêu cầu đã duyệt, bảng đơn của QLNN.
+- **Trạng thái lỗi:**
+  - **Khi có lỗi lúc hiển thị:** mỗi tab của Khách, HTX, Admin, mỗi sheet, và cả màn theo vai trò đều bọc trong `ListBoundary`. Có lỗi (dữ liệu trên trình duyệt hỏng, không tải được mã của màn) thì chỉ phần đó hiện khung lỗi, có nút "Thử lại", "Tải lại trang" và hướng dẫn khôi phục dữ liệu mẫu. Thanh điều hướng vẫn dùng được. Khi dữ liệu đổi (vd. vừa khôi phục), danh sách tự thử lại.
+  - **Khi không có quyền xem:** danh sách đọc qua kiểm tra quyền (đơn của khách, của HTX, của Admin; ticket của HTX; nhật ký; bảng QLNN) hiện lý do bị từ chối thay vì âm thầm hiện rỗng.
+  - **Kiểm thử:** làm hỏng dữ liệu đơn trong `localStorage`, rồi mở tab Đơn hàng: tab báo lỗi, thanh dưới vẫn dùng được, khôi phục dữ liệu mẫu thì danh sách hiện lại.
+- **Độ rộng:** Khách và HTX giữ bố cục điện thoại, rộng tối đa 640px. Màn 320px không cuộn ngang.
+- **Admin và QLNN dạng bảng** (`AdminTable`), cuộn ngang trong khung nếu màn hẹp. Đã chuyển từ dạng thẻ sang bảng:
+  - Mô phỏng ĐVVC;
+  - Hồ sơ HTX & quyền bán;
+  - Kiểm duyệt đánh giá;
+  - Duyệt sản phẩm & giá (bảng chờ duyệt và bảng đã xử lý);
+  - Danh mục dùng chung (phường/xã, hộp quà, bậc phụ phí);
+  - Ticket khiếu nại: bảng ticket, chọn một dòng thì phần chi tiết và xử lý hiện ngay dưới bảng.
+
+### Kiểm thử Giai đoạn 6
+
+- **Unit test mới `src/components/__tests__/ui.test.ts`** (5 test), đọc mã nguồn để kiểm tra:
+  - token màu có trong theme;
+  - không còn `#EE4D2D`, "Chính hãng", lớp màu cũ;
+  - không có chữ dưới 12px;
+  - viewport cho phóng to, không `select-none`;
+  - chỉ `BottomSheet` có `role="dialog"`.
+- **Trình duyệt:**
+  - kiểm tra giao diện tự động như trên;
+  - Luồng 1 và Luồng 2 đạt như Giai đoạn 5;
+  - dải demo hiện ở mọi vai trò;
+  - thử trạng thái lỗi.
+
+### Còn tồn tại sau Giai đoạn 6
+
+- **Màu nhãn trạng thái đơn** (xanh lam, tím, xanh lá mạ…) vẫn dùng màu Tailwind để phân biệt nhiều trạng thái. Chúng không thuộc bảng nhận diện; nhóm có thể chốt bảng màu trạng thái riêng.
+- **Chưa kiểm tra bằng trình đọc màn hình thật** (VoiceOver, TalkBack). Mới kiểm tra tự động bằng axe-core.
+- **Chưa có giao diện tối** (dark mode); yêu cầu không nêu.
 
 ---
 
@@ -161,7 +250,7 @@ Nội dung ảnh theo kích thước:
 - **Danh mục phường/xã giao hàng và loại hộp quà** vẫn là danh sách mẫu. Phường/xã có ghi "(mẫu)"; chờ nhóm nạp danh mục chính thức.
 - **Mô tả sản phẩm** chỉ ghi điều có trong bảng của nhóm; các thông tin khác ghi "chờ HTX xác nhận". **Quy cách của Cốm Tú Lệ và Bưởi Đại Minh** là quy cách mẫu.
 - **Thư mục `legacy/`** vẫn giữ bản `index.html` cũ, có các nội dung bị gỡ, để nhóm đối chiếu. Thư mục này không được build hay deploy. Nhóm có thể xoá khi không cần nữa.
-- **Màu sắc, cỡ chữ, trợ năng:** làm ở Giai đoạn 6.
+- **Màu sắc, cỡ chữ, trợ năng:** làm ở Giai đoạn 6 (đã làm).
 
 ## Giai đoạn 4 – Chức năng mức Must theo vai trò
 
@@ -572,6 +661,12 @@ Ngoài các ca trên còn có test cho:
 39. **"Khoảng ngày giao lấy từ cấu hình"** của Cốm Tú Lệ được hiểu là ngày giao sớm nhất bằng hôm nay + PAR-08, kéo dài 4 tuần. Bưởi Đại Minh chưa có khoảng ngày giao nên dùng cách tương tự: bắt đầu sau mốc PAR-08 thêm 1 tuần. Cả hai đều ghi "(mẫu, chờ HTX xác nhận)".
 40. **Bộ lọc vùng tách theo dấu phẩy:** mỗi địa danh trong ô "Vùng" thành một lựa chọn lọc. Số liệu QLNN theo vùng vẫn dùng nguyên chuỗi vùng của sản phẩm.
 41. **Nhãn "Dữ liệu mẫu – chờ HTX xác nhận" chỉ gắn cho sản phẩm trong danh mục mẫu.** Sản phẩm HTX tự tạo trong demo thì do chính HTX khai, nên không có nhãn này. Dải "Bản demo" vẫn hiện trên mọi màn.
+42. **Dải màu đầy đủ cho xanh rừng và champagne** tự tính từ 2 màu gốc của nhóm, chọn độ sáng để các cặp chữ / nền đang dùng đạt AA. Nhóm đổi màu gốc thì cần kiểm tra lại tương phản.
+43. **Chữ phụ dùng token `muted` `#6B655F`** thay cho `stone-500`, vì `stone-500` không đạt AA trên nền trắng ngà.
+44. **Ô nhập dùng chữ 16px trên điện thoại** để iOS không tự phóng to khi bấm vào ô (chuyện này xảy ra sau khi bỏ chặn phóng to).
+45. **Dải demo dùng chữ 12px đậm** vì là nhãn, không phải nội dung; ở 320px dải xuống 2 dòng.
+46. **Màn QLNN đổi thẻ đầu trang từ xanh lam sang xanh rừng** để theo bảng nhận diện. Nhãn trạng thái đơn và khung "Hoàn tiền" vẫn dùng màu thông tin (xanh lam).
+47. **Trạng thái lỗi của danh sách** gồm 2 trường hợp: lỗi khi hiển thị (bắt bằng error boundary) và lỗi không có quyền xem (hiện lý do). Dữ liệu demo đọc từ `localStorage` nên không có lỗi mạng.
 
 ## Vấn đề chờ nhóm chốt
 

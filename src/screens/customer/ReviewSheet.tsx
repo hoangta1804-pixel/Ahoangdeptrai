@@ -45,7 +45,7 @@ export function ReviewSheet({ orderId, productId, onClose }: { orderId: string; 
         <span className="text-sm font-semibold text-stone-700">Ảnh (không bắt buộc)</span>
         <PhotoPicker photos={photos} onChange={setPhotos} max={REVIEW_MAX_PHOTOS} />
       </div>
-      <p className="text-xs text-stone-500">Đánh giá công khai hiện tên rút gọn, không hiện SĐT, địa chỉ hay mã đơn đầy đủ.</p>
+      <p className="text-sm text-stone-600">Đánh giá công khai hiện tên rút gọn, không hiện SĐT, địa chỉ hay mã đơn đầy đủ.</p>
     </BottomSheet>
   );
 }

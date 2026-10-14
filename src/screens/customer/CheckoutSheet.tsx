@@ -137,7 +137,7 @@ export function CheckoutSheet({ source, onClose }: { source: CheckoutSource; onC
           <span className="block">Đặt hàng</span>
           <ol className="flex gap-1 text-xs font-semibold" aria-label="Các bước đặt hàng">
             {([1, 2, 3] as Step[]).map((s) => (
-              <li key={s} aria-current={step === s ? 'step' : undefined} className={`flex-1 rounded-lg px-2 py-1 text-center ${step === s ? 'bg-emerald-900 text-white' : s < step ? 'bg-emerald-100 text-emerald-900' : 'bg-stone-100 text-stone-500'}`}>
+              <li key={s} aria-current={step === s ? 'step' : undefined} className={`flex-1 rounded-lg px-2 py-1 text-center ${step === s ? 'bg-forest-800 text-white' : s < step ? 'bg-forest-100 text-forest-800' : 'bg-stone-100 text-muted'}`}>
                 {s}. {STEP_LABEL[s]}
               </li>
             ))}
@@ -169,7 +169,7 @@ export function CheckoutSheet({ source, onClose }: { source: CheckoutSource; onC
       }
     >
       {notices.length > 0 && (
-        <div className="space-y-1 rounded-2xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950" role="alert">
+        <div className="space-y-1 rounded-2xl border border-champagne-300 bg-champagne-50 p-3 text-sm text-champagne-950" role="alert">
           <p className="flex items-center gap-1.5 font-bold">
             <AlertTriangle size={16} /> Giỏ hàng vừa được kiểm tra lại
           </p>
@@ -200,8 +200,8 @@ export function CheckoutSheet({ source, onClose }: { source: CheckoutSource; onC
       {step === 2 && (
         <>
           <section className="space-y-2 rounded-2xl border border-stone-200 p-3" aria-label="Mã ưu đãi">
-            <h4 className="flex items-center gap-1.5 text-sm font-bold text-stone-900">
-              <Ticket size={16} /> Mã ưu đãi <span className="font-normal text-stone-500">(mỗi lần đặt dùng tối đa {state.params.vouchersPerCheckout} mã)</span>
+            <h4 className="flex items-center gap-1.5 text-sm font-bold text-ink">
+              <Ticket size={16} /> Mã ưu đãi <span className="font-normal text-muted">(mỗi lần đặt dùng tối đa {state.params.vouchersPerCheckout} mã)</span>
             </h4>
             <div className="flex gap-2">
               <Input aria-label="Nhập mã ưu đãi" placeholder="Nhập mã" value={voucherCode} onChange={(e) => setVoucherCode(e.target.value.toUpperCase())} />
@@ -228,27 +228,27 @@ export function CheckoutSheet({ source, onClose }: { source: CheckoutSource; onC
                       disabled={!ev.ok}
                       onClick={() => setVoucherId(selected ? undefined : v.id)}
                       aria-pressed={selected}
-                      className={`flex w-full items-start gap-2 rounded-xl border p-2.5 text-left text-sm ${selected ? 'border-emerald-700 bg-emerald-50' : 'border-stone-200 bg-white'} disabled:cursor-not-allowed disabled:bg-stone-50`}
+                      className={`flex w-full items-start gap-2 rounded-xl border p-2.5 text-left text-sm ${selected ? 'border-forest-600 bg-forest-50' : 'border-stone-200 bg-white'} disabled:cursor-not-allowed disabled:bg-stone-50`}
                     >
-                      <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${selected ? 'border-emerald-700 bg-emerald-700 text-white' : 'border-stone-300'}`}>
+                      <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${selected ? 'border-forest-600 bg-forest-600 text-white' : 'border-stone-300'}`}>
                         {selected && <Check size={12} />}
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block font-bold text-stone-900">{v.code}</span>
+                        <span className="block font-bold text-ink">{v.code}</span>
                         <span className="block text-stone-700">{v.title}</span>
-                        <span className={`block text-xs ${ev.ok ? 'text-emerald-800' : 'text-rose-700'}`}>{ev.ok ? `Giảm ${formatMoney(ev.value.discount)} trên tiền hàng hợp lệ` : ev.error}</span>
+                        <span className={`block text-xs ${ev.ok ? 'text-forest-700' : 'text-rose-700'}`}>{ev.ok ? `Giảm ${formatMoney(ev.value.discount)} trên tiền hàng hợp lệ` : ev.error}</span>
                       </span>
                     </button>
                   </li>
                 );
               })}
             </ul>
-            <p className="text-xs text-stone-500">Mã chỉ giảm tiền hàng của sản phẩm hợp lệ, không giảm phí giao, phụ phí hoả tốc hay phí hộp quà.</p>
+            <p className="text-sm text-stone-600">Mã chỉ giảm tiền hàng của sản phẩm hợp lệ, không giảm phí giao, phụ phí hoả tốc hay phí hộp quà.</p>
           </section>
 
           {plan.orders.map((o) => (
             <section key={o.key} className="space-y-2 rounded-2xl border border-stone-200 p-3">
-              <h4 className="text-sm font-bold text-stone-900">
+              <h4 className="text-sm font-bold text-ink">
                 {o.coopName} · {ORDER_KIND_LABEL[o.kind]}
                 {o.deliveryDate ? ` · giao ${formatDateKey(o.deliveryDate)}` : ''}
               </h4>
@@ -262,7 +262,7 @@ export function CheckoutSheet({ source, onClose }: { source: CheckoutSource; onC
           ))}
 
           {plan.hasPreorder && (
-            <section className="space-y-2 rounded-2xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950">
+            <section className="space-y-2 rounded-2xl border border-champagne-300 bg-champagne-50 p-3 text-sm text-champagne-950">
               <h4 className="font-bold">Điều kiện huỷ đơn đặt trước</h4>
               {plan.orders
                 .filter((o) => o.cancelPolicy)
@@ -298,12 +298,12 @@ export function CheckoutSheet({ source, onClose }: { source: CheckoutSource; onC
             </p>
           )}
           {priceUp && (
-            <label className="flex min-h-11 items-center gap-2 rounded-2xl border border-amber-300 bg-amber-50 p-3 text-sm font-semibold text-amber-950">
+            <label className="flex min-h-11 items-center gap-2 rounded-2xl border border-champagne-300 bg-champagne-50 p-3 text-sm font-semibold text-champagne-950">
               <input type="checkbox" className="h-5 w-5" checked={confirmedPriceUp} onChange={(e) => setConfirmedPriceUp(e.target.checked)} />
               Tôi đồng ý với giá mới đã tăng
             </label>
           )}
-          {payNow > 0 && <p className="text-xs text-stone-500">Sau khi bấm đặt hàng, bạn có {state.params.paymentHoldMinutes} phút để thanh toán ở cổng thanh toán mô phỏng. Hàng được giữ trong thời gian này.</p>}
+          {payNow > 0 && <p className="text-sm text-stone-600">Sau khi bấm đặt hàng, bạn có {state.params.paymentHoldMinutes} phút để thanh toán ở cổng thanh toán mô phỏng. Hàng được giữ trong thời gian này.</p>}
         </>
       )}
     </BottomSheet>
@@ -321,7 +321,7 @@ function Row({ label, value, strong }: { label: string; value: string; strong?: 
 
 function PaymentChoice({ order, onChange }: { order: PlannedOrder; onChange: (m: PaymentMethod) => void }) {
   const opt = (m: PaymentMethod, label: string, disabled = false) => (
-    <label className={`flex min-h-11 items-center gap-2 rounded-xl border px-3 text-sm ${order.paymentMethod === m ? 'border-emerald-700 bg-emerald-50 font-semibold' : 'border-stone-200'} ${disabled ? 'opacity-50' : ''}`}>
+    <label className={`flex min-h-11 items-center gap-2 rounded-xl border px-3 text-sm ${order.paymentMethod === m ? 'border-forest-600 bg-forest-50 font-semibold' : 'border-stone-200'} ${disabled ? 'opacity-50' : ''}`}>
       <input type="radio" name={`pay-${order.key}`} checked={order.paymentMethod === m} disabled={disabled} onChange={() => onChange(m)} />
       {label}
     </label>
@@ -330,7 +330,7 @@ function PaymentChoice({ order, onChange }: { order: PlannedOrder; onChange: (m:
     <div className="space-y-1.5">
       {opt('online', order.kind === 'preorder' ? 'Trả online khi HTX báo hàng sẵn sàng' : 'Thanh toán online (cổng mô phỏng)')}
       {opt('cod', order.kind === 'preorder' ? 'Trả tiền mặt khi nhận hàng' : 'Thanh toán khi nhận hàng (COD)', !order.codAllowed)}
-      {!order.codAllowed && <p className="text-xs text-stone-600">{order.codBlockedReason}</p>}
+      {!order.codAllowed && <p className="text-sm text-stone-600">{order.codBlockedReason}</p>}
     </div>
   );
 }
@@ -339,7 +339,7 @@ function OrderSummary({ order: o, index, total }: { order: PlannedOrder; index: 
   const p = o.pricing;
   return (
     <section className="space-y-2 rounded-2xl border border-stone-200 p-3 text-sm">
-      <h4 className="font-bold text-stone-900">
+      <h4 className="font-bold text-ink">
         Đơn {index}/{total}: {o.coopName} · {ORDER_KIND_LABEL[o.kind]}
         {o.deliveryDate ? ` · giao ${formatDateKey(o.deliveryDate)}` : ''}
       </h4>
@@ -347,7 +347,7 @@ function OrderSummary({ order: o, index, total }: { order: PlannedOrder; index: 
         Giao tới: {o.address.receiverName}, {o.address.text}
       </p>
       <table className="w-full text-left">
-        <thead className="text-xs text-stone-500">
+        <thead className="text-xs text-muted">
           <tr>
             <th className="font-medium">Sản phẩm</th>
             <th className="text-right font-medium">SL</th>
@@ -420,7 +420,7 @@ function StepDelivery(props: {
         const gift = props.options[o.key]?.gift;
         return (
           <section key={o.key} className="space-y-3 rounded-2xl border border-stone-200 p-3">
-            <h4 className="text-sm font-bold text-stone-900">
+            <h4 className="text-sm font-bold text-ink">
               {o.coopName} · {ORDER_KIND_LABEL[o.kind]}
             </h4>
             <ul className="space-y-2 text-sm">
@@ -449,15 +449,15 @@ function StepDelivery(props: {
             {o.kind === 'ready' ? (
               <div className="space-y-1.5">
                 <span className="text-sm font-semibold text-stone-700">Cách giao</span>
-                <label className={`flex min-h-11 items-center gap-2 rounded-xl border px-3 text-sm ${o.shipping === 'standard' ? 'border-emerald-700 bg-emerald-50 font-semibold' : 'border-stone-200'}`}>
+                <label className={`flex min-h-11 items-center gap-2 rounded-xl border px-3 text-sm ${o.shipping === 'standard' ? 'border-forest-600 bg-forest-50 font-semibold' : 'border-stone-200'}`}>
                   <input type="radio" name={`ship-${o.key}`} checked={o.shipping === 'standard'} onChange={() => props.setOpt(o.key, { shipping: 'standard' })} />
                   Giao thường · {formatMoney(params.standardShippingFee)}
                 </label>
-                <label className={`flex min-h-11 items-center gap-2 rounded-xl border px-3 text-sm ${o.shipping === 'express' ? 'border-emerald-700 bg-emerald-50 font-semibold' : 'border-stone-200'} ${o.express.available ? '' : 'opacity-50'}`}>
+                <label className={`flex min-h-11 items-center gap-2 rounded-xl border px-3 text-sm ${o.shipping === 'express' ? 'border-forest-600 bg-forest-50 font-semibold' : 'border-stone-200'} ${o.express.available ? '' : 'opacity-50'}`}>
                   <input type="radio" name={`ship-${o.key}`} disabled={!o.express.available} checked={o.shipping === 'express'} onChange={() => props.setOpt(o.key, { shipping: 'express' })} />
                   Hoả tốc · thêm {o.express.surcharge !== null ? formatMoney(o.express.surcharge) : '—'} ({o.address.distanceKm} km)
                 </label>
-                {!o.express.available && <p className="text-xs text-stone-600">Không có hoả tốc: {o.express.reasons.join(' ')}</p>}
+                {!o.express.available && <p className="text-sm text-stone-600">Không có hoả tốc: {o.express.reasons.join(' ')}</p>}
               </div>
             ) : (
               <p className="text-sm text-stone-600">Giao thường · {formatMoney(params.standardShippingFee)}. Đơn đặt trước không có hoả tốc.</p>

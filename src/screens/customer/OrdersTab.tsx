@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { MessageSquareWarning } from 'lucide-react';
 import { useUi } from '../../app/UiContext';
-import { EmptyState } from '../../components/EmptyState';
+import { EmptyState, ErrorState } from '../../components/EmptyState';
 import { OrderStatusBadge, PaymentStatusBadge } from '../../components/StatusBadge';
 import { listOrdersFor } from '../../domain/access';
 import { formatMoney } from '../../domain/pricing';
@@ -14,26 +14,27 @@ export function OrdersTab() {
   const { customerActor, openModal } = useUi();
   const [filter, setFilter] = useState<OrderStatus | 'all'>('all');
   const listed = listOrdersFor(state, customerActor);
-  const mine = listed.ok ? listed.value : [];
+  if (!listed.ok) return <ErrorState>{listed.error}</ErrorState>;
+  const mine = listed.value;
   const counts = Object.fromEntries(ORDER_STATUSES.map((s) => [s, mine.filter((o) => o.status === s).length])) as Record<OrderStatus, number>;
   const shown = filter === 'all' ? mine : mine.filter((o) => o.status === filter);
 
   return (
     <div className="space-y-3 p-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-bold text-stone-900">Đơn mua của tôi</h2>
-        <button onClick={() => openModal({ type: 'complaint' })} className="flex min-h-11 items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 text-sm font-semibold text-emerald-900">
+        <h2 className="text-base font-bold text-ink">Đơn mua của tôi</h2>
+        <button onClick={() => openModal({ type: 'complaint' })} className="flex min-h-11 items-center gap-1.5 rounded-xl border border-forest-200 bg-forest-50 px-3 text-sm font-semibold text-forest-800">
           <MessageSquareWarning size={16} />
           Khiếu nại
         </button>
       </div>
 
       <div className="no-scrollbar flex gap-2 overflow-x-auto" role="tablist" aria-label="Lọc đơn theo trạng thái">
-        <button role="tab" aria-selected={filter === 'all'} onClick={() => setFilter('all')} className={`min-h-10 whitespace-nowrap rounded-xl px-3 text-sm font-medium ${filter === 'all' ? 'bg-emerald-900 text-white' : 'border border-stone-200 bg-white text-stone-700'}`}>
+        <button role="tab" aria-selected={filter === 'all'} onClick={() => setFilter('all')} className={`min-h-11 whitespace-nowrap rounded-xl px-3 text-sm font-medium ${filter === 'all' ? 'bg-forest-800 text-white' : 'border border-stone-200 bg-white text-stone-700'}`}>
           Tất cả ({mine.length})
         </button>
         {ORDER_STATUSES.filter((s) => counts[s] > 0).map((s) => (
-          <button key={s} role="tab" aria-selected={filter === s} onClick={() => setFilter(s)} className={`min-h-10 whitespace-nowrap rounded-xl px-3 text-sm font-medium ${filter === s ? 'bg-emerald-900 text-white' : 'border border-stone-200 bg-white text-stone-700'}`}>
+          <button key={s} role="tab" aria-selected={filter === s} onClick={() => setFilter(s)} className={`min-h-11 whitespace-nowrap rounded-xl px-3 text-sm font-medium ${filter === s ? 'bg-forest-800 text-white' : 'border border-stone-200 bg-white text-stone-700'}`}>
             {ORDER_STATUS_LABEL[s]} ({counts[s]})
           </button>
         ))}
@@ -50,8 +51,8 @@ export function OrdersTab() {
                 <button onClick={() => openModal({ type: 'order_detail', orderId: o.id })} className="w-full space-y-2 rounded-2xl border border-stone-200 bg-white p-3.5 text-left shadow-xs hover:bg-stone-50">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div>
-                      <span className="block font-mono text-sm font-bold text-stone-900">{o.id}</span>
-                      <span className="text-xs text-stone-500">
+                      <span className="block font-mono text-sm font-bold text-ink">{o.id}</span>
+                      <span className="text-xs text-muted">
                         {new Date(o.createdAt).toLocaleString('vi-VN')} · {o.coopName} · {ORDER_KIND_LABEL[o.kind]}
                       </span>
                     </div>
@@ -65,8 +66,8 @@ export function OrdersTab() {
                     <span className="text-stone-600">Tổng đơn</span>
                     <span className="font-bold tabular-nums">{formatMoney(o.pricing.total)}</span>
                   </div>
-                  {tx && <p className="rounded-lg bg-amber-100 px-2 py-1 text-sm font-semibold text-amber-900">Chờ thanh toán {formatMoney(tx.amounts[o.id] ?? 0)} – bấm để tiếp tục</p>}
-                  {o.cancelRequest?.status === 'pending' && <p className="text-sm text-amber-800">Đã gửi yêu cầu huỷ, chờ HTX duyệt.</p>}
+                  {tx && <p className="rounded-lg bg-champagne-100 px-2 py-1 text-sm font-semibold text-champagne-900">Chờ thanh toán {formatMoney(tx.amounts[o.id] ?? 0)} – bấm để tiếp tục</p>}
+                  {o.cancelRequest?.status === 'pending' && <p className="text-sm text-champagne-800">Đã gửi yêu cầu huỷ, chờ HTX duyệt.</p>}
                 </button>
               </li>
             );

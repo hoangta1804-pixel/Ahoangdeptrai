@@ -1,5 +1,5 @@
 import { useUi } from '../../app/UiContext';
-import { EmptyState } from '../../components/EmptyState';
+import { EmptyState, ErrorState } from '../../components/EmptyState';
 import { readAuditLogs } from '../../domain/access';
 import { useStore } from '../../store/AppDataContext';
 
@@ -8,12 +8,12 @@ export function AdminAuditTab() {
   const { state } = useStore();
   const { adminActor } = useUi();
   const logs = readAuditLogs(state, adminActor);
-  if (!logs.ok) return <EmptyState>{logs.error}</EmptyState>;
+  if (!logs.ok) return <ErrorState>{logs.error}</ErrorState>;
   if (logs.value.length === 0) return <EmptyState>Chưa có thao tác nào được ghi.</EmptyState>;
   return (
     <div className="overflow-x-auto rounded-2xl border border-stone-200 bg-white">
       <table className="w-full min-w-[640px] text-left text-sm">
-        <thead className="bg-stone-50 text-xs text-stone-500">
+        <thead className="bg-stone-50 text-xs text-muted">
           <tr>
             <th className="px-3 py-2">Thời điểm</th>
             <th className="px-3 py-2">Người thực hiện</th>

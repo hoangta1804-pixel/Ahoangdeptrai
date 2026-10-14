@@ -56,9 +56,11 @@ export function PhotoPicker({ photos, onChange, max = MAX_PHOTOS }: { photos: st
               type="button"
               onClick={() => onChange(photos.filter((_, j) => j !== i))}
               aria-label={`Xoá ảnh ${i + 1}`}
-              className="absolute top-0 right-0 flex h-8 w-8 items-center justify-center rounded-bl-xl bg-black/60 text-white"
+              className="absolute top-0 right-0 flex h-11 w-11 items-start justify-end p-1 text-white"
             >
-              <X size={14} />
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-black/70">
+                <X size={14} />
+              </span>
             </button>
           </div>
         ))}
@@ -66,16 +68,16 @@ export function PhotoPicker({ photos, onChange, max = MAX_PHOTOS }: { photos: st
           <button
             type="button"
             onClick={() => input.current?.click()}
-            className="flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-stone-300 text-xs font-semibold text-stone-600 hover:border-emerald-700"
+            className="flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-stone-300 text-xs font-semibold text-stone-600 hover:border-forest-600"
           >
-            <Camera size={20} className="text-emerald-800" />
+            <Camera size={20} className="text-forest-700" />
             Thêm ảnh
           </button>
         )}
       </div>
       <input ref={input} type="file" accept="image/*" multiple className="hidden" onChange={(e) => onFiles(e.target.files)} />
-      <p className="text-xs text-stone-500">Ảnh chỉ lưu trên trình duyệt này (mô phỏng tải ảnh), tối đa {max} ảnh.</p>
-      {error && <p className="text-xs font-semibold text-rose-700">{error}</p>}
+      <p className="text-sm text-stone-600">Ảnh chỉ lưu trên trình duyệt này (mô phỏng tải ảnh), tối đa {max} ảnh.</p>
+      {error && <p className="text-sm font-semibold text-rose-700">{error}</p>}
     </div>
   );
 }

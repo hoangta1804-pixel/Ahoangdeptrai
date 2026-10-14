@@ -12,7 +12,7 @@ export function AdminAccountsTab() {
       <p className="text-sm text-stone-600">Đổi nhóm quyền của tài khoản Admin ở cột "Đơn vị / nhóm quyền". Cấp và khoá tài khoản do Admin – Vận hành thực hiện.</p>
       <div className="overflow-x-auto rounded-2xl border border-stone-200 bg-white">
         <table className="w-full min-w-[640px] text-left text-sm">
-          <thead className="bg-stone-50 text-xs text-stone-500">
+          <thead className="bg-stone-50 text-xs text-muted">
             <tr>
               <th className="px-3 py-2">Tên</th>
               <th className="px-3 py-2">SĐT</th>
@@ -22,6 +22,13 @@ export function AdminAccountsTab() {
             </tr>
           </thead>
           <tbody className="divide-y divide-stone-100">
+            {state.users.length === 0 && (
+              <tr>
+                <td colSpan={5} className="px-3 py-6 text-center text-stone-600">
+                  Chưa có tài khoản nào.
+                </td>
+              </tr>
+            )}
             {state.users.map((u) => (
               <tr key={u.id}>
                 <td className="px-3 py-2">{u.name}</td>

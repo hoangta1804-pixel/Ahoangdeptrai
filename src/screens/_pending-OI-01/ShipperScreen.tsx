@@ -30,13 +30,13 @@ export function ShipperScreen({ orders, setOrders, showToast }: ShipperScreenPro
     <>
       <div className="flex flex-col flex-1 p-4 space-y-4">
         {/* Shipper Header */}
-        <div className="bg-amber-600 text-white rounded-3xl p-4 shadow-md flex items-center justify-between">
+        <div className="bg-champagne-600 text-white rounded-3xl p-4 shadow-md flex items-center justify-between">
           <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-amber-200">
+            <span className="text-xs font-bold uppercase tracking-wider text-champagne-200">
               Đội Vận Chuyển Hà Nội
             </span>
             <h3 className="text-base font-bold">Shipper (mẫu)</h3>
-            <p className="text-xs text-amber-100">Khu vực phân công: Nam Từ Liêm & Cầu Giấy</p>
+            <p className="text-xs text-champagne-100">Khu vực phân công: Nam Từ Liêm & Cầu Giấy</p>
           </div>
           <button
             onClick={() => setScanning(true)}
@@ -50,7 +50,7 @@ export function ShipperScreen({ orders, setOrders, showToast }: ShipperScreenPro
         {/* Notice */}
         <div className="bg-white rounded-2xl p-3 border border-stone-200 text-xs flex items-center justify-between">
           <span className="font-semibold text-stone-700">Đơn hàng cần giao hôm nay:</span>
-          <span className="bg-amber-100 text-amber-900 font-bold px-2 py-0.5 rounded-lg">1 đơn cần phát</span>
+          <span className="bg-champagne-100 text-champagne-900 font-bold px-2 py-0.5 rounded-lg">1 đơn cần phát</span>
         </div>
 
         {/* Delivery Action Card */}
@@ -60,38 +60,38 @@ export function ShipperScreen({ orders, setOrders, showToast }: ShipperScreenPro
           .map((ord) => (
             <div key={ord.id} className="bg-white rounded-3xl border border-stone-200/80 p-4 shadow-sm space-y-3">
               <div className="flex justify-between items-center border-b border-stone-100 pb-2">
-                <span className="text-xs font-bold text-stone-900">{ord.id}</span>
-                <span className="text-[10px] font-bold bg-sky-100 text-sky-800 px-2 py-0.5 rounded-md">
+                <span className="text-xs font-bold text-ink">{ord.id}</span>
+                <span className="text-xs font-bold bg-sky-100 text-sky-800 px-2 py-0.5 rounded-md">
                   {ord.houseType === 'apartment' ? '🏢 Chung cư' : '🏠 Nhà mặt đất'}
                 </span>
               </div>
 
               {/* Snapshot Address details */}
               <div className="space-y-1">
-                <span className="text-[10px] font-bold uppercase text-stone-400">Snapshot Địa chỉ giao cố định</span>
-                <p className="text-xs font-bold text-stone-900 leading-snug">{ord.frozenAddressSnapshot}</p>
+                <span className="text-xs font-bold uppercase text-muted">Snapshot Địa chỉ giao cố định</span>
+                <p className="text-xs font-bold text-ink leading-snug">{ord.frozenAddressSnapshot}</p>
                 <div className="flex items-center gap-2 text-xs text-stone-600 mt-1">
-                  <Phone size={12} className="text-emerald-700" />
+                  <Phone size={12} className="text-forest-600" />
                   <span className="font-semibold">{ord.customerPhone} ({ord.customerName})</span>
                 </div>
               </div>
 
               {/* COD Collection box */}
-              <div className="bg-amber-50 rounded-2xl p-3 border border-amber-200 text-xs flex justify-between items-center">
+              <div className="bg-champagne-50 rounded-2xl p-3 border border-champagne-200 text-xs flex justify-between items-center">
                 <div>
-                  <span className="text-[10px] text-amber-800 font-semibold block">Số tiền cần thu COD:</span>
-                  <span className="text-base font-extrabold text-amber-900 tabular-nums">
+                  <span className="text-xs text-champagne-800 font-semibold block">Số tiền cần thu COD:</span>
+                  <span className="text-base font-extrabold text-champagne-900 tabular-nums">
                     {formatMoney(ord.remainingCod)}
                   </span>
                 </div>
-                <span className="text-[10px] text-amber-700 bg-white px-2 py-1 rounded-md border border-amber-200 font-medium">
+                <span className="text-xs text-champagne-700 bg-white px-2 py-1 rounded-md border border-champagne-200 font-medium">
                   70% giá trị + Ship
                 </span>
               </div>
 
               {/* One-touch Status Update Buttons */}
               <div className="space-y-2 pt-2">
-                <span className="text-[10px] font-bold uppercase text-stone-400 block">Cập nhật trạng thái giao đơn</span>
+                <span className="text-xs font-bold uppercase text-muted block">Cập nhật trạng thái giao đơn</span>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={() => {
@@ -111,7 +111,7 @@ export function ShipperScreen({ orders, setOrders, showToast }: ShipperScreenPro
                       );
                       showToast(`Giao thành công! Đã ghi nhận thu COD ${formatMoney(ord.remainingCod)}`);
                     }}
-                    className="bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold py-2.5 rounded-xl transition-colors"
+                    className="bg-forest-600 hover:bg-forest-500 text-white text-xs font-bold py-2.5 rounded-xl transition-colors"
                   >
                     Thành công & Thu COD
                   </button>
@@ -141,18 +141,18 @@ function ShipperScanModal({ onClose, showToast }: { onClose: () => void; showToa
   return (
     <div className="fixed inset-0 bg-stone-950 z-50 flex flex-col justify-between p-6 text-white text-center">
       <div className="flex justify-between items-center pt-4">
-        <span className="text-xs font-bold uppercase text-amber-400">Máy Quét QR Nông Sản</span>
+        <span className="text-xs font-bold uppercase text-champagne-400">Máy Quét QR Nông Sản</span>
         <button onClick={onClose} className="p-1 rounded-full bg-white/20">
           <X size={18} />
         </button>
       </div>
 
       <div className="my-auto flex flex-col items-center">
-        <div className="relative w-64 h-64 border-2 border-dashed border-amber-400 rounded-3xl flex items-center justify-center p-4">
+        <div className="relative w-64 h-64 border-2 border-dashed border-champagne-400 rounded-3xl flex items-center justify-center p-4">
           <div className="w-full h-full bg-stone-900/50 rounded-2xl flex items-center justify-center">
-            <QrCode size={120} className="text-amber-400/80" />
+            <QrCode size={120} className="text-champagne-400/80" />
           </div>
-          <div className="absolute top-0 left-0 right-0 h-1 bg-amber-400 animate-scanline"></div>
+          <div className="absolute top-0 left-0 right-0 h-1 bg-champagne-400 animate-scanline"></div>
         </div>
         <p className="text-xs text-stone-300 mt-4">
           Đưa mã QR trên túi hàng nông sản Lào Cai vào khung để nhận đơn giao
@@ -164,7 +164,7 @@ function ShipperScanModal({ onClose, showToast }: { onClose: () => void; showToa
           onClose();
           showToast('Đã quét nhận túi hàng mã LC-BAG-88219 (Cá Hồi Sa Pa)');
         }}
-        className="w-full bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold py-3.5 rounded-2xl shadow-lg"
+        className="w-full bg-champagne-600 hover:bg-champagne-500 text-white text-xs font-bold py-3.5 rounded-2xl shadow-lg"
       >
         Mô phỏng Quét thành công
       </button>

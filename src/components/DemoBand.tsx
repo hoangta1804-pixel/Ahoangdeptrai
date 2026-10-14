@@ -7,7 +7,7 @@ export const DEMO_BAND_TEXT = 'Bản demo – dữ liệu mẫu. Thanh toán, gi
  */
 export function DemoBand({ className = '' }: { className?: string }) {
   return (
-    <p role="note" className={`bg-amber-200 px-3 py-1 text-center text-xs font-semibold leading-snug text-amber-950 ${className}`}>
+    <p role="note" className={`bg-champagne-200 px-3 py-1 text-center text-xs font-semibold leading-snug text-champagne-950 ${className}`}>
       {DEMO_BAND_TEXT}
     </p>
   );

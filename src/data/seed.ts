@@ -207,7 +207,7 @@ function baseState(now: Date): DemoState {
       { id: 'coop-sapa', name: 'HTX mẫu Sa Pa', region: 'Sa Pa', payoutAccountMasked: '**** 0104', status: 'active', profileStatus: 'approved' },
       { id: 'coop-baoha', name: 'HTX mẫu Bảo Hà', region: 'Bảo Hà', payoutAccountMasked: '**** 0105', status: 'active', profileStatus: 'approved' },
       { id: 'coop-tule', name: 'HTX mẫu Tú Lệ', region: 'Tú Lệ', payoutAccountMasked: '**** 0106', status: 'active', profileStatus: 'approved' },
-      { id: 'coop-thacba', name: 'HTX mẫu Thác Bà', region: 'Vùng hồ Thác Bà', payoutAccountMasked: '**** 0107', status: 'active', profileStatus: 'approved' },
+      { id: 'coop-thacba', name: 'HTX mẫu Thác Bà', region: 'hồ Thác Bà', payoutAccountMasked: '**** 0107', status: 'active', profileStatus: 'approved' },
     ],
     products: products(now),
     productChanges: [],

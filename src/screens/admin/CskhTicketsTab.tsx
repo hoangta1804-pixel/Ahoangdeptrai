@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useUi } from '../../app/UiContext';
+import { AdminTable, Td } from '../../components/AdminTable';
 import { EmptyState } from '../../components/EmptyState';
 import { Input, PrimaryButton, SecondaryButton, DangerButton } from '../../components/form';
 import { cskhUpdateTicket, isTicketOpen, returnRefundAmount } from '../../domain/complaint';
@@ -8,16 +9,53 @@ import { findOrder } from '../../domain/state';
 import { COMPLAINT_REASON_LABEL, TICKET_STATUS_LABEL, type Ticket } from '../../domain/types';
 import { useNow, useStore } from '../../store/AppDataContext';
 
-/** Admin – CSKH xử lý ticket (FR-CSKH-07..09) và duyệt trả hàng – hoàn tiền (FR-DH-11). */
+/**
+ * Admin – CSKH xử lý ticket (FR-CSKH-07..09) và duyệt trả hàng – hoàn tiền (FR-DH-11).
+ * Bố cục bảng cho máy tính: chọn một dòng để xem chi tiết và xử lý ngay bên dưới.
+ */
 export function CskhTicketsTab() {
   const { state } = useStore();
+  const at = useNow(30_000);
   const tickets = [...state.tickets].sort((a, b) => Number(b.priority === 'high') - Number(a.priority === 'high') || b.createdAt.localeCompare(a.createdAt));
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   if (tickets.length === 0) return <EmptyState>Chưa có ticket nào.</EmptyState>;
+  const selected = tickets.find((t) => t.id === selectedId) ?? tickets.find(isTicketOpen) ?? tickets[0];
   return (
-    <div className="space-y-3">
-      {tickets.map((t) => (
-        <TicketRow key={t.id} ticket={t} />
-      ))}
+    <div className="space-y-4">
+      <AdminTable columns={['Mã ticket', 'Đơn · HTX', 'Lý do', 'Ưu tiên', 'Trạng thái', 'Hạn kết luận (SLA-01)', '']} minWidth={900}>
+        {tickets.map((t) => {
+          const order = findOrder(state, t.orderId);
+          const late = isTicketOpen(t) && at.getTime() > new Date(t.resolveDueAt).getTime();
+          const active = t.id === selected.id;
+          return (
+            <tr key={t.id} className={active ? 'bg-forest-50' : ''}>
+              <Td className="font-mono font-bold">{t.id}</Td>
+              <Td>
+                <span className="font-mono">{t.orderId}</span>
+                <span className="block text-stone-600">{order?.coopName}</span>
+              </Td>
+              <Td>
+                {COMPLAINT_REASON_LABEL[t.reason]}
+                {t.requestRefund && <span className="block text-stone-600">Yêu cầu trả hàng – hoàn tiền</span>}
+              </Td>
+              <Td>{t.priority === 'high' ? <span className="rounded-md bg-rose-100 px-2 py-0.5 text-xs font-bold text-rose-800">Cao</span> : 'Thường'}</Td>
+              <Td>{TICKET_STATUS_LABEL[t.status]}</Td>
+              <Td className={late ? 'font-bold text-rose-700' : ''}>{new Date(t.resolveDueAt).toLocaleString('vi-VN')}</Td>
+              <Td>
+                <button
+                  onClick={() => setSelectedId(t.id)}
+                  aria-pressed={active}
+                  aria-label={`Xem ticket ${t.id}`}
+                  className={`min-h-11 rounded-xl px-3 font-semibold ${active ? 'bg-forest-800 text-white' : 'border border-stone-300 bg-white text-stone-800 hover:bg-stone-50'}`}
+                >
+                  {active ? 'Đang xem' : 'Xem'}
+                </button>
+              </Td>
+            </tr>
+          );
+        })}
+      </AdminTable>
+      <TicketRow key={selected.id} ticket={selected} />
     </div>
   );
 }
@@ -36,7 +74,7 @@ function TicketRow({ ticket: t }: { ticket: Ticket }) {
     if (r.ok) setNote('');
   };
   return (
-    <div className="space-y-2 rounded-2xl border border-stone-200 bg-white p-3 text-sm">
+    <section aria-label={`Chi tiết ticket ${t.id}`} className="space-y-2 rounded-2xl border border-stone-200 bg-white p-3 text-sm">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="font-mono font-bold">{t.id}</span>
         <span className="flex gap-1">
@@ -82,6 +120,6 @@ function TicketRow({ ticket: t }: { ticket: Ticket }) {
           </div>
         </div>
       )}
-    </div>
+    </section>
   );
 }

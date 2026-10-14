@@ -107,7 +107,7 @@ export function OrderDetailSheet({ orderId, onClose }: { orderId: string; onClos
         {order.items.map((i) => (
           <div key={i.productId} className="flex justify-between gap-2">
             <span>
-              {i.name} × {i.quantity} {i.unit} <span className="text-stone-500">({formatMoney(i.unitPrice)})</span>
+              {i.name} × {i.quantity} {i.unit} <span className="text-muted">({formatMoney(i.unitPrice)})</span>
             </span>
             <span className="tabular-nums">{formatMoney(i.unitPrice * i.quantity)}</span>
           </div>
@@ -130,7 +130,7 @@ export function OrderDetailSheet({ orderId, onClose }: { orderId: string; onClos
         </div>
       </section>
 
-      {order.cancelPolicy && <p className="rounded-xl bg-amber-50 p-2.5 text-sm text-amber-950">Điều kiện huỷ đã đồng ý: {order.cancelPolicy}</p>}
+      {order.cancelPolicy && <p className="rounded-xl bg-champagne-50 p-2.5 text-sm text-champagne-950">Điều kiện huỷ đã đồng ý: {order.cancelPolicy}</p>}
 
       {refunds.length > 0 && (
         <section className="space-y-1 rounded-2xl border border-sky-200 bg-sky-50 p-3 text-sm">
@@ -168,7 +168,7 @@ export function OrderDetailSheet({ orderId, onClose }: { orderId: string; onClos
             {order.status === 'delivered' &&
               order.items.map((i) =>
                 reviewed.has(i.productId) ? (
-                  <span key={i.productId} className="flex min-h-11 items-center rounded-2xl bg-emerald-50 px-3 text-sm text-emerald-900">
+                  <span key={i.productId} className="flex min-h-11 items-center rounded-2xl bg-forest-50 px-3 text-sm text-forest-800">
                     Đã đánh giá {i.name}
                   </span>
                 ) : (
@@ -324,7 +324,7 @@ export function OrderDetailSheet({ orderId, onClose }: { orderId: string; onClos
           {order.statusHistory.map((h, i) => (
             <li key={i}>
               <span className="font-semibold">{ORDER_STATUS_LABEL[h.to]}</span>
-              <span className="text-stone-500"> · {new Date(h.at).toLocaleString('vi-VN')} · {h.actor.name ?? h.actor.kind}</span>
+              <span className="text-muted"> · {new Date(h.at).toLocaleString('vi-VN')} · {h.actor.name ?? h.actor.kind}</span>
               {h.reason && <span className="block text-stone-600">{h.reason}</span>}
             </li>
           ))}

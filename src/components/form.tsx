@@ -1,13 +1,14 @@
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react';
 
-const fieldClass = 'w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm text-stone-900 focus:border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-700/20';
+// Cao tối thiểu 44px; chữ 16px trên điện thoại để iOS không tự phóng to khi nhập.
+const fieldClass = 'min-h-11 w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-base text-ink md:text-sm focus:border-forest-600 focus:outline-none focus:ring-2 focus:ring-forest-600/20';
 
 export function Field({ label, hint, children }: { label: string; hint?: ReactNode; children: ReactNode }) {
   return (
     <label className="block space-y-1">
       <span className="text-sm font-semibold text-stone-700">{label}</span>
       {children}
-      {hint && <span className="block text-xs text-stone-500">{hint}</span>}
+      {hint && <span className="block text-xs text-muted">{hint}</span>}
     </label>
   );
 }
@@ -20,7 +21,7 @@ export function PrimaryButton({ children, className = '', ...rest }: ButtonHTMLA
   return (
     <button
       {...rest}
-      className={`min-h-11 rounded-2xl bg-emerald-900 px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-600 ${className}`}
+      className={`min-h-11 rounded-2xl bg-forest-800 px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-forest-700 disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-600 ${className}`}
     >
       {children}
     </button>

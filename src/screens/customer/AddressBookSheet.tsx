@@ -18,7 +18,7 @@ export function AddressBookSheet({ onClose }: { onClose: () => void }) {
       title={
         <>
           Sổ địa chỉ
-          <span className="block text-sm font-normal text-stone-500">
+          <span className="block text-sm font-normal text-muted">
             {mine.length}/{MAX_ADDRESSES} địa chỉ · chỉ giao trong Hà Nội
           </span>
         </>
@@ -28,7 +28,7 @@ export function AddressBookSheet({ onClose }: { onClose: () => void }) {
         <button
           disabled={full}
           onClick={() => openModal({ type: 'address_form' })}
-          className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-emerald-900 text-sm font-bold text-white disabled:bg-stone-300 disabled:text-stone-600"
+          className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-forest-800 text-sm font-bold text-white disabled:bg-stone-300 disabled:text-stone-600"
         >
           <Plus size={16} />
           {full ? `Đã đủ ${MAX_ADDRESSES} địa chỉ` : 'Thêm địa chỉ'}
@@ -40,13 +40,13 @@ export function AddressBookSheet({ onClose }: { onClose: () => void }) {
       ) : (
         <ul className="space-y-2">
           {mine.map((a) => (
-            <li key={a.id} className={`space-y-1 rounded-2xl border p-3 ${a.isDefault ? 'border-emerald-700 bg-emerald-50/50' : 'border-stone-200 bg-white'}`}>
+            <li key={a.id} className={`space-y-1 rounded-2xl border p-3 ${a.isDefault ? 'border-forest-600 bg-forest-50/50' : 'border-stone-200 bg-white'}`}>
               <div className="flex items-center justify-between gap-2">
-                <span className="text-sm font-bold text-stone-900">
+                <span className="text-sm font-bold text-ink">
                   {a.label}
-                  {a.isDefault && <span className="ml-2 rounded-md bg-emerald-800 px-1.5 py-0.5 text-xs text-white">Mặc định</span>}
+                  {a.isDefault && <span className="ml-2 rounded-md bg-forest-700 px-1.5 py-0.5 text-xs text-white">Mặc định</span>}
                 </span>
-                <span className="text-xs text-stone-500">{a.houseType === 'apartment' ? 'Chung cư' : 'Nhà mặt đất'}</span>
+                <span className="text-xs text-muted">{a.houseType === 'apartment' ? 'Chung cư' : 'Nhà mặt đất'}</span>
               </div>
               <p className="text-sm text-stone-700">
                 {a.receiverName} · {a.receiverPhone}
@@ -59,12 +59,12 @@ export function AddressBookSheet({ onClose }: { onClose: () => void }) {
                       const r = run((s) => setDefaultAddress(s, customerActor.id!, a.id));
                       showToast(r.ok ? 'Đã đặt làm địa chỉ mặc định.' : r.error);
                     }}
-                    className="flex min-h-10 items-center gap-1 rounded-lg px-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-50"
+                    className="flex min-h-11 items-center gap-1 rounded-lg px-2 text-sm font-semibold text-forest-700 hover:bg-forest-50"
                   >
                     <Star size={14} /> Đặt mặc định
                   </button>
                 )}
-                <button onClick={() => openModal({ type: 'address_form', addressId: a.id })} className="flex min-h-10 items-center gap-1 rounded-lg px-2 text-sm font-semibold text-stone-700 hover:bg-stone-100">
+                <button onClick={() => openModal({ type: 'address_form', addressId: a.id })} className="flex min-h-11 items-center gap-1 rounded-lg px-2 text-sm font-semibold text-stone-700 hover:bg-stone-100">
                   <Pencil size={14} /> Sửa
                 </button>
                 <button
@@ -73,7 +73,7 @@ export function AddressBookSheet({ onClose }: { onClose: () => void }) {
                     const r = run((s) => deleteAddress(s, customerActor.id!, a.id));
                     showToast(r.ok ? 'Đã xoá địa chỉ.' : r.error);
                   }}
-                  className="flex min-h-10 items-center gap-1 rounded-lg px-2 text-sm font-semibold text-rose-700 hover:bg-rose-50"
+                  className="flex min-h-11 items-center gap-1 rounded-lg px-2 text-sm font-semibold text-rose-700 hover:bg-rose-50"
                 >
                   <Trash2 size={14} /> Xoá
                 </button>

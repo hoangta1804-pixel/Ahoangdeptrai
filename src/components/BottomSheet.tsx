@@ -2,7 +2,7 @@
  * Bottom sheet dùng chung cho mọi màn: cùng độ rộng, đóng bằng nút X, bấm nền tối hoặc phím Esc.
  * Trên điện thoại trượt từ đáy; từ md trở lên hiện giữa màn hình.
  */
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useId, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { DemoBand } from './DemoBand';
 
@@ -16,6 +16,7 @@ interface BottomSheetProps {
 }
 
 export function BottomSheet({ title, onClose, children, footer, closeLabel = 'Đóng' }: BottomSheetProps) {
+  const titleId = useId();
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     document.addEventListener('keydown', onKey);
@@ -37,16 +38,17 @@ export function BottomSheet({ title, onClose, children, footer, closeLabel = 'Đ
       <div
         role="dialog"
         aria-modal="true"
+        aria-labelledby={titleId}
         className="flex max-h-[min(90dvh,calc(100dvh-3.5rem))] w-full max-w-[640px] flex-col rounded-t-[32px] bg-white shadow-2xl md:rounded-[32px]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3 px-5 pt-4 pb-2">
-          <div className="min-w-0 flex-1 pt-2 text-base font-bold text-stone-900">{title}</div>
+          <div id={titleId} className="min-w-0 flex-1 pt-2 text-base font-bold text-ink">{title}</div>
           <button
             type="button"
             onClick={onClose}
             aria-label={closeLabel}
-            className="-mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-stone-500 hover:bg-stone-100 hover:text-stone-800"
+            className="-mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted hover:bg-stone-100 hover:text-stone-800"
           >
             <X size={20} />
           </button>

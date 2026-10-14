@@ -58,7 +58,7 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
       title={
         <>
           <span className="block">{product.name}</span>
-          <span className="block text-sm font-normal text-stone-500">
+          <span className="block text-sm font-normal text-muted">
             {coop?.name} · {product.region} · {CATEGORY_LABEL[product.category]}
           </span>
         </>
@@ -69,7 +69,7 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
           <button
             disabled={!!blocked}
             onClick={() => add(product.id, qty) && onClose()}
-            className="min-h-12 rounded-2xl border border-emerald-900 bg-white text-sm font-bold text-emerald-900 disabled:border-stone-300 disabled:text-stone-500"
+            className="min-h-12 rounded-2xl border border-forest-800 bg-white text-sm font-bold text-forest-800 disabled:border-stone-300 disabled:text-muted"
           >
             Thêm vào giỏ
           </button>
@@ -81,7 +81,7 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
                 source: { type: 'buy_now', line: { productId: product.id, quantity: qty, deliveryDate: win?.min, seenPrice: product.price } },
               })
             }
-            className="min-h-12 rounded-2xl bg-emerald-900 text-sm font-bold text-white disabled:bg-stone-300 disabled:text-stone-600"
+            className="min-h-12 rounded-2xl bg-forest-800 text-sm font-bold text-white disabled:bg-stone-300 disabled:text-stone-600"
           >
             {blocked ?? (product.kind === 'preorder' ? 'Đặt trước' : 'Mua ngay')}
           </button>
@@ -92,7 +92,7 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
         <ProductImage product={product} variant="cover" className="h-full w-full" />
         <button
           onClick={() => openModal({ type: 'trace_lot', productId: product.id })}
-          className="absolute right-2 bottom-2 flex min-h-10 items-center gap-1 rounded-lg bg-black/75 px-3 text-sm font-semibold text-white hover:bg-black/90"
+          className="absolute right-2 bottom-2 flex min-h-11 items-center gap-1 rounded-lg bg-black/75 px-3 text-sm font-semibold text-white hover:bg-black/90"
         >
           <FileBadge size={16} />
           Xem nguồn gốc
@@ -100,10 +100,10 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
       </div>
 
       <div className="flex items-center justify-between gap-2">
-        <span className="text-xl font-extrabold tabular-nums text-stone-900">
+        <span className="text-xl font-extrabold tabular-nums text-ink">
           {formatMoney(product.price)}
-          <span className="text-sm font-normal text-stone-500">/{product.unit}</span>
-          {isSamplePrice(product) && <span className="ml-1.5 text-sm font-semibold text-amber-800">(giá mẫu)</span>}
+          <span className="text-sm font-normal text-muted">/{product.unit}</span>
+          {isSamplePrice(product) && <span className="ml-1.5 text-sm font-semibold text-champagne-800">(giá mẫu)</span>}
         </span>
         <span className="flex items-center gap-1">
           <span className="whitespace-nowrap rounded-md bg-stone-100 px-2 py-0.5 text-xs font-semibold text-stone-700">{ORDER_KIND_LABEL[product.kind]}</span>
@@ -126,7 +126,7 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
 
       {product.sample && (
         <div role="note" className="space-y-1 rounded-2xl border border-stone-300 bg-stone-50 p-3 text-sm text-stone-700">
-          <p className="font-bold text-stone-900">Dữ liệu mẫu – chờ HTX xác nhận</p>
+          <p className="font-bold text-ink">Dữ liệu mẫu – chờ HTX xác nhận</p>
           <p>
             {product.sample.surveyedPrice
               ? `Giá mẫu, chọn trong khoảng giá bán lẻ tại Hà Nội nhóm đã khảo sát: ${product.sample.surveyedPrice}.`
@@ -140,7 +140,7 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
       {product.kind === 'preorder' ? (
         <>
           <PreorderProgress product={product} />
-          <div className="space-y-1 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
+          <div className="space-y-1 rounded-2xl border border-champagne-200 bg-champagne-50 p-3 text-sm text-champagne-950">
             <p>
               <strong>Cọc {params.depositPercent}%</strong> trả online khi đặt: {formatMoney(deposit)} (chưa gồm phí giao).
             </p>
@@ -162,7 +162,7 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
         <ul className="space-y-1 text-sm">
           {product.certifications!.map((c) => (
             <li key={c.id} className="flex items-center gap-1.5 text-stone-700">
-              <BadgeCheck size={16} className="text-emerald-700" />
+              <BadgeCheck size={16} className="text-forest-600" />
               {c.label} · {c.issuer} · hiệu lực đến {c.validUntil.split('-').reverse().join('/')} (Admin đã xem hồ sơ – mô phỏng)
             </li>
           ))}
@@ -172,10 +172,10 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
       <div className="flex items-center justify-between border-t border-stone-100 pt-3">
         <span className="text-sm font-semibold text-stone-700">
           Số lượng ({product.unit})
-          <span className="block text-xs font-normal text-stone-500">Tối đa {Math.max(0, remaining)}</span>
+          <span className="block text-xs font-normal text-muted">Tối đa {Math.max(0, remaining)}</span>
         </span>
         <div className="flex items-center gap-1 rounded-xl bg-stone-100 p-1">
-          <button onClick={() => setQuantity((q) => Math.max(1, q - 1))} aria-label="Giảm số lượng" className="flex h-10 w-10 items-center justify-center rounded-lg bg-white shadow-xs">
+          <button onClick={() => setQuantity((q) => Math.max(1, q - 1))} aria-label="Giảm số lượng" className="flex h-11 w-11 items-center justify-center rounded-lg bg-white shadow-xs">
             <Minus size={16} />
           </button>
           <span className="w-8 text-center font-bold tabular-nums">{qty}</span>
@@ -183,7 +183,7 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
             onClick={() => setQuantity((q) => Math.min(remaining, q + 1))}
             disabled={qty >= remaining}
             aria-label="Tăng số lượng"
-            className="flex h-10 w-10 items-center justify-center rounded-lg bg-white shadow-xs disabled:opacity-40"
+            className="flex h-11 w-11 items-center justify-center rounded-lg bg-white shadow-xs disabled:opacity-40"
           >
             <Plus size={16} />
           </button>
@@ -196,7 +196,7 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
             <div key={r.id} className="space-y-1 rounded-xl bg-stone-50 p-2.5 text-sm">
               <p className="flex items-center gap-2">
                 <Stars value={r.stars} /> <span className="font-semibold">{r.reviewerName}</span>
-                <span className="text-xs text-stone-500">· đơn {r.orderRef}</span>
+                <span className="text-xs text-muted">· đơn {r.orderRef}</span>
               </p>
               {r.comment && <p className="text-stone-700">{r.comment}</p>}
               {r.photos.length > 0 && (
@@ -206,7 +206,7 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
                   ))}
                 </div>
               )}
-              {r.coopReply && <p className="border-l-2 border-emerald-700 pl-2 text-stone-700">HTX phản hồi: {r.coopReply}</p>}
+              {r.coopReply && <p className="border-l-2 border-forest-600 pl-2 text-stone-700">HTX phản hồi: {r.coopReply}</p>}
             </div>
           ))}
         </section>

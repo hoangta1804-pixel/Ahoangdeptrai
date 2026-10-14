@@ -30,7 +30,7 @@ export function AdminParamsTab() {
       <p className="text-sm text-stone-600">Giá trị mới chỉ áp cho đơn tạo sau thời điểm sửa. Cột “Tình trạng” cho biết giá trị nào chưa được nhóm chốt.</p>
       <div className="overflow-x-auto rounded-2xl border border-stone-200 bg-white">
         <table className="w-full min-w-[860px] text-left text-sm">
-          <thead className="bg-stone-50 text-xs uppercase text-stone-500">
+          <thead className="bg-stone-50 text-xs uppercase text-muted">
             <tr>
               <th className="px-3 py-2">Mã</th>
               <th className="px-3 py-2">Ý nghĩa</th>
@@ -87,7 +87,7 @@ function ParamRow({ meta: m, canEdit }: { meta: ParamMeta; canEdit: boolean }) {
     <tr>
       <td className="whitespace-nowrap px-3 py-2 font-mono text-xs font-bold text-stone-700">{m.code}</td>
       <td className="px-3 py-2 text-stone-800">{m.label}</td>
-      <td className="px-3 py-2 font-semibold tabular-nums text-stone-900">{formatValue(m.key, state.params, m.unit)}</td>
+      <td className="px-3 py-2 font-semibold tabular-nums text-ink">{formatValue(m.key, state.params, m.unit)}</td>
       <td className="px-3 py-2 text-xs text-stone-600">{m.status}</td>
       {canEdit && (
         <td className="px-3 py-2">
@@ -108,7 +108,7 @@ function ParamRow({ meta: m, canEdit }: { meta: ParamMeta; canEdit: boolean }) {
               </SecondaryButton>
             </div>
           ) : (
-            <span className="text-xs text-stone-500">Sửa bậc phí ở Danh mục dùng chung</span>
+            <span className="text-xs text-muted">Sửa bậc phí ở Danh mục dùng chung</span>
           )}
         </td>
       )}

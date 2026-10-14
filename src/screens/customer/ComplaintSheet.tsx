@@ -85,7 +85,7 @@ export function ComplaintSheet({ orderId, onClose }: { orderId?: string; onClose
               {i.name} × {i.quantity}
             </label>
           ))}
-          {deadline && <p className="text-xs text-stone-500">Hạn gửi: {deadline.toLocaleString('vi-VN')} (RET-01, tính từ lúc Đã giao).</p>}
+          {deadline && <p className="text-sm text-stone-600">Hạn gửi: {deadline.toLocaleString('vi-VN')} (RET-01, tính từ lúc Đã giao).</p>}
         </fieldset>
       )}
 
@@ -110,7 +110,7 @@ export function ComplaintSheet({ orderId, onClose }: { orderId?: string; onClose
         <input type="checkbox" className="h-5 w-5" checked={requestRefund} onChange={(e) => setRequestRefund(e.target.checked)} />
         Yêu cầu trả hàng – hoàn tiền
       </label>
-      <p className="text-xs text-stone-500">
+      <p className="text-sm text-stone-600">
         HTX xác nhận và đề xuất; Admin – CSKH quyết định. Số tiền hoàn bằng số bạn đã thực trả cho phần được duyệt. Mốc phản hồi: tiếp nhận trong {state.params.ticketAckHours} giờ, kết luận trong {state.params.ticketResolveHours} giờ làm việc (SLA-01).
       </p>
     </BottomSheet>

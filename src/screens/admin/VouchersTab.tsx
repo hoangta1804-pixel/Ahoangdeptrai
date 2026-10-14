@@ -94,17 +94,26 @@ export function VouchersTab() {
       </section>
       <div className="overflow-x-auto rounded-2xl border border-stone-200 bg-white">
         <table className="w-full min-w-[760px] text-left text-sm">
-          <thead className="bg-stone-50 text-xs text-stone-500">
+          <thead className="bg-stone-50 text-xs text-muted">
             <tr>
               <th className="px-3 py-2">Mã</th>
               <th className="px-3 py-2">Điều kiện</th>
               <th className="px-3 py-2">Hạn</th>
               <th className="px-3 py-2">Lượt đã giữ/dùng</th>
               <th className="px-3 py-2">Trạng thái</th>
-              <th className="px-3 py-2" />
+              <th className="px-3 py-2">
+                <span className="sr-only">Thao tác</span>
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-stone-100">
+            {state.vouchers.length === 0 && (
+              <tr>
+                <td colSpan={6} className="px-3 py-6 text-center text-stone-600">
+                  Chưa có mã ưu đãi nào. Tạo mã ở biểu mẫu phía trên.
+                </td>
+              </tr>
+            )}
             {state.vouchers.map((v) => {
               const expired = new Date(v.expiresAt).getTime() < now().getTime();
               return (
@@ -112,7 +121,7 @@ export function VouchersTab() {
                   <td className="px-3 py-2 font-mono font-bold">{v.code}</td>
                   <td className="px-3 py-2">
                     {v.title}
-                    <span className="block text-xs text-stone-500">
+                    <span className="block text-xs text-muted">
                       {v.kind === 'fixed' ? formatMoney(v.value) : `${v.value}%${v.maxDiscount ? `, tối đa ${formatMoney(v.maxDiscount)}` : ''}`} · chi từ {formatMoney(v.minSpend)}
                       {v.categories ? ` · ${v.categories.map((c) => CATEGORY_LABEL[c as Category]).join(', ')}` : ''}
                       {v.coopIds ? ` · ${v.coopIds.map((id) => state.coops.find((c) => c.id === id)?.name).join(', ')}` : ''}

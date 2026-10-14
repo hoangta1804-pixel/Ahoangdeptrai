@@ -28,25 +28,25 @@ export function CartSheet({ onClose }: { onClose: () => void }) {
       <div key={line.productId} className="flex items-center gap-2.5 rounded-2xl border border-stone-200 bg-stone-50/50 p-2.5">
         <ProductImage product={product} className="h-14 w-14 shrink-0 rounded-xl" />
         <div className="min-w-0 flex-1">
-          <h5 className="truncate text-sm font-bold text-stone-900">{product.name}</h5>
-          <span className="block text-sm font-bold tabular-nums text-emerald-900">
+          <h5 className="truncate text-sm font-bold text-ink">{product.name}</h5>
+          <span className="block text-sm font-bold tabular-nums text-forest-800">
             {formatMoney(product.price)}/{product.unit}
           </span>
-          <span className="text-xs text-stone-500">
+          <span className="text-xs text-muted">
             Còn {remaining}
             {line.deliveryDate ? ` · giao ${formatDateKey(line.deliveryDate)}` : ''}
           </span>
         </div>
         <div className="flex items-center rounded-xl border border-stone-200 bg-white">
-          <button onClick={() => update(line.productId, { quantity: line.quantity - 1 })} disabled={line.quantity <= 1} aria-label={`Giảm số lượng ${product.name}`} className="flex h-11 w-9 items-center justify-center disabled:opacity-40">
+          <button onClick={() => update(line.productId, { quantity: line.quantity - 1 })} disabled={line.quantity <= 1} aria-label={`Giảm số lượng ${product.name}`} className="flex h-11 w-11 items-center justify-center disabled:opacity-40">
             <Minus size={14} />
           </button>
           <span className="w-6 text-center text-sm font-bold tabular-nums">{line.quantity}</span>
-          <button onClick={() => update(line.productId, { quantity: line.quantity + 1 })} disabled={line.quantity >= remaining} aria-label={`Tăng số lượng ${product.name}`} className="flex h-11 w-9 items-center justify-center disabled:opacity-40">
+          <button onClick={() => update(line.productId, { quantity: line.quantity + 1 })} disabled={line.quantity >= remaining} aria-label={`Tăng số lượng ${product.name}`} className="flex h-11 w-11 items-center justify-center disabled:opacity-40">
             <Plus size={14} />
           </button>
         </div>
-        <button onClick={() => remove(line.productId)} aria-label={`Xoá ${product.name} khỏi giỏ`} className="flex h-11 w-11 items-center justify-center text-stone-500 hover:text-rose-700">
+        <button onClick={() => remove(line.productId)} aria-label={`Xoá ${product.name} khỏi giỏ`} className="flex h-11 w-11 items-center justify-center text-muted hover:text-rose-700">
           <Trash2 size={16} />
         </button>
       </div>
@@ -64,8 +64,8 @@ export function CartSheet({ onClose }: { onClose: () => void }) {
               <span className="text-stone-600">Tạm tính tiền hàng</span>
               <span className="font-bold tabular-nums">{formatMoney(subtotal)}</span>
             </div>
-            <p className="text-xs text-stone-500">Phí giao, mã ưu đãi và tiền cọc tính ở bước đặt hàng. Thêm vào giỏ chưa giữ hàng.</p>
-            <button onClick={() => openModal({ type: 'checkout', source: { type: 'cart' } })} className="min-h-12 w-full rounded-2xl bg-emerald-900 text-sm font-bold text-white hover:bg-emerald-800">
+            <p className="text-sm text-stone-600">Phí giao, mã ưu đãi và tiền cọc tính ở bước đặt hàng. Thêm vào giỏ chưa giữ hàng.</p>
+            <button onClick={() => openModal({ type: 'checkout', source: { type: 'cart' } })} className="min-h-12 w-full rounded-2xl bg-forest-800 text-sm font-bold text-white hover:bg-forest-700">
               Tiến hành đặt hàng
             </button>
           </div>
@@ -73,7 +73,7 @@ export function CartSheet({ onClose }: { onClose: () => void }) {
       }
     >
       {cart.length === 0 ? (
-        <div className="space-y-2 py-10 text-center text-sm text-stone-500">
+        <div className="space-y-2 py-10 text-center text-sm text-muted">
           <ShoppingBasket size={40} className="mx-auto text-stone-300" />
           <p>Giỏ hàng chưa có sản phẩm nào.</p>
         </div>

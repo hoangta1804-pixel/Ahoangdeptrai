@@ -13,9 +13,9 @@ export function CustomerTopBar() {
   return (
     <div className="sticky top-[var(--app-header-h,0px)] z-30 flex items-center justify-between gap-2 border-b border-stone-200/60 bg-white/95 px-4 py-1.5 backdrop-blur-md">
       <button onClick={() => openModal({ type: 'address_book' })} className="flex min-h-11 min-w-0 flex-1 items-center gap-1.5 text-left">
-        <MapPin size={16} className="shrink-0 text-emerald-700" />
+        <MapPin size={16} className="shrink-0 text-forest-600" />
         <span className="min-w-0">
-          <span className="block text-xs font-semibold text-stone-500">Giao tới (Hà Nội)</span>
+          <span className="block text-xs font-semibold text-muted">Giao tới (Hà Nội)</span>
           <span className="block truncate text-sm font-bold text-stone-800">{address ? snapshotAddress(state, address).text : 'Thêm địa chỉ giao hàng'}</span>
         </span>
       </button>
@@ -24,9 +24,9 @@ export function CustomerTopBar() {
         aria-label={`Giỏ hàng, ${cartCount} sản phẩm`}
         className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full hover:bg-stone-100"
       >
-        <ShoppingBag size={20} className="text-emerald-900" />
+        <ShoppingBag size={20} className="text-forest-800" />
         {cartCount > 0 && (
-          <span className="absolute top-1 right-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-600 px-1 text-xs font-bold text-white">{cartCount}</span>
+          <span className="absolute top-1 right-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-champagne-600 px-1 text-xs font-bold text-white">{cartCount}</span>
         )}
       </button>
       <button

@@ -21,15 +21,15 @@ export function CoopWalletTab() {
 
   return (
     <div className="space-y-3">
-      <div className="space-y-1 rounded-3xl bg-stone-900 p-4 text-white">
-        <p className="text-sm text-stone-300">
+      <div className="space-y-1 rounded-3xl bg-forest-900 p-4 text-white">
+        <p className="text-sm text-forest-100">
           Kỳ tuần {weekStart(at).toLocaleDateString('vi-VN')} – {addMs(currentEnd, -1).toLocaleDateString('vi-VN')} (tạm tính)
         </p>
-        <p className="text-2xl font-extrabold tabular-nums text-emerald-300">{formatMoney(sum.payout)}</p>
-        <p className="text-sm text-stone-300">
+        <p className="text-2xl font-extrabold tabular-nums text-forest-300">{formatMoney(sum.payout)}</p>
+        <p className="text-sm text-forest-100">
           Tiền hàng thực giữ lại {formatMoney(sum.retained)} − hoa hồng sàn {state.params.commissionPercent}% ({formatMoney(sum.commission)})
         </p>
-        <p className="text-xs text-stone-400">
+        <p className="text-sm text-forest-100">
           Phí giao không tính vào doanh thu HTX. Mã ưu đãi do sàn chịu. Admin – Tài chính chốt kỳ và ghi nhận chi trả (mô phỏng) vào tài khoản {coop?.payoutAccountMasked}. HTX không tự rút tiền.
         </p>
       </div>

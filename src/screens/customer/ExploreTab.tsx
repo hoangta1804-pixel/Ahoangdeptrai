@@ -39,26 +39,26 @@ export function ExploreTab() {
   };
 
   const chip = (active: boolean) =>
-    `min-h-10 whitespace-nowrap rounded-xl px-3 text-sm font-medium transition-colors ${
-      active ? 'bg-emerald-900 text-white' : 'border border-stone-200 bg-white text-stone-700 hover:bg-stone-50'
+    `min-h-11 whitespace-nowrap rounded-xl px-3 text-sm font-medium transition-colors ${
+      active ? 'bg-forest-800 text-white' : 'border border-stone-200 bg-white text-stone-700 hover:bg-stone-50'
     }`;
 
   return (
     <div className="space-y-4 p-4">
-      <div className="flex h-36 flex-col justify-end rounded-3xl bg-gradient-to-br from-emerald-900 via-emerald-950 to-stone-900 p-4 text-white shadow-sm sm:h-44">
+      <div className="flex h-36 flex-col justify-end rounded-3xl bg-gradient-to-br from-forest-800 via-forest-900 to-stone-900 p-4 text-white shadow-sm sm:h-44">
         <h2 className="text-lg font-bold leading-tight">Đặc sản Lào Cai giao tại Hà Nội</h2>
         <p className="mt-0.5 text-sm text-stone-200">Hàng mua sẵn và nông sản theo mùa đặt trước từ các HTX.</p>
       </div>
 
       <div className="relative">
-        <Search size={16} className="absolute top-1/2 left-3.5 -translate-y-1/2 text-stone-400" />
+        <Search size={16} className="absolute top-1/2 left-3.5 -translate-y-1/2 text-muted" />
         <input
           type="search"
           aria-label="Tìm sản phẩm"
           placeholder="Tìm sản phẩm, vùng, HTX…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="w-full rounded-2xl border border-stone-200 bg-white py-2.5 pr-4 pl-10 text-sm text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-emerald-700/20"
+          className="min-h-11 w-full rounded-2xl border border-stone-200 bg-white py-2.5 pr-4 pl-10 text-base text-ink md:text-sm placeholder-muted focus:outline-none focus:ring-2 focus:ring-forest-600/20"
         />
       </div>
 
@@ -87,7 +87,7 @@ export function ExploreTab() {
 
       <div className="flex items-center justify-between">
         <span className="text-sm font-bold text-stone-800">Sản phẩm</span>
-        <span className="text-xs text-stone-500">{visible.length} sản phẩm</span>
+        <span className="text-xs text-muted">{visible.length} sản phẩm</span>
       </div>
 
       {visible.length === 0 ? (
@@ -115,24 +115,24 @@ export function ExploreTab() {
                 <div className="relative h-28 w-full bg-stone-100">
                   <ProductImage product={p} variant="card" className="h-full w-full" />
                   <div className="absolute top-2 left-2 flex flex-col items-start gap-1">
-                    {p.kind === 'preorder' && <span className="rounded-md bg-amber-600 px-1.5 py-0.5 text-xs font-bold text-white">Đặt trước</span>}
+                    {p.kind === 'preorder' && <span className="rounded-md bg-champagne-600 px-1.5 py-0.5 text-xs font-bold text-white">Đặt trước</span>}
                     {soldOut && <span className="rounded-md bg-stone-900/85 px-1.5 py-0.5 text-xs font-bold text-white">{isOrderableIn(state, p) ? 'Hết hàng' : 'Tạm ngừng bán'}</span>}
                   </div>
                 </div>
                 <div className="flex flex-1 flex-col justify-between gap-2 p-2.5">
                   <div>
-                    <span className="block truncate text-xs font-semibold text-emerald-800">{coop?.name}</span>
-                    <h3 className="mt-0.5 line-clamp-2 text-sm font-bold text-stone-900">{p.name}</h3>
-                    <span className="text-xs text-stone-500">
+                    <span className="block truncate text-xs font-semibold text-forest-700">{coop?.name}</span>
+                    <h3 className="mt-0.5 line-clamp-2 text-sm font-bold text-ink">{p.name}</h3>
+                    <span className="text-xs text-muted">
                       {p.region} · {CATEGORY_LABEL[p.category]}
                     </span>
                   </div>
                   {p.kind === 'preorder' && <PreorderProgress product={p} />}
                   <div className="flex items-center justify-between border-t border-stone-100 pt-2">
                     <div>
-                      <span className="text-sm font-extrabold tabular-nums text-stone-900">{formatMoney(p.price)}</span>
-                      <span className="text-xs text-stone-500">/{p.unit}</span>
-                      {isSamplePrice(p) && <span className="block text-xs font-semibold text-amber-800">Giá mẫu</span>}
+                      <span className="text-sm font-extrabold tabular-nums text-ink">{formatMoney(p.price)}</span>
+                      <span className="text-xs text-muted">/{p.unit}</span>
+                      {isSamplePrice(p) && <span className="block text-xs font-semibold text-champagne-800">Giá mẫu</span>}
                     </div>
                     <button
                       disabled={soldOut}
@@ -141,7 +141,7 @@ export function ExploreTab() {
                         add(p.id, 1);
                       }}
                       aria-label={`Thêm ${p.name} vào giỏ`}
-                      className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-900 text-white hover:bg-emerald-800 disabled:bg-stone-300"
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-forest-800 text-white hover:bg-forest-700 disabled:bg-stone-300"
                     >
                       <Plus size={16} />
                     </button>

@@ -46,7 +46,7 @@ export function CoopOrderSheet({ orderId, onClose }: { orderId: string; onClose:
       onClose={onClose}
     >
       <section className="space-y-1 rounded-2xl border border-stone-300 bg-white p-3 text-sm" aria-label="Phiếu đóng gói">
-        <h4 className="font-bold">Phiếu đóng gói {hidePrice && <span className="font-normal text-stone-500">(quà gửi người khác – không in giá)</span>}</h4>
+        <h4 className="font-bold">Phiếu đóng gói {hidePrice && <span className="font-normal text-muted">(quà gửi người khác – không in giá)</span>}</h4>
         <p>
           {ORDER_KIND_LABEL[order.kind]}
           {order.deliveryDate ? ` · giao ngày ${formatDateKey(order.deliveryDate)}` : ''} · {order.shipping === 'express' ? 'Hoả tốc' : 'Giao thường'}

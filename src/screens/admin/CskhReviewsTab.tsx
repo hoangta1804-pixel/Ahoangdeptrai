@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useUi } from '../../app/UiContext';
+import { AdminTable, Td } from '../../components/AdminTable';
 import { EmptyState } from '../../components/EmptyState';
 import { Select, SecondaryButton } from '../../components/form';
 import { Stars } from '../../components/Stars';
@@ -12,11 +13,11 @@ export function CskhReviewsTab() {
   const { state } = useStore();
   if (state.reviews.length === 0) return <EmptyState>Chưa có đánh giá nào.</EmptyState>;
   return (
-    <div className="space-y-3">
+    <AdminTable columns={['Sao', 'Sản phẩm · đơn', 'Nội dung', 'Trạng thái', 'Thao tác']} minWidth={960}>
       {state.reviews.map((r) => (
         <ReviewRow key={r.id} review={r} />
       ))}
-    </div>
+    </AdminTable>
   );
 }
 
@@ -30,26 +31,37 @@ function ReviewRow({ review: r }: { review: Review }) {
     showToast(res.ok ? (hide ? 'Đã ẩn đánh giá.' : 'Đã hiện lại đánh giá.') : res.error);
   };
   return (
-    <div className="space-y-2 rounded-2xl border border-stone-200 bg-white p-3 text-sm">
-      <p className="flex flex-wrap items-center gap-2">
-        <Stars value={r.stars} /> <strong>{product?.name}</strong> · đơn {r.orderId}
+    <tr>
+      <Td>
+        <Stars value={r.stars} />
+        <span className="sr-only">{r.stars} sao</span>
+      </Td>
+      <Td className="min-w-40">
+        <strong className="block">{product?.name}</strong>
+        <span className="font-mono text-stone-600">{r.orderId}</span>
+      </Td>
+      <Td className="min-w-56">
+        {r.comment ? <p className="text-stone-700">{r.comment}</p> : <p className="text-muted">Không có lời nhận xét.</p>}
+        {r.coopReply && <p className="mt-1 border-l-2 border-forest-600 pl-2">HTX: {r.coopReply}</p>}
+      </Td>
+      <Td>
         <span className="rounded-md bg-stone-100 px-2 py-0.5 text-xs font-bold">{r.status === 'visible' ? 'Đang hiển thị' : `Đã ẩn: ${r.hiddenReason}`}</span>
-      </p>
-      {r.comment && <p className="text-stone-700">{r.comment}</p>}
-      {r.coopReply && <p className="border-l-2 border-emerald-700 pl-2">HTX: {r.coopReply}</p>}
-      {r.status === 'visible' ? (
-        <div className="flex flex-wrap gap-2">
-          <Select aria-label="Lý do ẩn" value={reason} onChange={(e) => setReason(e.target.value)} className="max-w-sm">
-            <option value="">— Lý do ẩn (không được ẩn vì sao thấp) —</option>
-            {REVIEW_HIDE_REASONS.map((x) => (
-              <option key={x}>{x}</option>
-            ))}
-          </Select>
-          <SecondaryButton onClick={() => act(true)}>Ẩn đánh giá</SecondaryButton>
-        </div>
-      ) : (
-        <SecondaryButton onClick={() => act(false)}>Hiện lại</SecondaryButton>
-      )}
-    </div>
+      </Td>
+      <Td>
+        {r.status === 'visible' ? (
+          <div className="flex flex-wrap gap-2">
+            <Select aria-label="Lý do ẩn" value={reason} onChange={(e) => setReason(e.target.value)} className="max-w-xs">
+              <option value="">— Lý do ẩn (không được ẩn vì sao thấp) —</option>
+              {REVIEW_HIDE_REASONS.map((x) => (
+                <option key={x}>{x}</option>
+              ))}
+            </Select>
+            <SecondaryButton onClick={() => act(true)}>Ẩn đánh giá</SecondaryButton>
+          </div>
+        ) : (
+          <SecondaryButton onClick={() => act(false)}>Hiện lại</SecondaryButton>
+        )}
+      </Td>
+    </tr>
   );
 }

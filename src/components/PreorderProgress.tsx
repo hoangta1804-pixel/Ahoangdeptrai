@@ -11,8 +11,8 @@ export function PreorderProgress({ product }: { product: Product }) {
   const reserved = Math.min(total, reservedSlots(product.id, state.orders));
   const percent = Math.round((reserved / total) * 100);
   return (
-    <div className="rounded-lg border border-amber-200/60 bg-amber-50 p-2">
-      <div className="mb-1 flex flex-wrap items-center justify-between gap-x-2 text-xs font-medium text-amber-900">
+    <div className="rounded-lg border border-champagne-200/60 bg-champagne-50 p-2">
+      <div className="mb-1 flex flex-wrap items-center justify-between gap-x-2 text-xs font-medium text-champagne-900">
         <span>
           Đã giữ {reserved}/{total} suất
         </span>
@@ -24,14 +24,14 @@ export function PreorderProgress({ product }: { product: Product }) {
         )}
       </div>
       <div
-        className="h-1.5 w-full overflow-hidden rounded-full bg-amber-200/70"
+        className="h-1.5 w-full overflow-hidden rounded-full bg-champagne-200/70"
         role="progressbar"
         aria-valuemin={0}
         aria-valuemax={total}
         aria-valuenow={reserved}
         aria-label={`Đã giữ ${reserved} trên ${total} suất`}
       >
-        <div className="h-full rounded-full bg-amber-600" style={{ width: `${percent}%` }} />
+        <div className="h-full rounded-full bg-champagne-600" style={{ width: `${percent}%` }} />
       </div>
     </div>
   );

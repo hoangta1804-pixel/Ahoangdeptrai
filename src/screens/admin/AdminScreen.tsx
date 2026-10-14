@@ -1,5 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { useUi } from '../../app/UiContext';
+import { ListBoundary } from '../../components/ListBoundary';
+import { useStore } from '../../store/AppDataContext';
 import { ADMIN_GROUP_LABEL, type AdminSubGroup } from '../../domain/types';
 import { AdminAccountsTab } from './AdminAccountsTab';
 import { AdminAuditTab } from './AdminAuditTab';
@@ -59,25 +61,30 @@ const TABS: Record<AdminSubGroup, TabDef[]> = {
 /** Admin theo nhóm quyền (mục 8). Giao diện rộng cho máy tính. */
 export function AdminScreen() {
   const { adminGroup } = useUi();
+  const { state } = useStore();
   const [tab, setTab] = useState(TABS[adminGroup][0].key);
   const current = TABS[adminGroup].find((t) => t.key === tab) ?? TABS[adminGroup][0];
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 lg:flex-row">
       <aside className="space-y-3 lg:w-56 lg:shrink-0">
-        <div className="rounded-3xl bg-stone-900 p-4 text-white">
-          <span className="text-xs font-bold uppercase tracking-wider text-stone-400">Quản trị</span>
+        <div className="rounded-3xl bg-forest-900 p-4 text-white">
+          <span className="text-xs font-bold uppercase tracking-wider text-forest-200">Quản trị</span>
           <p className="text-base font-bold">Admin – {ADMIN_GROUP_LABEL[adminGroup]}</p>
         </div>
         <nav className="no-scrollbar flex gap-1 overflow-x-auto lg:flex-col" aria-label="Chức năng quản trị">
           {TABS[adminGroup].map((t) => (
-            <button key={t.key} onClick={() => setTab(t.key)} aria-current={current.key === t.key ? 'page' : undefined} className={`min-h-11 whitespace-nowrap rounded-xl px-3 text-left text-sm font-medium ${current.key === t.key ? 'bg-emerald-900 text-white' : 'bg-white text-stone-700 hover:bg-stone-100'}`}>
+            <button key={t.key} onClick={() => setTab(t.key)} aria-current={current.key === t.key ? 'page' : undefined} className={`min-h-11 whitespace-nowrap rounded-xl px-3 text-left text-sm font-medium ${current.key === t.key ? 'bg-forest-800 text-white' : 'bg-white text-stone-700 hover:bg-stone-100'}`}>
               {t.label}
             </button>
           ))}
         </nav>
       </aside>
-      <section className="min-w-0 flex-1">{current.render()}</section>
+      <section className="min-w-0 flex-1">
+        <ListBoundary key={current.key} label={`mục "${current.label}"`} resetKey={state}>
+          {current.render()}
+        </ListBoundary>
+      </section>
     </div>
   );
 }

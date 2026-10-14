@@ -22,8 +22,8 @@ export function AccountTab() {
   return (
     <div className="space-y-4 p-4">
       <section className="space-y-2 rounded-3xl border border-stone-200 bg-white p-4 shadow-xs">
-        <h3 className="flex items-center gap-2 text-sm font-bold text-stone-900">
-          <UserRound size={18} className="text-emerald-700" /> Thông tin cá nhân
+        <h3 className="flex items-center gap-2 text-sm font-bold text-ink">
+          <UserRound size={18} className="text-forest-600" /> Thông tin cá nhân
         </h3>
         {editingName ? (
           <>
@@ -47,7 +47,7 @@ export function AccountTab() {
         ) : (
           <div className="flex items-center justify-between gap-2">
             <div>
-              <p className="text-base font-bold text-stone-900">{customer.name}</p>
+              <p className="text-base font-bold text-ink">{customer.name}</p>
               <p className="text-sm text-stone-600">SĐT: {customer.phone.replace(/(\d{4})(\d{3})(\d{3})/, '$1 $2 $3')} (dùng để đăng nhập, không đổi tại đây)</p>
             </div>
             <SecondaryButton onClick={() => setEditingName(true)}>Sửa</SecondaryButton>
@@ -56,8 +56,8 @@ export function AccountTab() {
       </section>
 
       <section className="space-y-2 rounded-3xl border border-stone-200 bg-white p-4 shadow-xs">
-        <h3 className="flex items-center gap-2 text-sm font-bold text-stone-900">
-          <ShieldCheck size={18} className="text-emerald-700" /> Tài khoản nhận hoàn tiền (đơn COD)
+        <h3 className="flex items-center gap-2 text-sm font-bold text-ink">
+          <ShieldCheck size={18} className="text-forest-600" /> Tài khoản nhận hoàn tiền (đơn COD)
         </h3>
         {editingBank ? (
           <>
@@ -91,23 +91,23 @@ export function AccountTab() {
                 {acc.value.bankName} · <span className="font-mono font-bold">{acc.value.accountNumber}</span>
               </p>
             ) : (
-              <p className="text-sm text-amber-800">Chưa khai tài khoản. Hoàn tiền đơn COD cần tài khoản này.</p>
+              <p className="text-sm text-champagne-800">Chưa khai tài khoản. Hoàn tiền đơn COD cần tài khoản này.</p>
             )}
             <SecondaryButton onClick={() => setEditingBank(true)}>{acc.ok && acc.value ? 'Đổi' : 'Khai báo'}</SecondaryButton>
           </div>
         )}
-        <p className="text-xs text-stone-500">Số tài khoản luôn hiện dạng che. Chỉ Admin – Tài chính xem được đầy đủ.</p>
+        <p className="text-sm text-stone-600">Số tài khoản luôn hiện dạng che. Chỉ Admin – Tài chính xem được đầy đủ.</p>
       </section>
 
       <button onClick={() => openModal({ type: 'address_book' })} className="flex min-h-14 w-full items-center justify-between rounded-2xl border border-stone-200 bg-white p-3.5 text-left shadow-xs hover:bg-stone-50">
         <span className="flex items-center gap-3">
           <MapPin size={18} className="text-stone-700" />
           <span>
-            <span className="block text-sm font-bold text-stone-900">Sổ địa chỉ</span>
-            <span className="text-xs text-stone-500">{addressCount}/10 địa chỉ</span>
+            <span className="block text-sm font-bold text-ink">Sổ địa chỉ</span>
+            <span className="text-xs text-muted">{addressCount}/10 địa chỉ</span>
           </span>
         </span>
-        <ChevronRight size={16} className="text-stone-400" />
+        <ChevronRight size={16} className="text-muted" />
       </button>
 
       <button onClick={logout} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-stone-100 text-sm font-bold text-rose-800 hover:bg-rose-50">

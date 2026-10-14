@@ -11,7 +11,7 @@ export function Toast() {
       aria-live="polite"
       className="pointer-events-none fixed inset-x-4 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-[60] mx-auto flex max-w-md items-start gap-2 rounded-2xl border border-stone-800 bg-stone-900/95 px-4 py-3 text-sm text-white shadow-xl"
     >
-      <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-emerald-400" />
+      <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-forest-400" />
       <span className="leading-snug">{toast}</span>
     </div>
   );

@@ -54,7 +54,7 @@ export function PaymentSheet({ txId, onClose }: { txId: string; onClose: () => v
       footer={
         pending ? (
           <div className="space-y-2">
-            <button onClick={() => send('success')} className="min-h-12 w-full rounded-2xl bg-emerald-700 text-sm font-bold text-white hover:bg-emerald-600">
+            <button onClick={() => send('success')} className="min-h-12 w-full rounded-2xl bg-forest-600 text-sm font-bold text-white hover:bg-forest-500">
               Thanh toán thành công
             </button>
             <div className="grid grid-cols-2 gap-2">
@@ -73,15 +73,15 @@ export function PaymentSheet({ txId, onClose }: { txId: string; onClose: () => v
         )
       }
     >
-      <p className="rounded-2xl border-2 border-dashed border-stone-900 bg-amber-50 p-3 text-center text-sm font-bold text-stone-900">
+      <p className="rounded-2xl border-2 border-dashed border-stone-900 bg-champagne-50 p-3 text-center text-sm font-bold text-ink">
         Đây là cổng mô phỏng, không trừ tiền thật.
       </p>
 
       <div className="text-center">
         <p className="text-sm text-stone-600">{isRemaining ? 'Số tiền phần còn lại' : 'Số tiền thanh toán'}</p>
-        <p className="text-3xl font-extrabold tabular-nums text-stone-900">{formatMoney(tx.amount)}</p>
+        <p className="text-3xl font-extrabold tabular-nums text-ink">{formatMoney(tx.amount)}</p>
         {pending ? (
-          <p className="mt-1 flex items-center justify-center gap-1.5 text-sm font-semibold text-amber-800" role="timer" aria-live="off">
+          <p className="mt-1 flex items-center justify-center gap-1.5 text-sm font-semibold text-champagne-800" role="timer" aria-live="off">
             <Clock size={16} />
             {isRemaining ? 'Hạn trả phần còn lại' : 'Giữ hàng'} còn {left >= 3600 ? `${Math.floor(left / 3600)} giờ ` : ''}
             {mm}:{ss}
@@ -108,7 +108,7 @@ export function PaymentSheet({ txId, onClose }: { txId: string; onClose: () => v
           );
         })}
       </section>
-      <p className="text-xs text-stone-500">
+      <p className="text-sm text-stone-600">
         Đóng màn này giao dịch vẫn được giữ; mở lại từ "Đơn hàng". Thử lại hoặc mở lại không gia hạn thời gian. Sau khi hết giờ, các đơn thanh toán online tự huỷ và hàng được nhả.
       </p>
     </BottomSheet>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useUi } from '../../app/UiContext';
-import { EmptyState } from '../../components/EmptyState';
+import { EmptyState, ErrorState } from '../../components/EmptyState';
 import { OrderStatusBadge, PaymentStatusBadge } from '../../components/StatusBadge';
 import { listOrdersFor } from '../../domain/access';
 import { formatMoney } from '../../domain/pricing';
@@ -14,17 +14,18 @@ export function CoopOrdersTab() {
   const { coopActor, openModal } = useUi();
   const [filter, setFilter] = useState<OrderStatus | 'all'>('all');
   const listed = listOrdersFor(state, coopActor);
-  const mine = listed.ok ? listed.value : [];
+  if (!listed.ok) return <ErrorState>{listed.error}</ErrorState>;
+  const mine = listed.value;
   const shown = filter === 'all' ? mine : mine.filter((o) => o.status === filter);
 
   return (
     <div className="space-y-3">
       <div className="no-scrollbar flex gap-2 overflow-x-auto">
-        <button onClick={() => setFilter('all')} className={`min-h-10 whitespace-nowrap rounded-xl px-3 text-sm ${filter === 'all' ? 'bg-emerald-900 text-white' : 'border border-stone-200 bg-white'}`}>
+        <button onClick={() => setFilter('all')} className={`min-h-11 whitespace-nowrap rounded-xl px-3 text-sm ${filter === 'all' ? 'bg-forest-800 text-white' : 'border border-stone-200 bg-white'}`}>
           Tất cả ({mine.length})
         </button>
         {ORDER_STATUSES.filter((s) => mine.some((o) => o.status === s)).map((s) => (
-          <button key={s} onClick={() => setFilter(s)} className={`min-h-10 whitespace-nowrap rounded-xl px-3 text-sm ${filter === s ? 'bg-emerald-900 text-white' : 'border border-stone-200 bg-white'}`}>
+          <button key={s} onClick={() => setFilter(s)} className={`min-h-11 whitespace-nowrap rounded-xl px-3 text-sm ${filter === s ? 'bg-forest-800 text-white' : 'border border-stone-200 bg-white'}`}>
             {ORDER_STATUS_LABEL[s]} ({mine.filter((o) => o.status === s).length})
           </button>
         ))}
@@ -48,7 +49,7 @@ export function CoopOrdersTab() {
                   {o.deliveryDate ? ` · giao ${formatDateKey(o.deliveryDate)}` : ''} · {o.items.map((i) => `${i.name} × ${i.quantity}`).join(', ')}
                 </p>
                 <p className="text-sm text-stone-600">Tiền hàng {formatMoney(o.pricing.itemsTotal)}</p>
-                {o.status === 'awaiting_confirmation' && o.confirmDeadline && <p className="text-sm font-semibold text-amber-800">Hạn xác nhận: {new Date(o.confirmDeadline).toLocaleString('vi-VN')}</p>}
+                {o.status === 'awaiting_confirmation' && o.confirmDeadline && <p className="text-sm font-semibold text-champagne-800">Hạn xác nhận: {new Date(o.confirmDeadline).toLocaleString('vi-VN')}</p>}
                 {o.cancelRequest?.status === 'pending' && <p className="text-sm font-semibold text-rose-700">Khách yêu cầu huỷ – cần duyệt</p>}
               </button>
             </li>

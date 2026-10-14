@@ -23,7 +23,7 @@ export function FinanceLedgerTab() {
       </div>
       <div className="overflow-x-auto rounded-2xl border border-stone-200 bg-white">
         <table className="w-full min-w-[720px] text-left text-sm">
-          <thead className="bg-stone-50 text-xs text-stone-500">
+          <thead className="bg-stone-50 text-xs text-muted">
             <tr>
               <th className="px-3 py-2">Thời điểm</th>
               <th className="px-3 py-2">Loại</th>
@@ -37,7 +37,7 @@ export function FinanceLedgerTab() {
               <tr key={e.id}>
                 <td className="px-3 py-2 whitespace-nowrap">{new Date(e.at).toLocaleString('vi-VN')}</td>
                 <td className="px-3 py-2">{LEDGER_TYPE_LABEL[e.type]}</td>
-                <td className={`px-3 py-2 text-right tabular-nums ${e.amount < 0 ? 'text-rose-700' : 'text-emerald-800'}`}>{e.amount < 0 ? `−${formatMoney(-e.amount)}` : formatMoney(e.amount)}</td>
+                <td className={`px-3 py-2 text-right tabular-nums ${e.amount < 0 ? 'text-rose-700' : 'text-forest-700'}`}>{e.amount < 0 ? `−${formatMoney(-e.amount)}` : formatMoney(e.amount)}</td>
                 <td className="px-3 py-2 font-mono text-xs">{e.orderId ?? state.coops.find((c) => c.id === e.coopId)?.name ?? '—'}</td>
                 <td className="px-3 py-2 text-xs">
                   {e.refId} {e.note}

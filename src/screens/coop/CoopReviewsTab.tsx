@@ -35,7 +35,7 @@ function ReviewRow({ review: r }: { review: Review }) {
       </p>
       {r.comment && <p className="text-stone-700">{r.comment}</p>}
       {r.coopReply ? (
-        <p className="border-l-2 border-emerald-700 pl-2">Đã phản hồi: {r.coopReply}</p>
+        <p className="border-l-2 border-forest-600 pl-2">Đã phản hồi: {r.coopReply}</p>
       ) : (
         <>
           <Textarea rows={2} aria-label="Phản hồi đánh giá" value={text} onChange={(e) => setText(e.target.value)} placeholder="Cảm ơn hoặc giải thích cho khách…" />

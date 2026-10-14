@@ -35,8 +35,8 @@ export function TraceLotSheet({ productId, onClose }: { productId: string; onClo
       <div className="flex gap-3">
         <ProductImage product={product} className="h-20 w-20 shrink-0 rounded-2xl" />
         <div className="min-w-0">
-          <h3 className="text-base font-bold text-stone-900">{product.name}</h3>
-          <p className="text-sm text-stone-500">{coop?.name}</p>
+          <h3 className="text-base font-bold text-ink">{product.name}</h3>
+          <p className="text-sm text-muted">{coop?.name}</p>
         </div>
       </div>
       <dl className="divide-y divide-stone-100 rounded-2xl border border-stone-200 text-sm">
@@ -44,13 +44,13 @@ export function TraceLotSheet({ productId, onClose }: { productId: string; onClo
           .filter(([, v]) => v)
           .map(([label, value]) => (
             <div key={label} className="flex justify-between gap-4 px-3 py-2.5">
-              <dt className="text-stone-500">{label}</dt>
-              <dd className="text-right font-semibold text-stone-900">{value}</dd>
+              <dt className="text-muted">{label}</dt>
+              <dd className="text-right font-semibold text-ink">{value}</dd>
             </div>
           ))}
       </dl>
       <p className="text-sm leading-relaxed text-stone-600">{product.description}</p>
-      <p className="rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm leading-relaxed text-amber-950">
+      <p className="rounded-2xl border border-champagne-200 bg-champagne-50 p-3 text-sm leading-relaxed text-champagne-950">
         Thông tin lô (mã lô, ngày thu hoạch, ngày đóng gói) do HTX khai khi tạo lô hàng.
         {product.sample && ' Dữ liệu trên là dữ liệu mẫu, chờ HTX xác nhận.'}
       </p>

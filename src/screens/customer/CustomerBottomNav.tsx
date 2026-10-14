@@ -22,7 +22,7 @@ export function CustomerBottomNav() {
             key={key}
             onClick={() => setCustomerTab(key)}
             aria-current={active ? 'page' : undefined}
-            className={`flex min-h-12 min-w-16 flex-col items-center justify-center gap-0.5 rounded-xl px-3 transition-colors ${active ? 'font-bold text-emerald-900' : 'font-medium text-stone-600'}`}
+            className={`flex min-h-12 min-w-16 flex-col items-center justify-center gap-0.5 rounded-xl px-3 transition-colors ${active ? 'font-bold text-forest-800' : 'font-medium text-stone-600'}`}
           >
             <Icon size={20} />
             <span className="text-xs">{label}</span>

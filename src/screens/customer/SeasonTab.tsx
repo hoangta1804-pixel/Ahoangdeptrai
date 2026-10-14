@@ -17,12 +17,12 @@ export function SeasonTab() {
 
   return (
     <div className="space-y-4 p-4">
-      <div className="space-y-1 rounded-3xl bg-gradient-to-r from-emerald-950 to-emerald-800 p-4 text-white shadow-sm">
+      <div className="space-y-1 rounded-3xl bg-gradient-to-r from-forest-900 to-forest-700 p-4 text-white shadow-sm">
         <div className="flex items-center gap-2">
-          <Wheat size={20} className="text-amber-300" />
+          <Wheat size={20} className="text-champagne-300" />
           <h2 className="text-base font-bold">Nông sản theo mùa – Đặt trước</h2>
         </div>
-        <p className="text-sm leading-relaxed text-emerald-100">
+        <p className="text-sm leading-relaxed text-forest-100">
           Giữ suất trước mùa thu hoạch. Cọc {params.depositPercent}% khi đặt; phần còn lại trả khi hàng sẵn sàng hoặc khi nhận hàng. Đơn đặt trước không có giao hoả tốc.
         </p>
       </div>
@@ -41,15 +41,15 @@ export function SeasonTab() {
                 <div className="flex gap-3">
                   <ProductImage product={p} className="h-20 w-20 shrink-0 rounded-2xl" />
                   <div className="min-w-0 flex-1">
-                    <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs font-bold text-amber-900">{p.region}</span>
-                    <h3 className="mt-1 line-clamp-2 text-sm font-bold text-stone-900">{p.name}</h3>
-                    <p className="truncate text-xs text-stone-500">{coop?.name}</p>
+                    <span className="rounded bg-champagne-100 px-1.5 py-0.5 text-xs font-bold text-champagne-900">{p.region}</span>
+                    <h3 className="mt-1 line-clamp-2 text-sm font-bold text-ink">{p.name}</h3>
+                    <p className="truncate text-xs text-muted">{coop?.name}</p>
                     <p className="mt-1 text-sm">
-                      <span className="font-extrabold tabular-nums text-emerald-900">
+                      <span className="font-extrabold tabular-nums text-forest-800">
                         {formatMoney(p.price)}/{p.unit}
                       </span>{' '}
-                      {isSamplePrice(p) && <span className="text-xs font-semibold text-amber-800">(giá mẫu) </span>}
-                      <span className="text-xs text-amber-800">
+                      {isSamplePrice(p) && <span className="text-xs font-semibold text-champagne-800">(giá mẫu) </span>}
+                      <span className="text-xs text-champagne-800">
                         · cọc từ {formatMoney(computeDeposit(p.price, 0, params.depositPercent, params.depositRoundingStep))}
                       </span>
                     </p>
@@ -69,7 +69,7 @@ export function SeasonTab() {
                       win &&
                       openModal({ type: 'checkout', source: { type: 'buy_now', line: { productId: p.id, quantity: 1, deliveryDate: win.min, seenPrice: p.price } } })
                     }
-                    className="min-h-11 rounded-2xl bg-emerald-900 text-sm font-bold text-white hover:bg-emerald-800 disabled:bg-stone-300 disabled:text-stone-600"
+                    className="min-h-11 rounded-2xl bg-forest-800 text-sm font-bold text-white hover:bg-forest-700 disabled:bg-stone-300 disabled:text-stone-600"
                   >
                     {blocked ?? 'Đặt trước'}
                   </button>

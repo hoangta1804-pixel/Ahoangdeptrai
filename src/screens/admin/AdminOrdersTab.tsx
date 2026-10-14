@@ -1,5 +1,5 @@
 import { useUi } from '../../app/UiContext';
-import { EmptyState } from '../../components/EmptyState';
+import { EmptyState, ErrorState } from '../../components/EmptyState';
 import { listOrdersFor } from '../../domain/access';
 import { OrderStatusBadge, PaymentStatusBadge } from '../../components/StatusBadge';
 import { formatMoney } from '../../domain/pricing';
@@ -11,12 +11,13 @@ export function AdminOrdersTab() {
   const { state } = useStore();
   const { adminActor } = useUi();
   const r = listOrdersFor(state, adminActor);
-  const orders = r.ok ? r.value : [];
+  if (!r.ok) return <ErrorState>{r.error}</ErrorState>;
+  const orders = r.value;
   if (orders.length === 0) return <EmptyState>Chưa có đơn.</EmptyState>;
   return (
     <div className="overflow-x-auto rounded-2xl border border-stone-200 bg-white">
       <table className="w-full min-w-[760px] text-left text-sm">
-        <thead className="bg-stone-50 text-xs text-stone-500">
+        <thead className="bg-stone-50 text-xs text-muted">
           <tr>
             <th className="px-3 py-2">Mã đơn</th>
             <th className="px-3 py-2">Tạo lúc</th>

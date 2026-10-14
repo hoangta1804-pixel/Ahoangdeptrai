@@ -54,11 +54,11 @@ function ProductCard({ product: p }: { product: Product }) {
       <div className="flex gap-3">
         <ProductImage product={p} className="h-16 w-16 shrink-0 rounded-xl" />
         <div className="min-w-0">
-          <h4 className="text-sm font-bold text-stone-900">{p.name}</h4>
+          <h4 className="text-sm font-bold text-ink">{p.name}</h4>
           <p className="text-sm text-stone-600">
             {ORDER_KIND_LABEL[p.kind]} · {CATEGORY_LABEL[p.category]} · {formatMoney(p.price)}/{p.unit}
           </p>
-          <p className="text-xs text-stone-500">
+          <p className="text-xs text-muted">
             <span className="font-semibold text-stone-800">{PRODUCT_STATUS_LABEL[p.status]}</span> · Hoả tốc: {p.expressApproved ? 'đã duyệt' : 'chưa duyệt'}
           </p>
         </div>
@@ -112,7 +112,7 @@ function ProductCard({ product: p }: { product: Product }) {
             Tồn kho {p.stockOnHand} · đang giữ cho đơn {held} · khả dụng <strong>{available}</strong>
           </p>
           {isLowStock(available, threshold) && (
-            <p className="flex items-center gap-1.5 text-sm font-semibold text-amber-800">
+            <p className="flex items-center gap-1.5 text-sm font-semibold text-champagne-800">
               <AlertTriangle size={16} /> Tồn thấp (ngưỡng {threshold})
             </p>
           )}
@@ -172,7 +172,7 @@ function ProductCard({ product: p }: { product: Product }) {
               {r.type === 'express' && (r.express ? ': bật' : ': tắt')}
               {r.type === 'cert' && r.cert && `: ${r.cert.label}`}
               {' · '}
-              <strong className={r.status === 'pending' ? 'text-amber-800' : r.status === 'approved' ? 'text-emerald-800' : 'text-rose-700'}>
+              <strong className={r.status === 'pending' ? 'text-champagne-800' : r.status === 'approved' ? 'text-forest-700' : 'text-rose-700'}>
                 {r.status === 'pending' ? 'Chờ duyệt' : r.status === 'approved' ? 'Đã duyệt' : `Từ chối: ${r.rejectReason}`}
               </strong>
             </li>

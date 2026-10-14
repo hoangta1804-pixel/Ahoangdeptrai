@@ -22,7 +22,7 @@ export function FinanceSettlementTab() {
       </p>
       <div className="overflow-x-auto rounded-2xl border border-stone-200 bg-white">
         <table className="w-full min-w-[640px] text-left text-sm">
-          <thead className="bg-stone-50 text-xs text-stone-500">
+          <thead className="bg-stone-50 text-xs text-muted">
             <tr>
               <th className="px-3 py-2">HTX</th>
               <th className="px-3 py-2 text-right">Đơn đủ điều kiện</th>
@@ -67,7 +67,7 @@ export function FinanceSettlementTab() {
               <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-stone-200 bg-white p-3 text-sm">
                 <span>
                   {coop?.name} · {p.lines.length} đơn · chi trả <strong>{formatMoney(p.payout)}</strong> vào {coop?.payoutAccountMasked}
-                  <span className="block text-xs text-stone-500">
+                  <span className="block text-xs text-muted">
                     Chốt {new Date(p.closedAt).toLocaleString('vi-VN')} bởi {p.closedBy}
                     {p.paidAt ? ` · đã chi trả (mô phỏng) ${new Date(p.paidAt).toLocaleString('vi-VN')}, mã ${p.paidRef}` : ''}
                   </span>

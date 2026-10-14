@@ -73,7 +73,7 @@ export function AddressFormSheet({ addressId, onClose }: { addressId?: string; o
         <legend className="text-sm font-semibold text-stone-700">Loại nhà</legend>
         <div className="grid grid-cols-2 gap-2">
           {(['apartment', 'ground'] as HouseType[]).map((t) => (
-            <label key={t} className={`flex min-h-11 items-center justify-center gap-2 rounded-xl border text-sm ${form.houseType === t ? 'border-emerald-700 bg-emerald-50 font-bold' : 'border-stone-200'}`}>
+            <label key={t} className={`flex min-h-11 items-center justify-center gap-2 rounded-xl border text-sm ${form.houseType === t ? 'border-forest-600 bg-forest-50 font-bold' : 'border-stone-200'}`}>
               <input type="radio" name="houseType" className="sr-only" checked={form.houseType === t} onChange={() => set({ houseType: t })} />
               {t === 'apartment' ? 'Chung cư' : 'Nhà mặt đất'}
             </label>

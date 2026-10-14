@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useUi } from '../../app/UiContext';
+import { AdminTable, Td } from '../../components/AdminTable';
 import { DangerButton, Input, PrimaryButton, SecondaryButton } from '../../components/form';
 import { GIFT_BOX_MAX, GIFT_BOX_MIN, opsDeleteGiftBox, opsDeleteWard, opsSaveGiftBox, opsSaveWard, opsUpdateParam } from '../../domain/adminConfig';
 import { formatMoney } from '../../domain/pricing';
@@ -15,23 +16,37 @@ export function SharedCatalogTab() {
       <section className="space-y-2">
         <h3 className="text-base font-bold">Phường/xã giao hàng (Hà Nội)</h3>
         <p className="text-sm text-stone-600">Danh sách mẫu, ghi "(mẫu)" cho tới khi nhóm nạp danh mục chính thức. Không dùng cấp quận/huyện. Khoảng cách dùng để tính phụ phí hoả tốc.</p>
-        <ul className="space-y-1">
+        <AdminTable columns={['Phường/xã', 'Khoảng cách (km)', 'Thao tác']} minWidth={640}>
+          {state.wards.length === 0 && (
+            <tr>
+              <Td colSpan={3} className="text-center text-stone-600">
+                Chưa có phường/xã nào. Thêm ở dòng dưới.
+              </Td>
+            </tr>
+          )}
           {state.wards.map((w) => (
             <WardRow key={w.id} ward={w} />
           ))}
           <WardRow />
-        </ul>
+        </AdminTable>
       </section>
       <section className="space-y-2">
         <h3 className="text-base font-bold">
           Loại hộp quà ({state.giftBoxTypes.length}/{GIFT_BOX_MAX}, tối thiểu {GIFT_BOX_MIN})
         </h3>
-        <ul className="space-y-1">
+        <AdminTable columns={['Tên hộp', 'Phí (đồng)', 'Mô tả', 'Thao tác']} minWidth={760}>
+          {state.giftBoxTypes.length === 0 && (
+            <tr>
+              <Td colSpan={4} className="text-center text-stone-600">
+                Chưa có loại hộp quà nào. Thêm ở dòng dưới.
+              </Td>
+            </tr>
+          )}
           {state.giftBoxTypes.map((b) => (
             <GiftRow key={b.id} box={b} />
           ))}
           {state.giftBoxTypes.length < GIFT_BOX_MAX && <GiftRow />}
-        </ul>
+        </AdminTable>
       </section>
       <ExpressTiers />
     </div>
@@ -44,36 +59,38 @@ function WardRow({ ward }: { ward?: Ward }) {
   const [name, setName] = useState(ward?.name ?? '');
   const [km, setKm] = useState(ward ? String(ward.distanceKm) : '');
   return (
-    <li className="flex flex-wrap items-center gap-2 rounded-xl bg-white p-2">
-      <div className="min-w-56 flex-1">
+    <tr>
+      <Td className="min-w-56">
         <Input aria-label="Tên phường/xã" value={name} onChange={(e) => setName(e.target.value)} placeholder="Thêm phường/xã (mẫu)" />
-      </div>
-      <div className="w-28">
+      </Td>
+      <Td className="w-36">
         <Input aria-label="Khoảng cách km" type="number" step="0.1" value={km} onChange={(e) => setKm(e.target.value)} placeholder="km" />
-      </div>
-      <SecondaryButton
-        onClick={() => {
-          const r = run((s, at) => opsSaveWard(s, adminActor, { id: ward?.id, name, distanceKm: Number(km) }, at));
-          showToast(r.ok ? 'Đã lưu phường/xã.' : r.error);
-          if (r.ok && !ward) {
-            setName('');
-            setKm('');
-          }
-        }}
-      >
-        {ward ? 'Lưu' : 'Thêm'}
-      </SecondaryButton>
-      {ward && (
-        <DangerButton
+      </Td>
+      <Td className="space-x-2 whitespace-nowrap">
+        <SecondaryButton
           onClick={() => {
-            const r = run((s, at) => opsDeleteWard(s, adminActor, ward.id, at));
-            showToast(r.ok ? 'Đã xoá.' : r.error);
+            const r = run((s, at) => opsSaveWard(s, adminActor, { id: ward?.id, name, distanceKm: Number(km) }, at));
+            showToast(r.ok ? 'Đã lưu phường/xã.' : r.error);
+            if (r.ok && !ward) {
+              setName('');
+              setKm('');
+            }
           }}
         >
-          Xoá
-        </DangerButton>
-      )}
-    </li>
+          {ward ? 'Lưu' : 'Thêm'}
+        </SecondaryButton>
+        {ward && (
+          <DangerButton
+            onClick={() => {
+              const r = run((s, at) => opsDeleteWard(s, adminActor, ward.id, at));
+              showToast(r.ok ? 'Đã xoá.' : r.error);
+            }}
+          >
+            Xoá
+          </DangerButton>
+        )}
+      </Td>
+    </tr>
   );
 }
 
@@ -84,35 +101,37 @@ function GiftRow({ box }: { box?: GiftBoxType }) {
   const [fee, setFee] = useState(box ? String(box.fee) : '');
   const [desc, setDesc] = useState(box?.description ?? '');
   return (
-    <li className="flex flex-wrap items-center gap-2 rounded-xl bg-white p-2">
-      <div className="min-w-48 flex-1">
+    <tr>
+      <Td className="min-w-48">
         <Input aria-label="Tên hộp quà" value={name} onChange={(e) => setName(e.target.value)} placeholder="Thêm loại hộp" />
-      </div>
-      <div className="w-32">
+      </Td>
+      <Td className="w-36">
         <Input aria-label="Phí hộp (đồng)" type="number" value={fee} onChange={(e) => setFee(e.target.value)} placeholder="Phí (đ)" />
-      </div>
-      <div className="min-w-48 flex-1">
+      </Td>
+      <Td className="min-w-48">
         <Input aria-label="Mô tả hộp quà" value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Mô tả" />
-      </div>
-      <SecondaryButton
-        onClick={() => {
-          const r = run((s, at) => opsSaveGiftBox(s, adminActor, { id: box?.id, name, fee: Number(fee), description: desc }, at));
-          showToast(r.ok ? 'Đã lưu hộp quà.' : r.error);
-        }}
-      >
-        {box ? 'Lưu' : 'Thêm'}
-      </SecondaryButton>
-      {box && (
-        <DangerButton
+      </Td>
+      <Td className="space-x-2 whitespace-nowrap">
+        <SecondaryButton
           onClick={() => {
-            const r = run((s, at) => opsDeleteGiftBox(s, adminActor, box.id, at));
-            showToast(r.ok ? 'Đã xoá.' : r.error);
+            const r = run((s, at) => opsSaveGiftBox(s, adminActor, { id: box?.id, name, fee: Number(fee), description: desc }, at));
+            showToast(r.ok ? 'Đã lưu hộp quà.' : r.error);
           }}
         >
-          Xoá
-        </DangerButton>
-      )}
-    </li>
+          {box ? 'Lưu' : 'Thêm'}
+        </SecondaryButton>
+        {box && (
+          <DangerButton
+            onClick={() => {
+              const r = run((s, at) => opsDeleteGiftBox(s, adminActor, box.id, at));
+              showToast(r.ok ? 'Đã xoá.' : r.error);
+            }}
+          >
+            Xoá
+          </DangerButton>
+        )}
+      </Td>
+    </tr>
   );
 }
 
@@ -124,19 +143,19 @@ function ExpressTiers() {
   return (
     <section className="space-y-2">
       <h3 className="text-base font-bold">Bậc phụ phí hoả tốc (FEE-02)</h3>
-      <ul className="space-y-1">
+      <AdminTable columns={['Khoảng cách', 'Phụ phí mới (đồng)', 'Đang áp dụng']} minWidth={520}>
         {tiers.map((t, i) => (
-          <li key={i} className="flex items-center gap-2 rounded-xl bg-white p-2 text-sm">
-            <span className="w-32">
+          <tr key={i}>
+            <Td className="space-x-2 whitespace-nowrap">
               {i === 0 ? 0 : tiers[i - 1].maxKm}–{t.maxKm} km
-            </span>
-            <div className="w-36">
+            </Td>
+            <Td className="w-44">
               <Input aria-label={`Phụ phí bậc ${i + 1}`} type="number" value={t.fee} onChange={(e) => setTiers(tiers.map((x, j) => (j === i ? { ...x, fee: Number(e.target.value) } : x)))} />
-            </div>
-            <span className="text-stone-500">hiện tại {formatMoney(state.params.expressTiers[i]?.fee ?? 0)}</span>
-          </li>
+            </Td>
+            <Td className="tabular-nums text-stone-700">{formatMoney(state.params.expressTiers[i]?.fee ?? 0)}</Td>
+          </tr>
         ))}
-      </ul>
+      </AdminTable>
       <div className="flex flex-wrap gap-2">
         <div className="min-w-56 flex-1">
           <Input aria-label="Lý do sửa bậc phí" placeholder="Lý do" value={reason} onChange={(e) => setReason(e.target.value)} />
