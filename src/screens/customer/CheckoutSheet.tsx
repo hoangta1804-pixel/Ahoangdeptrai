@@ -73,6 +73,28 @@ export function CheckoutSheet({ source, preferredAddressId, onClose }: { source:
   const input = { customerId, lines, addressId, voucherId, note, groupOptions: options };
   const plan = useMemo(() => planCheckout(state, input, at), [state, lines, addressId, voucherId, note, options, step]); // eslint-disable-line react-hooks/exhaustive-deps
   const addresses = state.addresses.filter((a) => a.customerId === customerId);
+
+  /**
+   * Chọn hoặc bỏ mã ưu đãi (BR-KM-01..08). Mã chưa đủ điều kiện thì không chọn được và báo lý do.
+   * `fromInput`: nhập tay thì luôn áp dụng (không bỏ chọn khi nhập lại mã đang dùng). Trả về true nếu đã áp dụng.
+   */
+  const chooseVoucher = (id: string, fromInput = false): boolean => {
+    const v = state.vouchers.find((x) => x.id === id);
+    if (!v) return false;
+    if (voucherId === id && !fromInput) {
+      setVoucherId(undefined);
+      showToast(`Đã bỏ mã ${v.code}.`);
+      return false;
+    }
+    const ev = evaluateVoucherFor(state, v, customerId, lines, at);
+    if (!ev.ok) {
+      showToast(`Chưa dùng được mã ${v.code}: ${ev.error}`);
+      return false;
+    }
+    setVoucherId(id);
+    showToast(`Đã áp dụng mã ${v.code}: giảm ${formatMoney(ev.value.discount)}.`);
+    return true;
+  };
   const priceUp = notices.some((n) => n.type === 'price_up');
 
   const setOpt = (key: string, patch: Partial<GroupOptions>) =>
@@ -210,32 +232,58 @@ export function CheckoutSheet({ source, preferredAddressId, onClose }: { source:
             <h4 className="flex items-center gap-1.5 text-sm font-bold text-ink">
               <Ticket size={16} /> Mã ưu đãi <span className="font-normal text-muted">(mỗi lần đặt dùng tối đa {state.params.vouchersPerCheckout} mã)</span>
             </h4>
-            <div className="flex gap-2">
-              <Input aria-label="Nhập mã ưu đãi" placeholder="Nhập mã" value={voucherCode} onChange={(e) => setVoucherCode(e.target.value.toUpperCase())} />
-              <SecondaryButton
-                onClick={() => {
-                  const v = state.vouchers.find((x) => x.code === voucherCode.trim());
-                  if (!v) return showToast(`Mã "${voucherCode}" không tồn tại.`);
-                  const ev = evaluateVoucherFor(state, v, customerId, lines, at);
-                  if (!ev.ok) return showToast(`Không dùng được mã ${v.code}: ${ev.error}`);
-                  setVoucherId(v.id);
-                  setVoucherCode('');
-                }}
+            {plan.voucher && (
+              <div
+                className={`flex flex-wrap items-center gap-2 rounded-xl border p-2.5 text-sm ${plan.voucherError ? 'border-rose-300 bg-rose-50 text-rose-900' : 'border-forest-600 bg-forest-50 text-forest-900'}`}
               >
+                <span className="min-w-0 flex-1">
+                  {plan.voucherError ? (
+                    <>
+                      Mã <strong>{plan.voucher.code}</strong> không còn dùng được: {plan.voucherError}
+                    </>
+                  ) : (
+                    <>
+                      Đang áp dụng mã <strong>{plan.voucher.code}</strong>: giảm {formatMoney(plan.voucherDiscount)}
+                    </>
+                  )}
+                </span>
+                <button type="button" onClick={() => setVoucherId(undefined)} className="min-h-11 rounded-lg px-3 font-semibold hover:bg-white">
+                  Bỏ mã
+                </button>
+              </div>
+            )}
+            <form
+              className="flex gap-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const code = voucherCode.trim();
+                if (!code) return showToast('Vui lòng nhập mã ưu đãi.');
+                const v = state.vouchers.find((x) => x.code === code);
+                if (!v) return showToast(`Mã "${code}" không tồn tại.`);
+                if (chooseVoucher(v.id, true)) setVoucherCode('');
+              }}
+            >
+              <Input aria-label="Nhập mã ưu đãi" placeholder="Nhập mã" value={voucherCode} onChange={(e) => setVoucherCode(e.target.value.toUpperCase())} />
+              <SecondaryButton type="submit" className="shrink-0 whitespace-nowrap">
                 Áp dụng
               </SecondaryButton>
-            </div>
+            </form>
+            <p className="text-sm text-stone-600">Hoặc bấm chọn một mã bên dưới:</p>
             <ul className="space-y-2">
               {state.vouchers.map((v) => {
                 const ev = evaluateVoucherFor(state, v, customerId, lines, at);
                 const selected = voucherId === v.id;
                 return (
                   <li key={v.id}>
+                    {/* Mã chưa đủ điều kiện vẫn bấm được để xem lý do (BR-KM: không chọn được và phải hiện lý do). */}
                     <button
-                      disabled={!ev.ok}
-                      onClick={() => setVoucherId(selected ? undefined : v.id)}
+                      type="button"
+                      onClick={() => chooseVoucher(v.id)}
                       aria-pressed={selected}
-                      className={`flex w-full items-start gap-2 rounded-xl border p-2.5 text-left text-sm ${selected ? 'border-forest-600 bg-forest-50' : 'border-stone-200 bg-white'} disabled:cursor-not-allowed disabled:bg-stone-50`}
+                      aria-disabled={!ev.ok}
+                      className={`flex w-full items-start gap-2 rounded-xl border p-2.5 text-left text-sm ${
+                        selected ? 'border-forest-600 bg-forest-50' : ev.ok ? 'border-stone-200 bg-white hover:border-forest-600' : 'border-dashed border-stone-300 bg-stone-50'
+                      }`}
                     >
                       <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${selected ? 'border-forest-600 bg-forest-600 text-white' : 'border-stone-300'}`}>
                         {selected && <Check size={12} />}
@@ -243,7 +291,9 @@ export function CheckoutSheet({ source, preferredAddressId, onClose }: { source:
                       <span className="min-w-0 flex-1">
                         <span className="block font-bold text-ink">{v.code}</span>
                         <span className="block text-stone-700">{v.title}</span>
-                        <span className={`block text-xs ${ev.ok ? 'text-forest-700' : 'text-rose-700'}`}>{ev.ok ? `Giảm ${formatMoney(ev.value.discount)} trên tiền hàng hợp lệ` : ev.error}</span>
+                        <span className={`block text-xs ${ev.ok ? 'text-forest-700' : 'text-rose-700'}`}>
+                          {ev.ok ? (selected ? `Đang áp dụng · giảm ${formatMoney(ev.value.discount)}` : `Bấm để dùng · giảm ${formatMoney(ev.value.discount)}`) : `Chưa dùng được: ${ev.error}`}
+                        </span>
                       </span>
                     </button>
                   </li>
