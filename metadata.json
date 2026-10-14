@@ -1,8 +1,6 @@
 {
   "name": "Đặc Sản Số Lào Cai – Gian Hàng Chính Hãng",
-  "description": "Nền tảng phân phối nông sản, đặc sản Lào Cai có bảo chứng nguồn gốc của Cơ quan Quản lý Nhà nước, giao hàng toàn Thành phố Hà Nội.",
+  "description": "Prototype nền tảng phân phối nông sản, đặc sản Lào Cai cho khách ở Hà Nội. Bản demo, dữ liệu mẫu.",
   "requestFramePermissions": [],
-  "majorCapabilities": [
-    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
-  ]
+  "majorCapabilities": []
 }

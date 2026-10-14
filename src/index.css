@@ -1,6 +1,6 @@
 @import "tailwindcss" source(none);
 @source "../index.html";
-@source "./DacSanApp.jsx";
+@source "./";
 
 /* Giữ hành vi mặc định giống Tailwind v3 (bản CDN cũ) để giao diện không đổi */
 @layer base {
@@ -25,6 +25,8 @@
     text-size-adjust: 100%;
   }
   body {
+    margin: 0;
+    background-color: #F5F4F0;
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;

@@ -1,0 +1,74 @@
+import { Lock } from 'lucide-react';
+import { useUi } from '../../app/UiContext';
+import { PARAM_CATALOG, type Params } from '../../domain/params';
+import { formatMoney } from '../../domain/pricing';
+import { useAppData } from '../../store/AppDataContext';
+
+function formatValue(key: keyof Params, params: Params, unit: string): string {
+  const value = params[key];
+  if (key === 'expressTiers') {
+    const tiers = params.expressTiers;
+    return (
+      tiers.map((t, i) => `${i === 0 ? 0 : tiers[i - 1].maxKm}–${t.maxKm} km: ${formatMoney(t.fee)}`).join('; ') +
+      `; trên ${tiers[tiers.length - 1].maxKm} km: không có hoả tốc`
+    );
+  }
+  if (typeof value === 'boolean') return value ? 'Có' : 'Không';
+  if (unit === 'đ' && typeof value === 'number') return formatMoney(value);
+  return `${String(value)}${unit ? ` ${unit}` : ''}`;
+}
+
+/** Tham số hệ thống (FR-HT-02), đọc từ store. Giai đoạn 4 thêm sửa giá trị kèm lý do và xem lịch sử. */
+export function AdminParamsTab() {
+  const { params } = useAppData();
+  const { openModal, showToast } = useUi();
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-stone-600">
+        Giá trị mới chỉ áp cho đơn tạo sau thời điểm sửa. Cột “Tình trạng” cho biết giá trị nào chưa được nhóm chốt.
+      </p>
+      <div className="overflow-x-auto rounded-2xl border border-stone-200 bg-white">
+        <table className="w-full min-w-[560px] text-left text-sm">
+          <thead className="bg-stone-50 text-xs uppercase text-stone-500">
+            <tr>
+              <th className="px-3 py-2">Mã</th>
+              <th className="px-3 py-2">Ý nghĩa</th>
+              <th className="px-3 py-2">Giá trị</th>
+              <th className="px-3 py-2">Tình trạng</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-stone-100">
+            {PARAM_CATALOG.map((m) => (
+              <tr key={m.key}>
+                <td className="whitespace-nowrap px-3 py-2 font-mono text-xs font-bold text-stone-700">{m.code}</td>
+                <td className="px-3 py-2 text-stone-800">{m.label}</td>
+                <td className="px-3 py-2 font-semibold tabular-nums text-stone-900">{formatValue(m.key, params, m.unit)}</td>
+                <td className="px-3 py-2 text-xs text-stone-600">{m.status}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Account Lock with Silent Push */}
+      <div className="bg-rose-50 border border-rose-200 rounded-2xl p-3.5 space-y-2">
+        <div className="flex items-center gap-2 text-rose-900 font-bold text-xs">
+          <Lock size={16} />
+          <span>Khóa Tài Khoản & Gửi Silent Push Ngắt Phiên</span>
+        </div>
+        <p className="text-[11px] text-rose-700">
+          Khóa tức thì quyền truy cập của người dùng trên toàn hệ thống (Chặn tự khóa chính Admin).
+        </p>
+        <button
+          onClick={() => {
+            openModal({ type: 'silent_locked' });
+            showToast('Đã kích hoạt Silent Push khóa tài khoản ngay lập tức!');
+          }}
+          className="w-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold py-2 rounded-xl transition-colors shadow-xs"
+        >
+          Kích hoạt Khóa phiên tức thời (Thử nghiệm)
+        </button>
+      </div>
+    </div>
+  );
+}
