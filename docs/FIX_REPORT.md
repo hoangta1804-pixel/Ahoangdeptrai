@@ -33,6 +33,28 @@ npm test         # unit test vitest: src/domain, dữ liệu mẫu, quy ước g
 
 ---
 
+## Sau Giai đoạn 6 – Bấm chọn mã ưu đãi
+
+**Lỗi chủ repo báo:** không bấm chọn được mã ưu đãi, phải nhập mã bằng tay.
+
+**Nguyên nhân:** mã chưa đủ điều kiện bị khoá hẳn (`disabled`), nên bấm vào không có phản hồi gì. Ví dụ: đơn chưa đủ 300.000đ, không có hàng Chế biến, hay khách không đặt lần đầu. Còn nhập tay thì có thông báo. Ngoài ra, khi đã chọn được mã, bước 2 cũng không hiện mã đang dùng và số tiền giảm.
+
+**Đã sửa ở bước 2 "Ưu đãi & thanh toán":**
+
+- **Mã dùng được:** bấm vào là áp dụng ngay, có thông báo "Đã áp dụng mã … : giảm …". Bấm lần nữa thì bỏ mã.
+- **Mã chưa đủ điều kiện:** vẫn không chọn được (BR-KM). Bấm vào thì báo lý do, vd. "Cần thêm 125.000đ tiền hàng hợp lệ". Dòng lý do trên thẻ ghi "Chưa dùng được: …".
+- **Khung mã đang áp dụng:** hiện ở đầu mục, gồm mã, số tiền giảm và nút "Bỏ mã". Nếu giỏ thay đổi làm mã hết hiệu lực, khung báo lý do.
+- **Nhập tay:** vẫn dùng được, có thể bấm Enter. Không phân biệt chữ hoa, chữ thường.
+
+**Kiểm tra trên trình duyệt** (cỡ điện thoại, thao tác chạm):
+
+- bấm mã chưa đủ điều kiện thì thấy lý do;
+- bấm, bỏ và nhập tay mã đều chạy;
+- bước 3 có dòng "Đã giảm"; tiền ở cổng thanh toán đã trừ đúng: 175.000 + 28.000 − 17.500 = 185.500đ;
+- kiểm tra giao diện tự động không có lỗi.
+
+---
+
 ## Sau Giai đoạn 6 – Sửa lỗi chọn địa chỉ giao hàng
 
 Chủ repo báo lỗi khi chọn địa chỉ giao hàng tại Hà Nội. Thử lại trên trình duyệt thấy 3 lỗi, đã sửa cả 3:
