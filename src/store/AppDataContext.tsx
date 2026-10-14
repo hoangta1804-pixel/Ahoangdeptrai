@@ -2,10 +2,12 @@
  * Store dữ liệu dùng chung, lưu localStorage (mục 7). Mở nhiều tab cùng trình duyệt thấy chung dữ liệu.
  * Mọi thay đổi dữ liệu đi qua các hàm trong src/domain thông qua run().
  * Tác vụ theo giờ (hết hạn thanh toán, quá hạn xác nhận…) chạy khi tải app, mỗi 5 giây và sau khi tua đồng hồ.
+ * Sau mỗi thay đổi, deriveNotifications() sinh thông báo cho đúng tài khoản (FR-CSKH-10).
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { now as clockNow, setClockOffset } from '../domain/clock';
 import { jobsChanged, runScheduledJobs } from '../domain/jobs';
+import { deriveNotifications } from '../domain/notifications';
 import type { DemoState, Result } from '../domain/types';
 import { createSeedState } from '../data/seed';
 import { clearState, loadState, saveState, STORAGE_KEY } from './persistence';
@@ -25,10 +27,16 @@ interface StoreValue {
 
 const StoreContext = createContext<StoreValue | null>(null);
 
+/** Chạy tác vụ theo giờ rồi sinh thông báo cho phần dữ liệu thay đổi. */
+function withJobs(state: DemoState, at: Date): { state: DemoState; changed: boolean } {
+  const { state: next, report } = runScheduledJobs(state, at);
+  return { state: deriveNotifications(state, next, at), changed: jobsChanged(report) };
+}
+
 function initialState(): DemoState {
   const loaded = loadState<DemoState>(() => createSeedState(new Date()));
   setClockOffset(loaded.clockOffsetMs ?? 0);
-  return runScheduledJobs(loaded, clockNow()).state;
+  return withJobs(loaded, clockNow()).state;
 }
 
 export function AppDataProvider({ children }: { children: ReactNode }) {
@@ -55,8 +63,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   }, [commit]);
 
   const runJobs = useCallback(() => {
-    const { state: next, report } = runScheduledJobs(ref.current, clockNow());
-    if (jobsChanged(report)) commit(next);
+    const { state: next, changed } = withJobs(ref.current, clockNow());
+    if (changed) commit(next);
   }, [commit]);
 
   useEffect(() => {
@@ -66,8 +74,10 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   const run = useCallback(
     <T,>(op: (s: DemoState, at: Date) => Result<T>, pick?: (value: T) => DemoState): Result<T> => {
-      const r = op(ref.current, clockNow());
-      if (r.ok) commit(pick ? pick(r.value) : (r.value as unknown as DemoState));
+      const prev = ref.current;
+      const at = clockNow();
+      const r = op(prev, at);
+      if (r.ok) commit(deriveNotifications(prev, pick ? pick(r.value) : (r.value as unknown as DemoState), at));
       return r;
     },
     [commit],
@@ -77,14 +87,14 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     (ms: number) => {
       const shifted = { ...ref.current, clockOffsetMs: ref.current.clockOffsetMs + ms };
       setClockOffset(shifted.clockOffsetMs);
-      commit(runScheduledJobs(shifted, clockNow()).state);
+      commit(withJobs(shifted, clockNow()).state);
     },
     [commit],
   );
 
   const resetClock = useCallback(() => {
     setClockOffset(0);
-    commit(runScheduledJobs({ ...ref.current, clockOffsetMs: 0 }, clockNow()).state);
+    commit(withJobs({ ...ref.current, clockOffsetMs: 0 }, clockNow()).state);
   }, [commit]);
 
   const resetDemoData = useCallback(() => {

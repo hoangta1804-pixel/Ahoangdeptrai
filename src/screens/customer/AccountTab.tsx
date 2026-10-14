@@ -1,12 +1,13 @@
-import { ChevronRight, MapPin, ShieldCheck } from 'lucide-react';
+import { ChevronRight, LogOut, MapPin, ShieldCheck } from 'lucide-react';
 import { useUi } from '../../app/UiContext';
-import { maskAccount } from '../../domain/state';
+import { viewRefundAccount } from '../../domain/access';
 import { useStore } from '../../store/AppDataContext';
 
 export function AccountTab() {
   const { state } = useStore();
-  const { customerActor, openModal } = useUi();
+  const { customerActor, openModal, logout } = useUi();
   const customer = state.customers.find((c) => c.id === customerActor.id);
+  const acc = viewRefundAccount(state, customerActor, customerActor.id ?? '');
   const addressCount = state.addresses.filter((a) => a.customerId === customerActor.id).length;
   if (!customer) return null;
 
@@ -27,9 +28,9 @@ export function AccountTab() {
           <ShieldCheck size={18} className="text-emerald-700" />
           Tài khoản nhận hoàn tiền (đơn COD)
         </h4>
-        {customer.refundAccount ? (
+        {acc.ok && acc.value ? (
           <p className="text-sm text-stone-700">
-            {customer.refundAccount.bankName} · <span className="font-mono font-bold">{maskAccount(customer.refundAccount.accountNumber)}</span>
+            {acc.value.bankName} · <span className="font-mono font-bold">{acc.value.accountNumber}</span>
           </p>
         ) : (
           <p className="text-sm text-amber-800">Chưa khai tài khoản. Hoàn tiền đơn COD cần tài khoản này.</p>
@@ -48,9 +49,10 @@ export function AccountTab() {
         <ChevronRight size={16} className="text-stone-400" />
       </button>
 
-      <p className="rounded-2xl border border-dashed border-stone-300 p-3 text-sm text-stone-600">
-        Bản demo đang dùng tài khoản <strong>{customer.name}</strong>. Đăng nhập bằng SĐT + OTP mô phỏng và đổi tài khoản sẽ có ở Giai đoạn 3.
-      </p>
+      <button onClick={logout} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-stone-100 text-sm font-bold text-rose-800 hover:bg-rose-50">
+        <LogOut size={16} />
+        Đăng xuất
+      </button>
     </div>
   );
 }

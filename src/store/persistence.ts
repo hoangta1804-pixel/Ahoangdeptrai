@@ -3,7 +3,7 @@
  * Mọi thao tác đọc/ghi bọc try/catch: trình duyệt chặn lưu trữ thì app vẫn chạy với dữ liệu mẫu.
  */
 export const STORAGE_KEY = 'dac-san-so-lao-cai:data';
-export const STORAGE_VERSION = 2;
+export const STORAGE_VERSION = 3;
 
 interface Envelope<T> {
   version: number;
@@ -33,6 +33,26 @@ export function saveState<T>(data: T): void {
 export function clearState(): void {
   try {
     localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // bỏ qua
+  }
+}
+
+/** Phiên đăng nhập lưu theo từng tab (sessionStorage): hai tab có thể đăng nhập hai vai trò khác nhau trên cùng dữ liệu. */
+const SESSION_KEY = 'dac-san-so-lao-cai:session';
+
+export function loadSession(): string | null {
+  try {
+    return sessionStorage.getItem(SESSION_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function saveSession(userId: string | null): void {
+  try {
+    if (userId) sessionStorage.setItem(SESSION_KEY, userId);
+    else sessionStorage.removeItem(SESSION_KEY);
   } catch {
     // bỏ qua
   }

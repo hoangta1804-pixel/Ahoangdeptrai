@@ -13,6 +13,8 @@ export const ADMIN_OPS: Actor = { kind: 'admin', id: 'ad-ops', name: 'Admin VH',
 export const ADMIN_CSKH: Actor = { kind: 'admin', id: 'ad-cskh', name: 'Admin CSKH', adminGroup: 'cskh' };
 export const ADMIN_FIN: Actor = { kind: 'admin', id: 'ad-fin', name: 'Admin TC', adminGroup: 'finance' };
 export const ADMIN_QA: Actor = { kind: 'admin', id: 'ad-qa', name: 'Admin CL', adminGroup: 'quality' };
+export const ADMIN_ROOT: Actor = { kind: 'admin', id: 'u-root', name: 'Quản trị gốc', adminGroup: 'root' };
+export const REGULATOR: Actor = { kind: 'regulator', id: 'u-gov', name: 'QLNN' };
 
 const product = (p: Partial<Product> & Pick<Product, 'id' | 'coopId' | 'kind' | 'price'>): Product => ({
   name: p.id,
@@ -42,6 +44,17 @@ export const VOUCHER_50K: Voucher = {
 export function makeState(): DemoState {
   return {
     clockOffsetMs: 0,
+    users: [
+      { id: 'u-kh1', phone: '0900000001', name: 'Khách 1', role: 'customer', customerId: 'cust-1', status: 'active', createdAt: '' },
+      { id: 'u-x', phone: '0900000101', name: 'HTX X', role: 'coop', coopId: 'coop-x', status: 'active', createdAt: '' },
+      { id: 'u-y', phone: '0900000102', name: 'HTX Y', role: 'coop', coopId: 'coop-y', status: 'active', createdAt: '' },
+      { id: 'u-qa', phone: '0900000202', name: 'Admin CL', role: 'admin', adminGroup: 'quality', status: 'active', createdAt: '' },
+      { id: 'u-cskh', phone: '0900000203', name: 'Admin CSKH', role: 'admin', adminGroup: 'cskh', status: 'active', createdAt: '' },
+      { id: 'u-fin', phone: '0900000204', name: 'Admin TC', role: 'admin', adminGroup: 'finance', status: 'active', createdAt: '' },
+      { id: 'u-root', phone: '0900000209', name: 'Quản trị gốc', role: 'admin', adminGroup: 'root', status: 'active', createdAt: '' },
+      { id: 'u-gov', phone: '0900000301', name: 'QLNN', role: 'regulator', status: 'active', createdAt: '' },
+      { id: 'u-lock', phone: '0900000999', name: 'Bị khoá', role: 'customer', customerId: 'cust-x', status: 'locked', createdAt: '' },
+    ],
     customers: [{ id: 'cust-1', name: 'Khách 1', phone: '0900000001', refundAccount: { bankName: 'NH mẫu', accountNumber: '000000000001', holder: 'KHACH 1' } }],
     coops: [
       { id: 'coop-x', name: 'HTX X', region: 'Vùng A', payoutAccountMasked: '**** 0101', status: 'active' },
@@ -80,6 +93,10 @@ export function makeState(): DemoState {
     params: structuredClone(DEFAULT_PARAMS),
     paramHistory: [],
     auditLogs: [],
+    notifications: [],
+    ledgerEntries: [],
+    reviews: [],
+    lowStockAlerts: {},
   };
 }
 

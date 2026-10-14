@@ -1,6 +1,7 @@
 import { useUi } from '../../app/UiContext';
 import { EmptyState, SimBadge } from '../../components/EmptyState';
 import { PrimaryButton, SecondaryButton } from '../../components/form';
+import { viewRefundAccount } from '../../domain/access';
 import { confirmRefundBySimBank, startRefundProcessing } from '../../domain/finance';
 import { formatMoney } from '../../domain/pricing';
 import { REFUND_SOURCE_LABEL } from '../../domain/types';
@@ -34,7 +35,7 @@ export function FinanceRefundsTab() {
           </thead>
           <tbody className="divide-y divide-stone-100">
             {state.refunds.map((r) => {
-              const customer = state.customers.find((c) => c.id === r.customerId);
+              const acc = viewRefundAccount(state, adminActor, r.customerId);
               return (
                 <tr key={r.id}>
                   <td className="px-3 py-2 font-mono">{r.orderId}</td>
@@ -44,7 +45,7 @@ export function FinanceRefundsTab() {
                   </td>
                   <td className="px-3 py-2 text-right tabular-nums">{formatMoney(r.amount)}</td>
                   <td className="px-3 py-2">
-                    {r.destination === 'original_source' ? 'Nguồn thanh toán ban đầu' : customer?.refundAccount ? `${customer.refundAccount.bankName} ${customer.refundAccount.accountNumber}` : 'Khách chưa khai tài khoản'}
+                    {r.destination === 'original_source' ? 'Nguồn thanh toán ban đầu' : acc.ok && acc.value ? `${acc.value.bankName} ${acc.value.accountNumber}` : 'Khách chưa khai tài khoản'}
                   </td>
                   <td className="px-3 py-2">{r.status === 'refunded' ? `Đã hoàn tiền (${r.bankRef})` : r.status === 'refunding' ? 'Đang hoàn tiền' : 'Chờ hoàn tiền'}</td>
                   <td className="px-3 py-2">

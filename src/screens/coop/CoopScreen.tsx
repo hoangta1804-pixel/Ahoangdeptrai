@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useUi } from '../../app/UiContext';
-import { Select } from '../../components/form';
 import { useStore } from '../../store/AppDataContext';
 import { CoopOrdersTab } from './CoopOrdersTab';
 import { CoopProductsTab } from './CoopProductsTab';
@@ -17,7 +16,7 @@ const TABS: { key: CoopTab; label: string }[] = [
 
 export function CoopScreen() {
   const { state } = useStore();
-  const { coopId, setCoopId } = useUi();
+  const { coopId } = useUi();
   const [tab, setTab] = useState<CoopTab>('orders');
   const coop = state.coops.find((c) => c.id === coopId);
   const pendingConfirm = state.orders.filter((o) => o.coopId === coopId && o.status === 'awaiting_confirmation').length;
@@ -30,16 +29,6 @@ export function CoopScreen() {
         <p className="text-sm text-emerald-100">
           Vùng {coop?.region} · Tài khoản nhận chi trả {coop?.payoutAccountMasked}
         </p>
-        <label className="block text-sm text-emerald-100">
-          <span className="mb-1 block text-xs">Đang xem với tư cách HTX (demo, Giai đoạn 3 thay bằng đăng nhập)</span>
-          <Select value={coopId} onChange={(e) => setCoopId(e.target.value)} className="text-stone-900">
-            {state.coops.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </Select>
-        </label>
       </div>
 
       <div className="grid grid-cols-4 gap-1 rounded-2xl bg-stone-200/70 p-1 text-sm font-medium" role="tablist">

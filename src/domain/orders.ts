@@ -6,7 +6,7 @@ import { linesOfOrders } from './checkout';
 import { generateId } from './ids';
 import { customerCancelMode, transitionOrder } from './orderStateMachine';
 import { preorderCancelRefund, type CancelCause } from './refund';
-import { addMs, audit, findOrder, fromDateKey, HOUR_MS, iso, replaceOrder } from './state';
+import { addLedger, addMs, audit, findOrder, fromDateKey, HOUR_MS, iso, replaceOrder } from './state';
 import {
   fail,
   goodsGroupOf,
@@ -206,6 +206,7 @@ function markDelivered(state: DemoState, order: Order, actor: Actor, at: Date, r
     paymentStatus: order.paymentStatus === 'refund_pending' ? order.paymentStatus : 'paid',
   };
   let next = replaceOrder(moved.value.state, delivered);
+  next = addLedger(next, { type: 'cod_in', amount: cod, orderId: order.id, coopId: order.coopId, note: 'Thu khi giao' }, at);
   next = {
     ...next,
     voucherUsages: next.voucherUsages.map((u) => (u.checkoutId === order.checkoutId && u.status === 'held' ? { ...u, status: 'used' } : u)),

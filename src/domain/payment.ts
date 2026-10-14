@@ -10,7 +10,7 @@
  */
 import { addRefund, failCheckoutTransaction } from './orders';
 import { transitionOrder } from './orderStateMachine';
-import { addMs, findOrder, HOUR_MS, iso, replaceOrder } from './state';
+import { addLedger, addMs, findOrder, HOUR_MS, iso, replaceOrder } from './state';
 import { fail, ok, type DemoState, type Order, type Result, type Transaction } from './types';
 
 export type GatewayResult = 'success' | 'failed' | 'cancelled';
@@ -105,6 +105,8 @@ export function applyGatewayResult(
   }
 
   if (result === 'success') {
+    // Mọi lần cổng báo thành công đều là tiền vào thật sự (kể cả lần trùng, lần về muộn) → ghi sổ.
+    current = addLedger(current, { type: 'payment_in', amount: txNow.amount, refId: txNow.id, note: `Cổng mô phỏng, mã ${gatewayRef}` }, at);
     if (txNow.status === 'pending') {
       const next = applySuccess(markRef(current, txId, gatewayRef, { status: 'paid', paidRef: gatewayRef }), txNow, at);
       const usageUsed = {

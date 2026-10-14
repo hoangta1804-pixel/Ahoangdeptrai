@@ -6,7 +6,7 @@ import { useStore } from '../../store/AppDataContext';
 
 export function CustomerTopBar() {
   const { state } = useStore();
-  const { openModal, customerActor } = useUi();
+  const { openModal, customerActor, setCustomerTab } = useUi();
   const address = defaultAddressOf(state, customerActor.id!);
   const cartCount = (state.carts[customerActor.id!] ?? []).reduce((s, l) => s + l.quantity, 0);
 
@@ -30,8 +30,8 @@ export function CustomerTopBar() {
         )}
       </button>
       <button
-        onClick={() => openModal({ type: 'auth' })}
-        aria-label="Tài khoản / Đăng nhập"
+        onClick={() => setCustomerTab('account')}
+        aria-label="Tài khoản"
         className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-stone-700 hover:bg-stone-100"
       >
         <User size={18} />

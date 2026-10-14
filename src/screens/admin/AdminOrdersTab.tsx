@@ -1,4 +1,6 @@
+import { useUi } from '../../app/UiContext';
 import { EmptyState } from '../../components/EmptyState';
+import { listOrdersFor } from '../../domain/access';
 import { OrderStatusBadge, PaymentStatusBadge } from '../../components/StatusBadge';
 import { formatMoney } from '../../domain/pricing';
 import { ORDER_KIND_LABEL } from '../../domain/types';
@@ -7,7 +9,9 @@ import { useStore } from '../../store/AppDataContext';
 /** Toàn bộ đơn (Admin). Đơn mới hiện ngay ở cả 3 phía (L4). */
 export function AdminOrdersTab() {
   const { state } = useStore();
-  const orders = [...state.orders].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const { adminActor } = useUi();
+  const r = listOrdersFor(state, adminActor);
+  const orders = r.ok ? r.value : [];
   if (orders.length === 0) return <EmptyState>Chưa có đơn.</EmptyState>;
   return (
     <div className="overflow-x-auto rounded-2xl border border-stone-200 bg-white">

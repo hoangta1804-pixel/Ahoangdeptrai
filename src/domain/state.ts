@@ -4,7 +4,7 @@
  */
 import { generateId } from './ids';
 import { availableStock, remainingSlots } from './stock';
-import type { Actor, Address, AddressSnapshot, AuditLog, DemoState, Order, Product, Result, Ward } from './types';
+import type { Actor, Address, AddressSnapshot, AuditLog, DemoState, LedgerEntry, Order, Product, Result, Ward } from './types';
 
 export const HOUR_MS = 3_600_000;
 export const MINUTE_MS = 60_000;
@@ -32,8 +32,15 @@ export function formatDateKey(key: string): string {
 export function audit(state: DemoState, actor: Actor, action: string, target: string, at: Date, detail?: string): DemoState {
   // Chỉ ghi thao tác của Admin và HTX (mục 5.9). Nhật ký chỉ thêm, không sửa, không xoá.
   if (actor.kind !== 'admin' && actor.kind !== 'coop') return state;
+  if (actor.id === 'seed') return state;
   const entry: AuditLog = { id: generateId('AUD'), at: iso(at), actor, action, target, detail };
   return { ...state, auditLogs: [entry, ...state.auditLogs] };
+}
+
+/** Ghi một dòng vào sổ giao dịch (chỉ thêm). */
+export function addLedger(state: DemoState, entry: Omit<LedgerEntry, 'id' | 'at'>, at: Date): DemoState {
+  if (entry.amount === 0) return state;
+  return { ...state, ledgerEntries: [{ id: generateId('SO'), at: iso(at), ...entry }, ...state.ledgerEntries] };
 }
 
 export const findProduct = (state: DemoState, id: string): Product | undefined => state.products.find((p) => p.id === id);

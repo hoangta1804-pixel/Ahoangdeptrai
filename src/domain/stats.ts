@@ -45,22 +45,3 @@ export function aggregateStats(state: DemoState): AggregateStats {
     byCoop: [...coop].map(([k, v]) => ({ coopName: k, ...v })).sort((a, b) => b.orders - a.orders),
   };
 }
-
-/** Dòng đơn cho Cơ quan QLNN: chỉ HTX, vùng, trạng thái, giá trị, ngày; không có dữ liệu cá nhân của khách. */
-export interface RegulatorOrderRow {
-  coopName: string;
-  region: string;
-  status: OrderStatus;
-  itemsTotal: number;
-  createdDate: string;
-}
-
-export function regulatorOrderRows(state: DemoState): RegulatorOrderRow[] {
-  return state.orders.map((o) => ({
-    coopName: o.coopName,
-    region: findProduct(state, o.items[0]?.productId ?? '')?.region ?? 'Khác',
-    status: o.status,
-    itemsTotal: o.pricing.itemsTotal,
-    createdDate: o.createdAt.slice(0, 10),
-  }));
-}

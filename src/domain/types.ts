@@ -20,13 +20,15 @@ export const fail = <T = never>(error: string): Result<T> => ({ ok: false, error
 // ==========================================
 
 export type UserRole = 'customer' | 'coop' | 'shipper' | 'regulator' | 'admin';
-export type AdminSubGroup = 'operations' | 'quality' | 'cskh' | 'finance';
+/** Nhóm quyền Admin (mục 8). "root" là Quản trị gốc. */
+export type AdminSubGroup = 'operations' | 'quality' | 'cskh' | 'finance' | 'root';
 
 export const ADMIN_GROUP_LABEL: Record<AdminSubGroup, string> = {
   operations: 'Vận hành',
   quality: 'Chất lượng',
   cskh: 'CSKH',
   finance: 'Tài chính',
+  root: 'Quản trị gốc',
 };
 
 /** Ai thực hiện một thao tác: người dùng (theo vai trò) hoặc hệ thống. */
@@ -34,7 +36,10 @@ export type ActorKind = 'customer' | 'coop' | 'admin' | 'regulator' | 'system' |
 
 export interface Actor {
   kind: ActorKind;
+  /** Khách: mã khách hàng. HTX: mã HTX. Admin, QLNN: mã tài khoản. */
   id?: string;
+  /** Mã tài khoản đăng nhập (để gửi thông báo, ghi nhật ký). */
+  userId?: string;
   name?: string;
   /** Nhóm quyền của Admin. */
   adminGroup?: AdminSubGroup;
@@ -500,12 +505,89 @@ export interface AuditLog {
 }
 
 // ==========================================
+// Tài khoản, thông báo, sổ giao dịch, đánh giá
+// ==========================================
+
+export type AccountRole = 'customer' | 'coop' | 'admin' | 'regulator';
+
+export const ACCOUNT_ROLE_LABEL: Record<AccountRole, string> = {
+  customer: 'Khách hàng',
+  coop: 'HTX',
+  admin: 'Admin',
+  regulator: 'Cơ quan QLNN',
+};
+
+export interface UserAccount {
+  id: string;
+  phone: string;
+  name: string;
+  role: AccountRole;
+  customerId?: string;
+  coopId?: string;
+  adminGroup?: AdminSubGroup;
+  status: 'active' | 'locked';
+  createdAt: string;
+}
+
+export type NotificationLink = { type: 'order'; id: string } | { type: 'ticket'; id: string } | { type: 'product'; id: string };
+
+/** Thông báo cho từng tài khoản (FR-CSKH-10). */
+export interface AppNotification {
+  id: string;
+  userId: string;
+  at: string;
+  title: string;
+  body: string;
+  link?: NotificationLink;
+  read: boolean;
+}
+
+export type LedgerType = 'payment_in' | 'cod_in' | 'refund_out' | 'payout_out' | 'commission';
+
+export const LEDGER_TYPE_LABEL: Record<LedgerType, string> = {
+  payment_in: 'Tiền vào qua cổng (mô phỏng)',
+  cod_in: 'Thu khi giao (COD)',
+  refund_out: 'Hoàn tiền cho khách',
+  payout_out: 'Chi trả cho HTX (mô phỏng)',
+  commission: 'Hoa hồng sàn',
+};
+
+/** Sổ giao dịch: chỉ thêm, không sửa, không xoá. */
+export interface LedgerEntry {
+  id: string;
+  at: string;
+  type: LedgerType;
+  amount: number;
+  orderId?: string;
+  coopId?: string;
+  /** Mã tham chiếu: giao dịch, yêu cầu hoàn, kỳ đối soát. */
+  refId?: string;
+  note?: string;
+}
+
+/** Đánh giá sản phẩm (chức năng làm ở Giai đoạn 4). */
+export interface Review {
+  id: string;
+  orderId: string;
+  productId: string;
+  customerId: string;
+  stars: number;
+  comment: string;
+  photos: string[];
+  status: 'visible' | 'hidden';
+  hiddenReason?: string;
+  coopReply?: string;
+  createdAt: string;
+}
+
+// ==========================================
 // Toàn bộ dữ liệu demo
 // ==========================================
 
 export interface DemoState {
   /** Độ lệch đồng hồ demo (tua thời gian), ms. */
   clockOffsetMs: number;
+  users: UserAccount[];
   customers: Customer[];
   coops: Coop[];
   products: Product[];
@@ -526,4 +608,9 @@ export interface DemoState {
   params: Params;
   paramHistory: ParamChange[];
   auditLogs: AuditLog[];
+  notifications: AppNotification[];
+  ledgerEntries: LedgerEntry[];
+  reviews: Review[];
+  /** Ngày (yyyy-mm-dd) đã gửi cảnh báo tồn thấp cho từng sản phẩm, để tối đa 1 lần/ngày. */
+  lowStockAlerts: Record<string, string>;
 }

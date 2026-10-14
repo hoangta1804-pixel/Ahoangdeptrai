@@ -8,7 +8,7 @@
  */
 import { isTicketOpen } from './complaint';
 import { generateId } from './ids';
-import { addMs, audit, DAY_MS, iso } from './state';
+import { addLedger, addMs, audit, DAY_MS, iso } from './state';
 import { fail, ok, type Actor, type DemoState, type Order, type PayoutPeriod, type Result, type SettlementLine } from './types';
 
 /** Thứ Hai 00:00 (giờ địa phương) của tuần chứa ngày `at`. */
@@ -84,6 +84,8 @@ export function recordPayout(state: DemoState, periodId: string, actor: Actor, a
   if (!period) return fail('Không tìm thấy kỳ đối soát.');
   if (period.status === 'paid') return fail('Kỳ này đã ghi nhận chi trả.');
   const paid: PayoutPeriod = { ...period, status: 'paid', paidAt: iso(at), paidRef: generateId('CK-MP') };
-  const next = { ...state, payoutPeriods: state.payoutPeriods.map((p) => (p.id === periodId ? paid : p)) };
+  let next: DemoState = { ...state, payoutPeriods: state.payoutPeriods.map((p) => (p.id === periodId ? paid : p)) };
+  next = addLedger(next, { type: 'payout_out', amount: -period.payout, coopId: period.coopId, refId: period.id, note: paid.paidRef }, at);
+  next = addLedger(next, { type: 'commission', amount: period.commission, coopId: period.coopId, refId: period.id, note: 'Hoa hồng sàn của kỳ' }, at);
   return ok(audit(next, actor, 'Ghi nhận chi trả (mô phỏng)', period.coopId, at, `${period.payout}`));
 }

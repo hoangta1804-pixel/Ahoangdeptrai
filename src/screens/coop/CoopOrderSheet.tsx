@@ -3,9 +3,10 @@ import { useUi } from '../../app/UiContext';
 import { BottomSheet } from '../../components/BottomSheet';
 import { DangerButton, PrimaryButton, ReasonPrompt, SecondaryButton } from '../../components/form';
 import { OrderStatusBadge, PaymentStatusBadge } from '../../components/StatusBadge';
+import { getOrderFor } from '../../domain/access';
 import { coopCannotSupply, coopConfirm, coopDecideCancelRequest, coopHandover, coopReceiveReturn, coopReject, coopReportReady } from '../../domain/orders';
 import { formatMoney } from '../../domain/pricing';
-import { findOrder, formatDateKey } from '../../domain/state';
+import { formatDateKey } from '../../domain/state';
 import { ORDER_KIND_LABEL, ORDER_STATUS_LABEL } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
 
@@ -17,8 +18,9 @@ export function CoopOrderSheet({ orderId, onClose }: { orderId: string; onClose:
   const { coopActor, showToast } = useUi();
   const [pending, setPending] = useState<Pending>(null);
   const [reason, setReason] = useState('');
-  const order = findOrder(state, orderId);
-  if (!order || order.coopId !== coopActor.id) return null;
+  const found = getOrderFor(state, coopActor, orderId);
+  if (!found.ok) return null;
+  const order = found.value;
 
   const act = (op: Parameters<typeof run>[0], ok: string) => {
     const r = run(op);

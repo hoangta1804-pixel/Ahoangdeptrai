@@ -1,14 +1,12 @@
 /**
- * Trạng thái giao diện dùng chung: vai trò đang xem, tài khoản demo đang dùng, tab, sheet đang mở, thông báo nổi.
- * Dữ liệu nghiệp vụ nằm ở src/store, không nằm ở đây.
- *
- * Giai đoạn 2: tài khoản đang dùng chọn trực tiếp trên giao diện (khách mẫu 1, HTX theo bộ chọn, nhóm quyền Admin theo tab).
- * Giai đoạn 3 thay bằng đăng nhập SĐT + OTP mô phỏng.
+ * Trạng thái giao diện: tài khoản đang đăng nhập (theo từng tab), tab khách hàng, sheet đang mở, thông báo nổi.
+ * Vai trò, HTX và nhóm quyền Admin lấy từ tài khoản đăng nhập (mục 5.9); không có thanh chuyển vai trò công khai.
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import type { Actor, AdminSubGroup, CartLine, UserRole } from '../domain/types';
-import { ADMIN_GROUP_LABEL } from '../domain/types';
+import { actorOf } from '../domain/auth';
+import type { Actor, AdminSubGroup, CartLine, UserAccount } from '../domain/types';
 import { useStore } from '../store/AppDataContext';
+import { loadSession, saveSession } from '../store/persistence';
 
 export type CustomerTab = 'explore' | 'season' | 'orders' | 'account';
 
@@ -25,26 +23,26 @@ export type ModalState =
   | { type: 'address_form'; addressId?: string }
   | { type: 'complaint'; orderId?: string }
   | { type: 'coop_order'; orderId: string }
-  | { type: 'demo_panel' }
-  | { type: 'auth'; step?: 'login' | 'register' | 'otp' }
-  | { type: 'silent_locked' }
-  | { type: 'face_id_scan' };
+  | { type: 'notifications' }
+  | { type: 'demo_panel' };
 
-export const DEMO_CUSTOMER_ID = 'cust-1';
+const NO_ACTOR: Actor = { kind: 'system', name: 'Chưa đăng nhập' };
 
 interface UiContextValue {
-  role: UserRole;
-  setRole: (role: UserRole) => void;
-  customerTab: CustomerTab;
-  setCustomerTab: (tab: CustomerTab) => void;
-  coopId: string;
-  setCoopId: (id: string) => void;
-  adminGroup: AdminSubGroup;
-  setAdminGroup: (g: AdminSubGroup) => void;
-  /** Người đang thao tác theo vai trò đang xem. */
+  /** Tài khoản đang đăng nhập ở tab này; null khi chưa đăng nhập. */
+  user: UserAccount | null;
+  login: (userId: string) => void;
+  logout: () => void;
+  /** Người đang thao tác (dùng cho mọi hàm domain). */
+  actor: Actor;
+  /** Bí danh của `actor` theo vai trò, để màn hình đọc rõ nghĩa. */
   customerActor: Actor;
   coopActor: Actor;
   adminActor: Actor;
+  coopId: string;
+  adminGroup: AdminSubGroup;
+  customerTab: CustomerTab;
+  setCustomerTab: (tab: CustomerTab) => void;
   modal: ModalState | null;
   openModal: (modal: ModalState) => void;
   closeModal: () => void;
@@ -56,13 +54,13 @@ const UiContext = createContext<UiContextValue | null>(null);
 
 export function UiProvider({ children }: { children: ReactNode }) {
   const { state } = useStore();
-  const [role, setRole] = useState<UserRole>('customer');
+  const [userId, setUserId] = useState<string | null>(() => loadSession());
   const [customerTab, setCustomerTab] = useState<CustomerTab>('explore');
-  const [coopId, setCoopId] = useState('coop-bacha');
-  const [adminGroup, setAdminGroup] = useState<AdminSubGroup>('operations');
   const [modal, setModal] = useState<ModalState | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  const user = state.users.find((u) => u.id === userId && u.status === 'active') ?? null;
 
   const showToast = useCallback((message: string) => {
     setToast(message);
@@ -71,29 +69,40 @@ export function UiProvider({ children }: { children: ReactNode }) {
   }, []);
   useEffect(() => () => clearTimeout(toastTimer.current), []);
 
+  const login = useCallback((id: string) => {
+    saveSession(id);
+    setUserId(id);
+    setModal(null);
+    setCustomerTab('explore');
+  }, []);
+  const logout = useCallback(() => {
+    saveSession(null);
+    setUserId(null);
+    setModal(null);
+  }, []);
   const closeModal = useCallback(() => setModal(null), []);
 
-  const value = useMemo<UiContextValue>(
-    () => ({
-      role,
-      setRole,
+  const value = useMemo<UiContextValue>(() => {
+    const actor = user ? actorOf(user) : NO_ACTOR;
+    return {
+      user,
+      login,
+      logout,
+      actor,
+      customerActor: actor,
+      coopActor: actor,
+      adminActor: actor,
+      coopId: user?.coopId ?? '',
+      adminGroup: user?.adminGroup ?? 'operations',
       customerTab,
       setCustomerTab,
-      coopId,
-      setCoopId,
-      adminGroup,
-      setAdminGroup,
-      customerActor: { kind: 'customer', id: DEMO_CUSTOMER_ID, name: 'Khách hàng mẫu 1' },
-      coopActor: { kind: 'coop', id: coopId, name: state.coops.find((c) => c.id === coopId)?.name ?? coopId },
-      adminActor: { kind: 'admin', id: `admin-${adminGroup}`, name: `Admin – ${ADMIN_GROUP_LABEL[adminGroup]}`, adminGroup },
       modal,
       openModal: setModal,
       closeModal,
       toast,
       showToast,
-    }),
-    [role, customerTab, coopId, adminGroup, modal, closeModal, toast, showToast, state.coops],
-  );
+    };
+  }, [user, login, logout, customerTab, modal, closeModal, toast, showToast]);
   return <UiContext.Provider value={value}>{children}</UiContext.Provider>;
 }
 

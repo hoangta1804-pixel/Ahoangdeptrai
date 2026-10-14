@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useUi } from '../../app/UiContext';
 import { EmptyState } from '../../components/EmptyState';
 import { OrderStatusBadge, PaymentStatusBadge } from '../../components/StatusBadge';
+import { listOrdersFor } from '../../domain/access';
 import { formatMoney } from '../../domain/pricing';
 import { formatDateKey } from '../../domain/state';
 import { ORDER_KIND_LABEL, ORDER_STATUS_LABEL, ORDER_STATUSES, type OrderStatus } from '../../domain/types';
@@ -10,9 +11,10 @@ import { useStore } from '../../store/AppDataContext';
 /** Danh sách đơn của HTX (FR-DH-07). HTX chỉ thấy đơn của HTX mình. */
 export function CoopOrdersTab() {
   const { state } = useStore();
-  const { coopId, openModal } = useUi();
+  const { coopActor, openModal } = useUi();
   const [filter, setFilter] = useState<OrderStatus | 'all'>('all');
-  const mine = state.orders.filter((o) => o.coopId === coopId).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const listed = listOrdersFor(state, coopActor);
+  const mine = listed.ok ? listed.value : [];
   const shown = filter === 'all' ? mine : mine.filter((o) => o.status === filter);
 
   return (

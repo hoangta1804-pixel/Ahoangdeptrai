@@ -1,10 +1,15 @@
+import { useUi } from '../../app/UiContext';
 import { EmptyState } from '../../components/EmptyState';
+import { readAuditLogs } from '../../domain/access';
 import { useStore } from '../../store/AppDataContext';
 
 /** Nhật ký thao tác của Admin và HTX (mục 5.9): chỉ thêm, không sửa, không xoá. */
 export function AdminAuditTab() {
   const { state } = useStore();
-  if (state.auditLogs.length === 0) return <EmptyState>Chưa có thao tác nào được ghi.</EmptyState>;
+  const { adminActor } = useUi();
+  const logs = readAuditLogs(state, adminActor);
+  if (!logs.ok) return <EmptyState>{logs.error}</EmptyState>;
+  if (logs.value.length === 0) return <EmptyState>Chưa có thao tác nào được ghi.</EmptyState>;
   return (
     <div className="overflow-x-auto rounded-2xl border border-stone-200 bg-white">
       <table className="w-full min-w-[640px] text-left text-sm">
@@ -18,7 +23,7 @@ export function AdminAuditTab() {
           </tr>
         </thead>
         <tbody className="divide-y divide-stone-100">
-          {state.auditLogs.map((l) => (
+          {logs.value.map((l) => (
             <tr key={l.id}>
               <td className="px-3 py-2 whitespace-nowrap">{new Date(l.at).toLocaleString('vi-VN')}</td>
               <td className="px-3 py-2">{l.actor.name}</td>

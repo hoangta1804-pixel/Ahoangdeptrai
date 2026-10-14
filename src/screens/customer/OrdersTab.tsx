@@ -3,6 +3,7 @@ import { MessageSquareWarning } from 'lucide-react';
 import { useUi } from '../../app/UiContext';
 import { EmptyState } from '../../components/EmptyState';
 import { OrderStatusBadge, PaymentStatusBadge } from '../../components/StatusBadge';
+import { listOrdersFor } from '../../domain/access';
 import { formatMoney } from '../../domain/pricing';
 import { ORDER_KIND_LABEL, ORDER_STATUS_LABEL, ORDER_STATUSES, type OrderStatus } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
@@ -12,9 +13,8 @@ export function OrdersTab() {
   const { state } = useStore();
   const { customerActor, openModal } = useUi();
   const [filter, setFilter] = useState<OrderStatus | 'all'>('all');
-  const mine = state.orders
-    .filter((o) => o.customerId === customerActor.id)
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const listed = listOrdersFor(state, customerActor);
+  const mine = listed.ok ? listed.value : [];
   const counts = Object.fromEntries(ORDER_STATUSES.map((s) => [s, mine.filter((o) => o.status === s).length])) as Record<OrderStatus, number>;
   const shown = filter === 'all' ? mine : mine.filter((o) => o.status === filter);
 

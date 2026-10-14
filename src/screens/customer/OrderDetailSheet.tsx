@@ -3,6 +3,7 @@ import { useUi } from '../../app/UiContext';
 import { BottomSheet } from '../../components/BottomSheet';
 import { DangerButton, Field, PrimaryButton, SecondaryButton, Select, Textarea } from '../../components/form';
 import { OrderStatusBadge, PaymentStatusBadge } from '../../components/StatusBadge';
+import { getOrderFor } from '../../domain/access';
 import { returnDeadline } from '../../domain/complaint';
 import { customerCancelMode } from '../../domain/orderStateMachine';
 import {
@@ -15,7 +16,7 @@ import {
 } from '../../domain/orders';
 import { formatMoney } from '../../domain/pricing';
 import { depositRefundDeadline } from '../../domain/refund';
-import { findOrder, formatDateKey, fromDateKey } from '../../domain/state';
+import { formatDateKey, fromDateKey } from '../../domain/state';
 import { ORDER_KIND_LABEL, ORDER_STATUS_LABEL, REFUND_SOURCE_LABEL } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
 
@@ -27,8 +28,9 @@ export function OrderDetailSheet({ orderId, onClose }: { orderId: string; onClos
   const { customerActor, openModal, showToast } = useUi();
   const [cancelReason, setCancelReason] = useState('');
   const [cancelling, setCancelling] = useState(false);
-  const order = findOrder(state, orderId);
-  if (!order || order.customerId !== customerActor.id) return null;
+  const found = getOrderFor(state, customerActor, orderId);
+  if (!found.ok) return null;
+  const order = found.value;
   const p = order.pricing;
   const at = now();
 

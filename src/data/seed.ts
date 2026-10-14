@@ -12,13 +12,8 @@ import { carrierSimulate, coopConfirm, coopHandover, customerConfirmReceived } f
 import { DEFAULT_PARAMS } from '../domain/params';
 import { applyGatewayResult } from '../domain/payment';
 import { addMs, DAY_MS, HOUR_MS, toDateKey } from '../domain/state';
-import type { Actor, DemoState, Product } from '../domain/types';
+import type { Actor, DemoState, Product, UserAccount } from '../domain/types';
 import type { Voucher } from '../domain/voucher';
-
-export const DEMO_CUSTOMERS: Actor[] = [
-  { kind: 'customer', id: 'cust-1', name: 'Khách hàng mẫu 1' },
-  { kind: 'customer', id: 'cust-2', name: 'Khách hàng mẫu 2' },
-];
 
 const dateFromNow = (now: Date, days: number) => toDateKey(addMs(now, days * DAY_MS));
 
@@ -125,9 +120,29 @@ function vouchers(now: Date): Voucher[] {
   ];
 }
 
+/**
+ * Tài khoản demo (mục 5.9). SĐT rõ ràng là giả; OTP mô phỏng luôn là 123456.
+ * Đủ 2 khách hàng, các HTX, Admin theo 4 nhóm quyền + Quản trị gốc, 1 tài khoản Cơ quan QLNN.
+ */
+export const DEMO_USERS: Omit<UserAccount, 'createdAt'>[] = [
+  { id: 'u-kh1', phone: '0900000001', name: 'Khách hàng mẫu 1', role: 'customer', customerId: 'cust-1', status: 'active' },
+  { id: 'u-kh2', phone: '0900000002', name: 'Khách hàng mẫu 2', role: 'customer', customerId: 'cust-2', status: 'active' },
+  { id: 'u-htx-bacha', phone: '0900000101', name: 'HTX mẫu Bắc Hà', role: 'coop', coopId: 'coop-bacha', status: 'active' },
+  { id: 'u-htx-mk', phone: '0900000102', name: 'HTX mẫu Mường Khương', role: 'coop', coopId: 'coop-muongkhuong', status: 'active' },
+  { id: 'u-htx-sapats', phone: '0900000103', name: 'HTX mẫu Sa Pa (thuỷ sản)', role: 'coop', coopId: 'coop-sapa-ts', status: 'active' },
+  { id: 'u-htx-sapacaq', phone: '0900000104', name: 'HTX mẫu Sa Pa (cây ăn quả)', role: 'coop', coopId: 'coop-sapa-caq', status: 'active' },
+  { id: 'u-ad-vh', phone: '0900000201', name: 'Admin – Vận hành (mẫu)', role: 'admin', adminGroup: 'operations', status: 'active' },
+  { id: 'u-ad-cl', phone: '0900000202', name: 'Admin – Chất lượng (mẫu)', role: 'admin', adminGroup: 'quality', status: 'active' },
+  { id: 'u-ad-cskh', phone: '0900000203', name: 'Admin – CSKH (mẫu)', role: 'admin', adminGroup: 'cskh', status: 'active' },
+  { id: 'u-ad-tc', phone: '0900000204', name: 'Admin – Tài chính (mẫu)', role: 'admin', adminGroup: 'finance', status: 'active' },
+  { id: 'u-ad-root', phone: '0900000209', name: 'Quản trị gốc (mẫu)', role: 'admin', adminGroup: 'root', status: 'active' },
+  { id: 'u-qlnn', phone: '0900000301', name: 'Cơ quan QLNN (mẫu)', role: 'regulator', status: 'active' },
+];
+
 function baseState(now: Date): DemoState {
   return {
     clockOffsetMs: 0,
+    users: DEMO_USERS.map((u) => ({ ...u, createdAt: now.toISOString() })),
     customers: [
       { id: 'cust-1', name: 'Khách hàng mẫu 1', phone: '0900000001', refundAccount: { bankName: 'Ngân hàng mẫu', accountNumber: '000000000001', holder: 'KHACH HANG MAU 1' } },
       { id: 'cust-2', name: 'Khách hàng mẫu 2', phone: '0900000002' },
@@ -172,6 +187,10 @@ function baseState(now: Date): DemoState {
     params: structuredClone(DEFAULT_PARAMS),
     paramHistory: [],
     auditLogs: [],
+    notifications: [],
+    ledgerEntries: [],
+    reviews: [],
+    lowStockAlerts: {},
   };
 }
 
@@ -183,9 +202,9 @@ function must(r: { ok: true; value: DemoState } | { ok: false; error: string }):
 /** Tạo dữ liệu mẫu: 1 đơn đã giao (để demo khiếu nại, đối soát) và 1 đơn đã thanh toán đang chờ HTX xác nhận. */
 export function createSeedState(now: Date): DemoState {
   let s = baseState(now);
-  const cust2: Actor = DEMO_CUSTOMERS[1];
-  const cust1: Actor = DEMO_CUSTOMERS[0];
-  const coopMK: Actor = { kind: 'coop', id: 'coop-muongkhuong', name: 'HTX mẫu Mường Khương' };
+  const cust2: Actor = { kind: 'customer', id: 'cust-2', userId: 'u-kh2', name: 'Khách hàng mẫu 2' };
+  const cust1: Actor = { kind: 'customer', id: 'cust-1', userId: 'u-kh1', name: 'Khách hàng mẫu 1' };
+  const coopMK: Actor = { kind: 'coop', id: 'coop-muongkhuong', userId: 'u-htx-mk', name: 'HTX mẫu Mường Khương' };
   const opsSystem: Actor = { kind: 'admin', id: 'seed', name: 'Dữ liệu mẫu', adminGroup: 'operations' };
 
   // Đơn 1: Khách 2 mua 2 túi gạo, COD, đã giao cách đây 2 ngày.
@@ -242,6 +261,6 @@ export function createSeedState(now: Date): DemoState {
     return r.ok ? { ok: true as const, value: r.value.state } : r;
   })());
 
-  // Nhật ký của dữ liệu mẫu không tính là thao tác thật.
+  // Nhật ký và sổ giao dịch của dữ liệu mẫu giữ lại để màn Admin có dữ liệu; thông báo bắt đầu trống.
   return { ...s, auditLogs: [] };
 }

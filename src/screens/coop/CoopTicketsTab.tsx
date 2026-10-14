@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useUi } from '../../app/UiContext';
 import { EmptyState } from '../../components/EmptyState';
 import { SecondaryButton, Textarea } from '../../components/form';
+import { listTicketsFor } from '../../domain/access';
 import { coopReplyTicket } from '../../domain/complaint';
 import { COMPLAINT_REASON_LABEL, TICKET_STATUS_LABEL, type Ticket } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
@@ -9,8 +10,9 @@ import { useStore } from '../../store/AppDataContext';
 /** HTX chỉ xem và phản hồi ticket của HTX mình; không đóng, không từ chối hoàn tiền, không sửa nội dung (mục 5.8). */
 export function CoopTicketsTab() {
   const { state } = useStore();
-  const { coopId } = useUi();
-  const mine = state.tickets.filter((t) => t.coopId === coopId);
+  const { coopActor } = useUi();
+  const listed = listTicketsFor(state, coopActor);
+  const mine = listed.ok ? listed.value : [];
   if (mine.length === 0) return <EmptyState>Chưa có khiếu nại nào.</EmptyState>;
   return (
     <ul className="space-y-3">

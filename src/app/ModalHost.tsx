@@ -1,7 +1,5 @@
-import { AuthSheet } from '../components/auth/AuthSheet';
-import { FaceIdModal } from '../components/auth/FaceIdModal';
-import { SilentLockedModal } from '../components/auth/SilentLockedModal';
 import { DemoPanel } from '../components/DemoPanel';
+import { NotificationsSheet } from '../components/NotificationsSheet';
 import { CoopOrderSheet } from '../screens/coop/CoopOrderSheet';
 import { AddressBookSheet } from '../screens/customer/AddressBookSheet';
 import { AddressFormSheet } from '../screens/customer/AddressFormSheet';
@@ -41,11 +39,7 @@ export function ModalHost() {
       return <CoopOrderSheet key={modal.orderId} orderId={modal.orderId} onClose={closeModal} />;
     case 'demo_panel':
       return <DemoPanel onClose={closeModal} />;
-    case 'auth':
-      return <AuthSheet initialStep={modal.step} onClose={closeModal} />;
-    case 'silent_locked':
-      return <SilentLockedModal onClose={closeModal} />;
-    case 'face_id_scan':
-      return <FaceIdModal />;
+    case 'notifications':
+      return <NotificationsSheet onClose={closeModal} />;
   }
 }

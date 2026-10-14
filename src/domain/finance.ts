@@ -5,7 +5,7 @@
  */
 import { generateId } from './ids';
 import { completeRefund, startRefund } from './refund';
-import { audit, findOrder, iso, replaceOrder } from './state';
+import { addLedger, audit, findOrder, iso, replaceOrder } from './state';
 import { fail, ok, type Actor, type DemoState, type RefundRecord, type Result } from './types';
 
 function requireFinance(actor: Actor): string | null {
@@ -46,5 +46,7 @@ export function confirmRefundBySimBank(state: DemoState, refundId: string, actor
   if (!r.ok) return r;
   let next = { ...state, refunds: state.refunds.map((x) => (x.id === refundId ? { ...r.value, completedAt: iso(at) } : x)) };
   next = syncOrderPayment(next, r.value);
+  const order = findOrder(next, refund.orderId);
+  next = addLedger(next, { type: 'refund_out', amount: -refund.amount, orderId: refund.orderId, coopId: order?.coopId, refId: refund.id, note: r.value.bankRef }, at);
   return ok(audit(next, actor, 'Ghi nhận đã hoàn tiền (ngân hàng mô phỏng)', refund.orderId, at, `${refund.amount}`));
 }

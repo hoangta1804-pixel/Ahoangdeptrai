@@ -12,7 +12,7 @@ import { useNow, useStore } from '../../store/AppDataContext';
 /** Cổng thanh toán – MÔ PHỎNG (mục 5.4). Kết quả chỉ ghi nhận qua applyGatewayResult(). */
 export function PaymentSheet({ txId, onClose }: { txId: string; onClose: () => void }) {
   const { state, run } = useStore();
-  const { showToast, setCustomerTab, setRole } = useUi();
+  const { showToast, setCustomerTab } = useUi();
   const at = useNow(1000);
   const tx = state.transactions.find((t) => t.id === txId);
   if (!tx) return null;
@@ -34,7 +34,6 @@ export function PaymentSheet({ txId, onClose }: { txId: string; onClose: () => v
     );
     showToast(r.ok ? message : r.error);
     onClose();
-    setRole('customer');
     setCustomerTab('orders');
   };
 

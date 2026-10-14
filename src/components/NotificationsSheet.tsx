@@ -1,0 +1,57 @@
+import { useEffect, useState } from 'react';
+import { useUi } from '../app/UiContext';
+import { markNotificationsRead, notificationsOf } from '../domain/notifications';
+import type { AppNotification } from '../domain/types';
+import { useStore } from '../store/AppDataContext';
+import { BottomSheet } from './BottomSheet';
+import { EmptyState } from './EmptyState';
+
+/** Trung tâm thông báo của tài khoản đang đăng nhập (FR-CSKH-10). Mở ra thì đánh dấu đã đọc. */
+export function NotificationsSheet({ onClose }: { onClose: () => void }) {
+  const { state, run } = useStore();
+  const { user, openModal } = useUi();
+  const list = user ? notificationsOf(state, user.id) : [];
+  // Giữ danh sách chưa đọc lúc mở để vẫn tô nổi sau khi đã đánh dấu đọc.
+  const [unreadIds] = useState(() => list.filter((n) => !n.read).map((n) => n.id));
+
+  useEffect(() => {
+    if (user && unreadIds.length > 0) run((s) => ({ ok: true, value: markNotificationsRead(s, user.id, unreadIds) }));
+    // Chỉ đánh dấu những thông báo chưa đọc lúc mở.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const open = (n: AppNotification) => {
+    if (!n.link || !user) return;
+    const orderId = n.link.type === 'order' ? n.link.id : n.link.type === 'ticket' ? state.tickets.find((t) => t.id === n.link!.id)?.orderId : undefined;
+    if (!orderId) return;
+    if (user.role === 'customer') openModal({ type: 'order_detail', orderId });
+    else if (user.role === 'coop') openModal({ type: 'coop_order', orderId });
+  };
+
+  return (
+    <BottomSheet title={`Thông báo (${list.length})`} onClose={onClose}>
+      {list.length === 0 ? (
+        <EmptyState>Chưa có thông báo nào.</EmptyState>
+      ) : (
+        <ul className="space-y-2">
+          {list.map((n) => {
+            const clickable = !!n.link && (user?.role === 'customer' || user?.role === 'coop') && n.link.type !== 'product';
+            return (
+              <li key={n.id}>
+                <button
+                  disabled={!clickable}
+                  onClick={() => open(n)}
+                  className={`w-full rounded-2xl border p-3 text-left text-sm ${unreadIds.includes(n.id) ? 'border-emerald-700 bg-emerald-50' : 'border-stone-200 bg-white'} disabled:cursor-default`}
+                >
+                  <span className="block font-bold text-stone-900">{n.title}</span>
+                  {n.body && <span className="block text-stone-700">{n.body}</span>}
+                  <span className="block text-xs text-stone-500">{new Date(n.at).toLocaleString('vi-VN')}</span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </BottomSheet>
+  );
+}

@@ -6,7 +6,7 @@ Tài liệu này cập nhật sau mỗi giai đoạn của `PROMPT_SUA_APP.md`. 
 |---|---|---|
 | 1 | Hợp nhất mã nguồn, sửa cấu hình build | **Xong** |
 | 2 | Sửa lỗi L1–L18 | **Xong** |
-| 3 | Dữ liệu dùng chung và đăng nhập | Chưa làm |
+| 3 | Dữ liệu dùng chung và đăng nhập | **Xong** |
 | 4 | Chức năng mức Must theo vai trò | Chưa làm |
 | 5 | Nội dung và dữ liệu mẫu | Chưa làm |
 | 6 | Giao diện | Chưa làm |
@@ -21,14 +21,111 @@ npm run lint     # kiểm tra kiểu TypeScript
 npm test         # unit test vitest cho src/domain
 ```
 
-### Kết quả lần chạy cuối (Giai đoạn 2)
+### Kết quả lần chạy cuối (Giai đoạn 3)
 
 | Lệnh | Kết quả |
 |---|---|
 | `npm run lint` | Không lỗi |
-| `npm test` | 9 file, 52 test, tất cả đạt |
-| `npm run build` | Thành công. JS 426 kB (gzip 122 kB), CSS 65 kB (gzip 19 kB) |
-| Kiểm thử trình duyệt (Playwright, chặn mọi request ngoài localhost) | Đạt cả Luồng 1 (trừ bước đăng nhập và đánh giá, xem dưới) và Luồng 2. Không lỗi JS. Không tràn ngang ở 320, 390 và 1280px |
+| `npm test` | 11 file, 59 test, tất cả đạt |
+| `npm run build` | Thành công |
+| Kiểm thử trình duyệt (Playwright, chặn mọi request ngoài localhost, 2 tab cùng lúc) | Đạt. Không lỗi JS |
+
+---
+
+## Giai đoạn 3 – Dữ liệu dùng chung và đăng nhập
+
+### Đăng nhập và phân quyền (mục 5.9)
+
+- **Đăng nhập bằng SĐT + OTP.**
+  - Màn hình ghi rõ "OTP mô phỏng", mã luôn là `123456`, có nút "Điền OTP mô phỏng".
+  - Có danh sách tài khoản demo để bấm nhanh: bấm một tài khoản thì điền sẵn SĐT, rồi nhập OTP.
+  - Sai OTP, SĐT chưa có tài khoản, tài khoản đang khoá đều bị chặn kèm lý do.
+- **Khách hàng mới đăng ký được** bằng họ tên + SĐT + OTP mô phỏng (FR-TK-01). Tài khoản HTX, Admin, QLNN do Admin cấp (làm ở Giai đoạn 4).
+- **Đã bỏ thanh chuyển vai trò công khai,** ô chọn HTX và ô chọn nhóm quyền Admin. Vai trò, HTX và nhóm quyền lấy từ tài khoản đăng nhập. Đổi vai trò bằng nút "Đăng xuất" rồi đăng nhập tài khoản khác.
+- **Đã bỏ màn đăng nhập cũ của `src/App.tsx`:** mật khẩu, Face ID, "Silent Push khoá phiên", hotline 1900. Thẻ "Khoá phiên tức thời (thử nghiệm)" ở Tham số cũng đã bỏ. Khoá tài khoản thật làm ở Giai đoạn 4 (FR-TK-10/12).
+- **Phiên đăng nhập lưu theo từng tab** (`sessionStorage`), dữ liệu lưu chung (`localStorage`).
+  - Hai tab cùng trình duyệt đăng nhập được hai vai trò khác nhau và thấy cùng một dữ liệu.
+  - Tab còn lại cập nhật ngay qua sự kiện `storage` và khi tải lại trang.
+- **Kiểm quyền đọc trong hàm domain** (`src/domain/access.ts`), các màn đều đọc qua đây:
+  - `listOrdersFor`, `getOrderFor`: khách chỉ thấy đơn của mình; HTX chỉ thấy đơn của HTX mình; QLNN không xem được chi tiết đơn.
+  - `listTicketsFor`: HTX chỉ thấy ticket của HTX mình.
+  - `regulatorOrderRows`: dòng đơn ẩn danh cho QLNN (không tên, SĐT, địa chỉ, tài khoản).
+  - `readAuditLogs`: chỉ Quản trị gốc xem nhật ký; QLNN không xem được.
+  - `viewRefundAccount`: tài khoản ngân hàng của khách hiện dạng che `**** 0001`; chỉ Admin – Tài chính xem đầy đủ.
+- **Quyền thao tác** đã kiểm trong từng hàm từ Giai đoạn 2. QLNN không có thao tác sửa nào.
+- **Màn Admin chia chức năng theo nhóm quyền của tài khoản:**
+  - Vận hành: Tổng quan, Đơn hàng, Mô phỏng ĐVVC, Tham số.
+  - Chất lượng: Tổng quan, Duyệt sản phẩm & giá.
+  - CSKH: Tổng quan, Ticket.
+  - Tài chính: Tổng quan, Hoàn tiền, Đối soát HTX, Sổ giao dịch.
+  - Quản trị gốc: Tổng quan, Tài khoản (chỉ xem), Nhật ký.
+
+### Dữ liệu dùng chung (mục 7)
+
+| Thực thể theo mục 7 | Trong store (`DemoState`) |
+|---|---|
+| users | `users` (tài khoản đăng nhập: vai trò, HTX, nhóm quyền, trạng thái) |
+| coops | `coops` |
+| products | `products` |
+| preorderConfigs | `products[].preorder` (quan hệ 1–1 với sản phẩm đặt trước) |
+| addresses | `addresses`, `wards` (danh mục phường/xã mẫu) |
+| carts | `carts` (theo khách hàng) |
+| checkouts (lần đặt) | `checkouts` |
+| orders (kèm items, statusHistory) | `orders` |
+| transactions | `transactions` |
+| vouchers, voucherUsages | `vouchers`, `voucherUsages` |
+| giftBoxTypes | `giftBoxTypes` |
+| tickets | `tickets` |
+| reviews | `reviews` (khung dữ liệu; chức năng đánh giá làm ở Giai đoạn 4) |
+| ledgerEntries | `ledgerEntries`: tiền vào qua cổng, thu COD, hoàn tiền, chi trả HTX, hoa hồng. Chỉ thêm, không sửa |
+| payoutPeriods | `payoutPeriods` |
+| params (kèm history) | `params`, `paramHistory` |
+| auditLogs | `auditLogs` |
+| notifications | `notifications` |
+| (thêm) | `customers`, `productChanges`, `refunds`, `lowStockAlerts`, `clockOffsetMs` |
+
+- Mọi thay đổi đi qua các hàm trong `src/domain` thông qua `run()` của store.
+- Khoá `localStorage` lên phiên bản 3, nên dữ liệu của bản cũ tự được thay bằng dữ liệu mẫu mới.
+
+### Trung tâm thông báo (FR-CSKH-10)
+
+Nút chuông ở thanh trên cùng hiện số chưa đọc. Mở ra thì đánh dấu đã đọc; bấm thông báo của đơn thì mở đúng đơn.
+
+Thông báo do `deriveNotifications()` sinh: hàm so dữ liệu trước và sau mỗi thao tác. Vì vậy thao tác của người dùng, tác vụ theo giờ và cổng mô phỏng đều sinh thông báo như nhau.
+
+| Sự kiện | Người nhận |
+|---|---|
+| Tạo đơn; đơn đổi trạng thái (kèm lý do) | Khách. HTX nhận khi đơn đã thanh toán / COD cần xác nhận và các bước sau. Không báo lại cho chính bên vừa thao tác |
+| Đơn Đã giao | Khách, kèm lời "Mời bạn đánh giá sản phẩm" |
+| HTX báo hàng sẵn sàng, cần trả phần còn lại | Khách |
+| Nhắc thanh toán ở phút PAR-20 | Khách |
+| Hoàn tiền (Chờ / Đang / Đã hoàn) | Khách |
+| Khách yêu cầu huỷ; HTX từ chối yêu cầu huỷ | HTX; khách |
+| Khiếu nại mới | HTX của đơn và Admin – CSKH |
+| HTX phản hồi khiếu nại; ticket đổi trạng thái | Khách và CSKH; khách và HTX |
+| Yêu cầu đổi giá / báo thu hoạch mới; kết quả duyệt | Admin – Chất lượng; HTX |
+| Yêu cầu hoàn tiền mới | Admin – Tài chính |
+| Đã ghi nhận chi trả kỳ đối soát | HTX |
+| Tồn thấp (≤ ngưỡng PAR-02), tối đa 1 lần/ngày mỗi sản phẩm | HTX |
+
+### Kiểm thử Giai đoạn 3
+
+- **Unit test mới:**
+  - `access.test.ts`: đăng nhập, đăng ký, T21, T22, che tài khoản, quyền xem nhật ký.
+  - `notifications.test.ts`: thông báo theo trạng thái đơn, khiếu nại, kết quả duyệt, tồn thấp 1 lần/ngày.
+- **Trình duyệt, 2 tab cùng lúc:**
+  1. Tab A (Khách hàng mẫu 1): nhập sai OTP bị chặn; đăng nhập đúng; mua mật ong và thanh toán mô phỏng.
+  2. Tab B mở ra ở màn đăng nhập (phiên riêng), đăng nhập HTX mẫu Bắc Hà. HTX nhận 2 thông báo ("Đơn mới … cần xác nhận", "Tồn thấp"), xác nhận đơn, không thấy đơn của HTX khác.
+  3. Tab A tải lại: đơn sang Đang chuẩn bị, có 3 thông báo.
+  4. Đăng xuất rồi đăng nhập QLNN: không có tên, SĐT, địa chỉ; có bảng đơn ẩn danh.
+  5. Quản trị gốc thấy dòng nhật ký "HTX mẫu Bắc Hà · Xác nhận đơn".
+  6. Admin – Tài chính thấy sổ giao dịch.
+  7. Khách hàng mẫu 2 chỉ thấy đơn của mình.
+
+### Còn tồn tại sau Giai đoạn 3
+
+- **Còn thiếu các chức năng tài khoản thuộc Giai đoạn 4:** thông tin cá nhân (TK-03), hồ sơ HTX (TK-06/07), cấp và khoá tài khoản (TK-10/12), phân quyền (TK-11). Màn "Tài khoản" của Quản trị gốc hiện chỉ xem.
+- **Công cụ demo** hiện cho mọi tài khoản và cả ở màn đăng nhập, vì đây là bản demo. Nếu nhóm muốn chỉ Admin thấy thì sửa ở `AppShell`.
 
 ---
 
@@ -125,7 +222,7 @@ Chưa chạy được, chờ giai đoạn sau:
 
 ### Còn tồn tại sau Giai đoạn 2
 
-- **Danh tính tạm thời:** khách luôn là "Khách hàng mẫu 1"; HTX chọn bằng ô chọn; nhóm quyền Admin chọn bằng ô chọn. Giai đoạn 3 thay bằng đăng nhập SĐT + OTP mô phỏng; khi đó màn đăng nhập cũ (mật khẩu, Face ID, "Silent Push") sẽ được làm lại.
+- ~~**Danh tính tạm thời** (khách cố định, chọn HTX và nhóm quyền bằng ô chọn)~~ – đã thay bằng đăng nhập ở Giai đoạn 3.
 - **Chưa có:** đổi ngày giao D 1 lần sau khi đặt; đổi người nhận / địa chỉ trước bàn giao; trung tâm thông báo; đánh giá. Các mục này thuộc Giai đoạn 3–4.
 - **Màn Tham số chỉ đọc.** Phần sửa kèm lý do làm ở Giai đoạn 4; hàm `updateParam` đã có.
 - **Sản phẩm, mô tả, ảnh Unsplash vẫn là bộ cũ**, chỉ đã sửa nhóm hàng và mã HTX. Giai đoạn 5 thay theo danh mục của nhóm.
@@ -170,8 +267,8 @@ Chưa chạy được, chờ giai đoạn sau:
 | T18 | Đạt | `flow.test.ts` |
 | T19 | Chưa làm | Đánh giá làm ở Giai đoạn 4 |
 | T20 | Đạt | `text.test.ts` |
-| T21 | Một phần | `regulatorOrderRows` không có tên, SĐT, địa chỉ (`flow.test.ts`). Chặn quyền đọc theo tài khoản QLNN làm ở Giai đoạn 3 |
-| T22 | Một phần | HTX B thao tác đơn của HTX A bị từ chối (`payment.test.ts`). Hàm đọc đơn theo tài khoản làm ở Giai đoạn 3 |
+| T21 | Đạt | `access.test.ts`, `flow.test.ts` |
+| T22 | Đạt | `access.test.ts`, `payment.test.ts` |
 
 Ngoài các ca trên còn có test cho:
 - đặt lặp với cùng khoá (BR-DAT-07), HTX không đặt được hàng (BR-DAT-01);
@@ -206,6 +303,12 @@ Chưa bắt đầu. Bảng FR theo vai trò sẽ được điền khi làm Giai 
 18. **Ảnh khiếu nại** được thu nhỏ còn cạnh dài 320px và chỉ lưu trên trình duyệt (mô phỏng tải ảnh).
 19. **Đề xuất của SRS dùng như quy tắc:** BR-TON-04 (giữ hàng ngay khi tạo đơn) và BR-TT-06 (lần trả thứ hai tạo yêu cầu hoàn 100%).
 20. **Mã đơn** dạng `DH-yyyymmdd-xxxxxx`, phần ngẫu nhiên bỏ các ký tự dễ nhầm (0/O, 1/I).
+21. **preorderConfigs lưu ngay trong sản phẩm** (`products[].preorder`), vì mỗi sản phẩm đặt trước có đúng một cấu hình đang áp dụng. Lịch sử báo thu hoạch nằm ở `productChanges`.
+22. **Phiên đăng nhập theo từng tab** (`sessionStorage`), để demo hai vai trò song song trên một trình duyệt.
+23. **Nhật ký thao tác chỉ Quản trị gốc xem** (FR-HT-03); các nhóm Admin khác không xem.
+24. **Thông báo không gửi lại cho chính bên vừa thao tác** (ví dụ HTX tự xác nhận đơn thì chỉ khách nhận thông báo).
+25. **Tồn thấp khi tồn khả dụng ≤ ngưỡng** (PAR-02 hoặc ngưỡng riêng của sản phẩm), kể cả lúc khách vừa tạo đơn và hàng đang được giữ.
+26. **Khách hàng đăng ký mới** bằng SĐT + OTP mô phỏng, chưa yêu cầu thêm thông tin nào khác. Thông tin cá nhân (TK-03) làm ở Giai đoạn 4.
 
 ## Vấn đề chờ nhóm chốt
 
@@ -225,8 +328,21 @@ Tài liệu yêu cầu không mô tả nội dung của OI-02, OI-04, OI-05, OI-
 
 ## Tài khoản demo và khôi phục dữ liệu
 
-- **Tài khoản demo:** chưa có đăng nhập (Giai đoạn 3). Tạm thời:
-  - Khách là "Khách hàng mẫu 1";
-  - HTX chọn ở ô "Đang xem với tư cách HTX";
-  - nhóm quyền Admin chọn ở ô bên trái màn Admin.
+**Tài khoản demo.** Đăng nhập bằng SĐT, OTP mô phỏng luôn là `123456`. Có thể bấm tên tài khoản ở màn đăng nhập để điền sẵn số.
+
+| Tài khoản | SĐT | Vai trò |
+|---|---|---|
+| Khách hàng mẫu 1 | 0900 000 001 | Khách hàng (có tài khoản nhận hoàn, có 1 đơn mẫu Chờ xác nhận) |
+| Khách hàng mẫu 2 | 0900 000 002 | Khách hàng (có 1 đơn mẫu Đã giao) |
+| HTX mẫu Bắc Hà | 0900 000 101 | HTX (mận, mật ong) |
+| HTX mẫu Mường Khương | 0900 000 102 | HTX (gạo) |
+| HTX mẫu Sa Pa (thuỷ sản) | 0900 000 103 | HTX (cá hồi) |
+| HTX mẫu Sa Pa (cây ăn quả) | 0900 000 104 | HTX (đào) |
+| Admin – Vận hành (mẫu) | 0900 000 201 | Admin – Vận hành |
+| Admin – Chất lượng (mẫu) | 0900 000 202 | Admin – Chất lượng |
+| Admin – CSKH (mẫu) | 0900 000 203 | Admin – CSKH |
+| Admin – Tài chính (mẫu) | 0900 000 204 | Admin – Tài chính |
+| Quản trị gốc (mẫu) | 0900 000 209 | Quản trị gốc |
+| Cơ quan QLNN (mẫu) | 0900 000 301 | Cơ quan QLNN (chỉ xem) |
+
 - **Khôi phục dữ liệu mẫu:** bấm "Công cụ demo" ở góc phải thanh trên cùng, rồi bấm "Khôi phục dữ liệu mẫu". Thao tác này xoá dữ liệu trong `localStorage` (khoá `dac-san-so-lao-cai:data`), nạp lại dữ liệu mẫu và đưa đồng hồ demo về giờ thật.

@@ -8,9 +8,10 @@ import { applyGatewayResult } from '../payment';
 import { coopRequestPreorder, coopRequestPriceChange, coopUpdateStock, decideProductChange } from '../productChanges';
 import { closePeriod, eligibleLines, recordPayout, weekStart } from '../settlement';
 import { addMs, DAY_MS, HOUR_MS, MINUTE_MS } from '../state';
-import { aggregateStats, regulatorOrderRows } from '../stats';
+import { aggregateStats } from '../stats';
+import { regulatorOrderRows } from '../access';
 import type { DemoState } from '../types';
-import { ADMIN_CSKH, ADMIN_FIN, ADMIN_OPS, ADMIN_QA, COOP_X, CUSTOMER, keyX, keyXPre, line, makeState, placeInput, T0 } from './fixtures';
+import { ADMIN_CSKH, ADMIN_FIN, ADMIN_OPS, ADMIN_QA, COOP_X, CUSTOMER, REGULATOR, keyX, keyXPre, line, makeState, placeInput, T0 } from './fixtures';
 
 const must = <T,>(r: { ok: true; value: T } | { ok: false; error: string }): T => {
   if (!r.ok) throw new Error(r.error);
@@ -151,7 +152,7 @@ describe('Luồng đơn, khiếu nại, hoàn tiền, đối soát', () => {
     expect(stats.ordersTotal).toBe(1);
     expect(stats.ordersByStatus.delivered).toBe(1);
     expect(stats.deliveredGoodsValue).toBe(1_540_000);
-    const rows = JSON.stringify(regulatorOrderRows(state));
+    const rows = JSON.stringify(regulatorOrderRows(state, REGULATOR));
     expect(rows).not.toContain('Khách 1');
     expect(rows).not.toContain('0900000001');
     expect(rows).not.toContain('đường mẫu');
