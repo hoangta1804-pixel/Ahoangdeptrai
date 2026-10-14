@@ -50,6 +50,14 @@ describe('Giao diện (mục 10)', () => {
     expect(read('src/index.css')).not.toMatch(/user-select:\s*none/);
   });
 
+  it('không dùng hộp thoại của trình duyệt (bị chặn khi app chạy trong khung nhúng)', () => {
+    // Bỏ chú thích rồi tìm lời gọi confirm(), alert(), prompt() (không tính phương thức trùng tên như x.prompt()).
+    const calls = sources
+      .filter((f) => /(^|[^\w.])(window\.)?(confirm|alert|prompt)\(/m.test(f.text.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '')))
+      .map((f) => f.path);
+    expect(calls).toEqual([]);
+  });
+
   it('mọi sheet dùng chung BottomSheet', () => {
     expect(offenders(/role="dialog"/)).toEqual(['src/components/BottomSheet.tsx']);
   });

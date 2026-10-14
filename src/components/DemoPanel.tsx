@@ -7,7 +7,7 @@ import { formatMoney } from '../domain/pricing';
 import { TRANSACTION_STATUS_LABEL } from '../domain/types';
 import { useNow, useStore } from '../store/AppDataContext';
 import { BottomSheet } from './BottomSheet';
-import { Select, SecondaryButton } from './form';
+import { DangerButton, Select, SecondaryButton } from './form';
 
 /** Bảng điều khiển demo (mục 5.4). Chỉ để trình diễn, không phải chức năng của sản phẩm. */
 export function DemoPanel({ onClose }: { onClose: () => void }) {
@@ -18,6 +18,7 @@ export function DemoPanel({ onClose }: { onClose: () => void }) {
   const paid = state.transactions.filter((t) => t.status === 'paid');
   const [lateTx, setLateTx] = useState('');
   const [dupTx, setDupTx] = useState('');
+  const [confirmReset, setConfirmReset] = useState(false);
 
   const gateway = (txId: string) => {
     if (!txId) return showToast('Chọn giao dịch trước.');
@@ -97,17 +98,28 @@ export function DemoPanel({ onClose }: { onClose: () => void }) {
 
       <section className="space-y-2">
         <h4 className="text-sm font-bold">Dữ liệu</h4>
-        <SecondaryButton
-          className="w-full"
-          onClick={() => {
-            if (!window.confirm('Khôi phục dữ liệu mẫu? Mọi đơn, giỏ hàng và thay đổi trên trình duyệt này sẽ bị xoá.')) return;
-            resetDemoData();
-            closeModal();
-            showToast('Đã khôi phục dữ liệu mẫu.');
-          }}
-        >
-          Khôi phục dữ liệu mẫu
-        </SecondaryButton>
+        {/* Xác nhận ngay trong trang: hộp confirm() của trình duyệt bị chặn khi app chạy trong khung nhúng. */}
+        {confirmReset ? (
+          <div role="alert" className="space-y-2 rounded-2xl border border-rose-300 bg-rose-50 p-3 text-sm text-rose-900">
+            <p>Khôi phục dữ liệu mẫu? Mọi đơn, giỏ hàng và thay đổi trên trình duyệt này sẽ bị xoá.</p>
+            <div className="grid grid-cols-2 gap-2">
+              <SecondaryButton onClick={() => setConfirmReset(false)}>Huỷ</SecondaryButton>
+              <DangerButton
+                onClick={() => {
+                  resetDemoData();
+                  closeModal();
+                  showToast('Đã khôi phục dữ liệu mẫu.');
+                }}
+              >
+                Xoá và khôi phục
+              </DangerButton>
+            </div>
+          </div>
+        ) : (
+          <SecondaryButton className="w-full" onClick={() => setConfirmReset(true)}>
+            Khôi phục dữ liệu mẫu
+          </SecondaryButton>
+        )}
       </section>
     </BottomSheet>
   );
