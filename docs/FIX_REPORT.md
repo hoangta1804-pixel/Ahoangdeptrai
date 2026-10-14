@@ -26,10 +26,41 @@ npm test         # unit test vitest: src/domain, dữ liệu mẫu, quy ước g
 | Lệnh | Kết quả |
 |---|---|
 | `npm run lint` | Không lỗi |
-| `npm test` | 15 file, 126 test, tất cả đạt |
+| `npm test` | 15 file, 127 test, tất cả đạt |
 | `npm run build` | Thành công, không cảnh báo. Phần chung 431 kB (gzip 127 kB); màn HTX, Admin, QLNN tải riêng theo vai trò |
 | Luồng 1 và Luồng 2 (mục 11.2) bằng Playwright, chặn mọi request ngoài localhost | Đạt trọn vẹn. Không có request ra ngoài, không lỗi JS |
 | Kiểm tra giao diện tự động trên mọi màn và trong Luồng 1 (axe-core 4.10 + đo vùng bấm và cỡ chữ) | 0 lỗi tương phản AA, 0 nút thiếu tên, 0 vùng bấm dưới 44×44, 0 chữ dưới 12px |
+
+---
+
+## Sau Giai đoạn 6 – Chọn nhiều sản phẩm trong giỏ để đặt chung
+
+**Yêu cầu của chủ repo:** cho chọn nhiều sản phẩm trong giỏ hàng để thanh toán một thể. Trước đây bấm đặt hàng là đặt cả giỏ.
+
+**Giỏ hàng:**
+
+- Mỗi sản phẩm có ô chọn. Thêm ô "Chọn tất cả" để chọn hoặc bỏ chọn mọi sản phẩm đặt được.
+- Sản phẩm mới thêm vào giỏ được chọn sẵn.
+- Sản phẩm hết hàng hoặc tạm ngừng bán có ghi rõ, và không chọn được.
+- Chân giỏ hiện số sản phẩm đã chọn và tạm tính của các sản phẩm đó.
+- Nút đặt hàng ghi "Đặt hàng N sản phẩm (M món)". Chưa chọn gì thì nút bị khoá và ghi "Chọn sản phẩm để đặt hàng".
+- Nút tăng, giảm số lượng chuyển xuống dòng thứ hai, cạnh thành tiền của sản phẩm. Nhờ vậy màn 320px vẫn đủ vùng bấm 44px.
+
+**Đặt hàng:**
+
+- Chỉ các sản phẩm đã chọn vào bước đặt hàng (`CheckoutSource` có thêm `productIds`).
+- Đơn vẫn tách theo HTX và loại hàng; phần trả online gộp một giao dịch (PAR-19).
+- Đặt xong, chỉ các sản phẩm đã đặt bị xoá khỏi giỏ; sản phẩm không chọn ở lại.
+
+**Kiểm thử:**
+
+- **Unit test mới** (`checkout.test.ts`): đặt 2 trong 3 sản phẩm của giỏ thì ra 2 đơn, chung 1 giao dịch, và giỏ còn lại đúng sản phẩm không chọn.
+- **Trình duyệt:**
+  - chọn, bỏ chọn, chọn tất cả, bỏ chọn tất cả đều chạy;
+  - chọn mật ong và gạo (2 HTX) thì cổng thanh toán gộp 351.000đ cho 2 đơn;
+  - giỏ còn lại chè và mận;
+  - màn 320px không cuộn ngang;
+  - Luồng 1 và Luồng 2 vẫn đạt; kiểm tra giao diện tự động không có lỗi.
 
 ---
 

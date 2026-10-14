@@ -171,3 +171,29 @@ describe('Đặt hàng (mục 5.1–5.4)', () => {
     expect(addToCart(s, 'cust-1', 'y-dry', 11, T0).ok).toBe(false);
   });
 });
+
+describe('Đặt một phần giỏ hàng', () => {
+  it('chỉ các sản phẩm khách chọn được đặt (chung một giao dịch); sản phẩm không chọn ở lại giỏ', () => {
+    let s = makeState();
+    for (const [id, qty] of [['x-dry', 1], ['y-dry', 2], ['x-pre', 1]] as const) {
+      const r = addToCart(s, 'cust-1', id, qty, T0);
+      expect(r.ok, id).toBe(true);
+      if (r.ok) s = r.value;
+    }
+    const cart = s.carts['cust-1'];
+    const chosen = cart.filter((l) => l.productId === 'x-dry' || l.productId === 'y-dry');
+    const r = placeCheckout(
+      s,
+      placeInput(chosen, { [keyX]: { shipping: 'standard', paymentMethod: 'online' }, [keyY]: { shipping: 'standard', paymentMethod: 'online' } }, { fromCart: true }),
+      CUSTOMER,
+      T0,
+    );
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    // 2 HTX → 2 đơn, trả online gộp một giao dịch.
+    expect(r.checkout.orderIds).toHaveLength(2);
+    expect(r.transaction?.orderIds).toHaveLength(2);
+    expect(r.state.carts['cust-1'].map((l) => l.productId)).toEqual(['x-pre']);
+  });
+});
+

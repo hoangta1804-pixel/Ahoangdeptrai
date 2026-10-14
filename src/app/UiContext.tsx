@@ -10,7 +10,8 @@ import { loadSession, saveSession } from '../store/persistence';
 
 export type CustomerTab = 'explore' | 'season' | 'orders' | 'account';
 
-export type CheckoutSource = { type: 'cart' } | { type: 'buy_now'; line: CartLine };
+/** Đặt từ giỏ: `productIds` là các sản phẩm khách đã chọn trong giỏ (không có thì lấy cả giỏ). */
+export type CheckoutSource = { type: 'cart'; productIds?: string[] } | { type: 'buy_now'; line: CartLine };
 
 export type ModalState =
   | { type: 'product_detail'; productId: string }
