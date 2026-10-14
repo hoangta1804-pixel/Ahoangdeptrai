@@ -1,98 +1,134 @@
-import { Info } from 'lucide-react';
+import { useState } from 'react';
+import { AlertTriangle } from 'lucide-react';
 import { useUi } from '../../app/UiContext';
+import { EmptyState } from '../../components/EmptyState';
+import { Field, Input, PrimaryButton, SecondaryButton } from '../../components/form';
 import { ProductImage } from '../../components/ProductImage';
 import { formatMoney } from '../../domain/pricing';
-import { useAppData } from '../../store/AppDataContext';
-import { DEMO_COOP_ID } from './demoCoop';
+import { coopRequestPreorder, coopRequestPriceChange, coopUpdateStock } from '../../domain/productChanges';
+import { formatDateKey, remainingFor } from '../../domain/state';
+import { heldQuantity, isLowStock, reservedSlots } from '../../domain/stock';
+import { CATEGORY_LABEL, ORDER_KIND_LABEL, type Product } from '../../domain/types';
+import { useStore } from '../../store/AppDataContext';
 
+/**
+ * Sản phẩm của HTX (FR-SP-07, FR-SP-09, L12).
+ * Tồn kho có hiệu lực ngay; đổi giá và báo thu hoạch phải chờ Admin – Chất lượng duyệt (trong lúc chờ vẫn bán giá cũ).
+ */
 export function CoopProductsTab() {
-  const { products, setProducts } = useAppData();
-  const { showToast } = useUi();
+  const { state } = useStore();
+  const { coopId } = useUi();
+  const mine = state.products.filter((p) => p.coopId === coopId);
+  if (mine.length === 0) return <EmptyState>HTX chưa có sản phẩm.</EmptyState>;
   return (
     <div className="space-y-3">
-      <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 text-xs text-emerald-900 flex items-start gap-2">
-        <Info size={16} className="text-emerald-700 shrink-0 mt-0.5" />
-        <span>
-          <strong>Quyền tự chủ Preorder:</strong> HTX được chủ động điều chỉnh số lượng suất bán và lịch thu hái trên sản phẩm đã duyệt. Cập nhật áp dụng ngay tức thì trên App Khách hàng.
-        </span>
+      {mine.map((p) => (
+        <ProductCard key={p.id} product={p} />
+      ))}
+    </div>
+  );
+}
+
+function ProductCard({ product: p }: { product: Product }) {
+  const { state, run } = useStore();
+  const { coopActor, showToast } = useUi();
+  const [stock, setStock] = useState(String(p.stockOnHand));
+  const [price, setPrice] = useState('');
+  const [slots, setSlots] = useState(String(p.preorder?.totalSlots ?? ''));
+  const [from, setFrom] = useState(p.preorder?.deliveryFrom ?? '');
+  const [to, setTo] = useState(p.preorder?.deliveryTo ?? '');
+  const requests = state.productChanges.filter((c) => c.productId === p.id);
+  const held = heldQuantity(p.id, state.orders);
+  const available = remainingFor(state, p);
+  const threshold = p.lowStockThreshold ?? state.params.lowStockThreshold;
+
+  const act = (op: Parameters<typeof run>[0], ok: string) => {
+    const r = run(op);
+    showToast(r.ok ? ok : r.error);
+  };
+
+  return (
+    <div className="space-y-3 rounded-2xl border border-stone-200 bg-white p-3.5">
+      <div className="flex gap-3">
+        <ProductImage product={p} className="h-16 w-16 shrink-0 rounded-xl" />
+        <div className="min-w-0">
+          <h4 className="text-sm font-bold text-stone-900">{p.name}</h4>
+          <p className="text-sm text-stone-600">
+            {ORDER_KIND_LABEL[p.kind]} · {CATEGORY_LABEL[p.category]} · {formatMoney(p.price)}/{p.unit}
+          </p>
+          <p className="text-xs text-stone-500">Hoả tốc: {p.expressApproved ? 'đã duyệt' : 'chưa duyệt'}</p>
+        </div>
       </div>
 
-      {products
-        .filter((p) => p.coopId === DEMO_COOP_ID)
-        .map((prod) => (
-          <div key={prod.id} className="bg-white rounded-2xl border border-stone-200/80 p-3.5 shadow-xs space-y-3">
-            <div className="flex gap-3">
-              <ProductImage product={prod} className="w-16 h-16 rounded-xl" />
-              <div className="flex-1 min-w-0">
-                <span className="text-[10px] font-bold text-sky-700">{prod.certType}</span>
-                <h4 className="text-xs font-bold text-stone-900 truncate">{prod.name}</h4>
-                <span className="text-xs font-extrabold text-emerald-800 tabular-nums">
-                  {formatMoney(prod.price)}/{prod.unit}
-                </span>
-              </div>
-            </div>
-
-            {prod.isPreorder && (
-              <div className="bg-stone-50 rounded-xl p-3 border border-stone-200/70 space-y-2">
-                <div className="flex justify-between items-center text-xs">
-                  <span className="font-semibold text-stone-700">Suất mở bán Preorder:</span>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => {
-                        setProducts((prev) =>
-                          prev.map((item) =>
-                            item.id === prod.id && (item.preorderStock || 0) > 10
-                              ? { ...item, preorderStock: (item.preorderStock || 0) - 5 }
-                              : item
-                          )
-                        );
-                        showToast('Đã giảm 5 suất preorder. Áp dụng ngay trên App!');
-                      }}
-                      className="w-6 h-6 rounded-md bg-stone-200 text-stone-800 flex items-center justify-center font-bold"
-                    >
-                      -
-                    </button>
-                    <span className="font-bold text-stone-900 tabular-nums text-sm">
-                      {prod.preorderStock}
-                    </span>
-                    <button
-                      onClick={() => {
-                        setProducts((prev) =>
-                          prev.map((item) =>
-                            item.id === prod.id
-                              ? { ...item, preorderStock: (item.preorderStock || 0) + 10 }
-                              : item
-                          )
-                        );
-                        showToast('Đã tăng 10 suất preorder. Áp dụng ngay trên App!');
-                      }}
-                      className="w-6 h-6 rounded-md bg-emerald-800 text-white flex items-center justify-center font-bold"
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex justify-between items-center text-xs pt-2 border-t border-stone-200/50">
-                  <span className="font-semibold text-stone-700">Ngày dự kiến giao Hà Nội:</span>
-                  <input
-                    type="text"
-                    defaultValue={prod.deliveryDate}
-                    onBlur={(e) => {
-                      setProducts((prev) =>
-                        prev.map((item) =>
-                          item.id === prod.id ? { ...item, deliveryDate: e.target.value } : item
-                        )
-                      );
-                      showToast(`Đã đổi ngày giao thành ${e.target.value}. Đồng bộ ngay lập tức!`);
-                    }}
-                    className="bg-white border border-stone-300 rounded-lg px-2 py-1 text-xs text-stone-800 w-28 text-right font-medium"
-                  />
-                </div>
-              </div>
-            )}
+      {p.kind === 'ready' ? (
+        <div className="space-y-2 rounded-xl bg-stone-50 p-3">
+          <p className="text-sm text-stone-700">
+            Tồn kho {p.stockOnHand} · đang giữ cho đơn {held} · khả dụng <strong>{available}</strong>
+          </p>
+          {isLowStock(available, threshold) && (
+            <p className="flex items-center gap-1.5 text-sm font-semibold text-amber-800">
+              <AlertTriangle size={16} /> Tồn thấp (ngưỡng {threshold})
+            </p>
+          )}
+          <div className="flex items-end gap-2">
+            <Field label="Tồn kho mới (có hiệu lực ngay)">
+              <Input type="number" min={0} value={stock} onChange={(e) => setStock(e.target.value)} />
+            </Field>
+            <SecondaryButton onClick={() => act((s, t) => coopUpdateStock(s, p.id, coopActor, Number(stock), t), 'Đã cập nhật tồn kho.')}>Lưu</SecondaryButton>
           </div>
-        ))}
+        </div>
+      ) : (
+        <div className="space-y-2 rounded-xl bg-stone-50 p-3">
+          <p className="text-sm text-stone-700">
+            {p.preorder ? (
+              <>
+                Đang mở {p.preorder.totalSlots} suất · đã giữ {reservedSlots(p.id, state.orders)} · giao {formatDateKey(p.preorder.deliveryFrom)} – {formatDateKey(p.preorder.deliveryTo)}
+              </>
+            ) : (
+              'Chưa mở đặt trước.'
+            )}
+          </p>
+          <h5 className="text-sm font-bold text-stone-800">Báo thu hoạch / mở đợt đặt trước (chờ duyệt)</h5>
+          <div className="grid grid-cols-3 gap-2">
+            <Field label="Số suất">
+              <Input type="number" min={1} value={slots} onChange={(e) => setSlots(e.target.value)} />
+            </Field>
+            <Field label="Giao từ">
+              <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+            </Field>
+            <Field label="Giao đến">
+              <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+            </Field>
+          </div>
+          <PrimaryButton
+            className="w-full"
+            onClick={() => act((s, t) => coopRequestPreorder(s, p.id, coopActor, { totalSlots: Number(slots), deliveryFrom: from, deliveryTo: to, open: true }, '', t), 'Đã gửi báo thu hoạch. Trạng thái: Chờ duyệt.')}
+          >
+            Gửi duyệt
+          </PrimaryButton>
+        </div>
+      )}
+
+      <div className="flex items-end gap-2">
+        <Field label="Đề xuất giá mới (chờ duyệt, trong lúc chờ bán giá cũ)">
+          <Input type="number" min={1} value={price} onChange={(e) => setPrice(e.target.value)} placeholder={String(p.price)} />
+        </Field>
+        <SecondaryButton onClick={() => act((s, t) => coopRequestPriceChange(s, p.id, coopActor, Number(price), '', t), 'Đã gửi đề xuất giá. Trạng thái: Chờ duyệt.')}>Gửi duyệt</SecondaryButton>
+      </div>
+
+      {requests.length > 0 && (
+        <ul className="space-y-1 text-sm">
+          {requests.map((r) => (
+            <li key={r.id} className="rounded-lg bg-stone-50 px-2 py-1.5">
+              {r.type === 'price' ? `Đổi giá → ${formatMoney(r.newPrice!)}` : `Báo thu hoạch ${r.preorder?.totalSlots} suất (${formatDateKey(r.preorder!.deliveryFrom)} – ${formatDateKey(r.preorder!.deliveryTo)})`}
+              {' · '}
+              <strong className={r.status === 'pending' ? 'text-amber-800' : r.status === 'approved' ? 'text-emerald-800' : 'text-rose-700'}>
+                {r.status === 'pending' ? 'Chờ duyệt' : r.status === 'approved' ? 'Đã duyệt' : `Từ chối: ${r.rejectReason}`}
+              </strong>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

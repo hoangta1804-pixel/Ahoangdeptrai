@@ -8,8 +8,6 @@ export interface StatefulOrder {
   status: OrderStatus;
   kind: OrderKind;
   statusHistory: StatusChange[];
-  /** Đơn đặt trước: khách đã trả đủ, hoặc phần còn lại là COD (điều kiện Chờ thu hoạch → Đang chuẩn bị). */
-  remainingSettled?: boolean;
 }
 
 /** Bảng chuyển trạng thái hợp lệ. */
@@ -38,6 +36,8 @@ export interface TransitionInput {
   actor: Actor;
   at: Date;
   reason?: string;
+  /** Đơn đặt trước: khách đã trả đủ, hoặc phần còn lại là COD (điều kiện Chờ thu hoạch → Đang chuẩn bị). */
+  remainingSettled?: boolean;
 }
 
 function guard(order: StatefulOrder, input: TransitionInput): string | null {
@@ -51,7 +51,7 @@ function guard(order: StatefulOrder, input: TransitionInput): string | null {
   if (from === 'confirmed' && to === 'preparing' && kind !== 'ready') {
     return 'Đơn đặt trước phải qua Chờ thu hoạch trước khi chuẩn bị.';
   }
-  if (from === 'awaiting_harvest' && to === 'preparing' && !order.remainingSettled) {
+  if (from === 'awaiting_harvest' && to === 'preparing' && !input.remainingSettled) {
     return 'Khách chưa trả đủ phần còn lại và phần còn lại không phải COD.';
   }
   if (to === 'cancelled' && !hasReason) {

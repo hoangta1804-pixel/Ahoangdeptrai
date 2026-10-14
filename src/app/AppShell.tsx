@@ -1,11 +1,10 @@
-import { Building2, Lock, RotateCcw, ShoppingBag, Store, type LucideIcon } from 'lucide-react';
+import { Building2, FlaskConical, Lock, ShoppingBag, Store, type LucideIcon } from 'lucide-react';
 import type { UserRole } from '../domain/types';
 import { Toast } from '../components/Toast';
 import { AdminScreen } from '../screens/admin/AdminScreen';
 import { CoopScreen } from '../screens/coop/CoopScreen';
 import { CustomerScreen } from '../screens/customer/CustomerScreen';
 import { RegulatorScreen } from '../screens/regulator/RegulatorScreen';
-import { useAppData } from '../store/AppDataContext';
 import { ModalHost } from './ModalHost';
 import { useUi } from './UiContext';
 
@@ -25,21 +24,13 @@ const ROLES: { role: UserRole; label: string; Icon: LucideIcon }[] = [
 const WIDE_ROLES: UserRole[] = ['admin', 'regulator'];
 
 export function AppShell() {
-  const { role, setRole, closeModal, showToast } = useUi();
-  const { resetDemoData } = useAppData();
+  const { role, setRole, closeModal, openModal } = useUi();
   const wide = WIDE_ROLES.includes(role);
-
-  const handleReset = () => {
-    if (!window.confirm('Khôi phục dữ liệu mẫu? Mọi đơn, giỏ hàng và thay đổi đã lưu trên trình duyệt này sẽ bị xoá.')) return;
-    resetDemoData();
-    closeModal();
-    showToast('Đã khôi phục dữ liệu mẫu.');
-  };
 
   return (
     <div className="flex min-h-dvh flex-col bg-[#F5F4F0] text-stone-800">
       <header className="sticky top-0 z-40 border-b border-stone-800 bg-stone-900 text-stone-200">
-        <div className={`mx-auto flex w-full items-center gap-2 px-3 py-1.5 ${wide ? 'max-w-6xl' : 'max-w-[640px]'}`}>
+        <div className={`mx-auto flex w-full items-center gap-2 px-3 py-1.5 ${wide ? 'max-w-7xl' : 'max-w-[640px]'}`}>
           <nav aria-label="Chuyển vai trò demo" className="no-scrollbar flex flex-1 items-center gap-1 overflow-x-auto">
             {ROLES.map(({ role: r, label, Icon }) => (
               <button
@@ -59,18 +50,17 @@ export function AppShell() {
             ))}
           </nav>
           <button
-            onClick={handleReset}
-            aria-label="Khôi phục dữ liệu mẫu"
-            title="Khôi phục dữ liệu mẫu"
-            className="flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-xl px-2.5 text-sm text-stone-300 hover:bg-stone-800 hover:text-white"
+            onClick={() => openModal({ type: 'demo_panel' })}
+            aria-label="Công cụ demo: tua thời gian, mô phỏng cổng thanh toán, khôi phục dữ liệu mẫu"
+            className="flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-amber-400/60 px-2.5 text-sm font-semibold text-amber-300 hover:bg-stone-800"
           >
-            <RotateCcw size={16} />
-            <span className="hidden sm:inline">Khôi phục dữ liệu mẫu</span>
+            <FlaskConical size={16} />
+            <span className="hidden sm:inline">Công cụ demo</span>
           </button>
         </div>
       </header>
 
-      <main className={`mx-auto flex w-full flex-1 flex-col bg-[#FAF8F5] ${wide ? 'max-w-6xl' : 'max-w-[640px]'}`}>
+      <main className={`mx-auto flex w-full flex-1 flex-col bg-[#FAF8F5] ${wide ? 'max-w-7xl' : 'max-w-[640px]'}`}>
         {role === 'customer' && <CustomerScreen />}
         {role === 'coop' && <CoopScreen />}
         {role === 'regulator' && <RegulatorScreen />}

@@ -1,42 +1,51 @@
 import { AuthSheet } from '../components/auth/AuthSheet';
 import { FaceIdModal } from '../components/auth/FaceIdModal';
 import { SilentLockedModal } from '../components/auth/SilentLockedModal';
-import { LedgerAdjustSheet } from '../screens/admin/LedgerAdjustSheet';
-import { AddressSheet } from '../screens/customer/AddressSheet';
+import { DemoPanel } from '../components/DemoPanel';
+import { CoopOrderSheet } from '../screens/coop/CoopOrderSheet';
+import { AddressBookSheet } from '../screens/customer/AddressBookSheet';
+import { AddressFormSheet } from '../screens/customer/AddressFormSheet';
 import { CartSheet } from '../screens/customer/CartSheet';
 import { CheckoutSheet } from '../screens/customer/CheckoutSheet';
-import { NewAddressSheet } from '../screens/customer/NewAddressSheet';
+import { ComplaintSheet } from '../screens/customer/ComplaintSheet';
+import { OrderDetailSheet } from '../screens/customer/OrderDetailSheet';
+import { PaymentSheet } from '../screens/customer/PaymentSheet';
 import { ProductDetailSheet } from '../screens/customer/ProductDetailSheet';
-import { TicketFormSheet } from '../screens/customer/TicketFormSheet';
 import { TraceLotSheet } from '../screens/customer/TraceLotSheet';
 import { useUi } from './UiContext';
 
-/** Hiển thị đúng một sheet/modal đang mở. */
+/** Hiển thị đúng một sheet đang mở. Sheet nhận mã bản ghi và đọc dữ liệu mới nhất từ store. */
 export function ModalHost() {
   const { modal, closeModal } = useUi();
   if (!modal) return null;
   switch (modal.type) {
     case 'product_detail':
-      return <ProductDetailSheet key={modal.product.id} product={modal.product} onClose={closeModal} />;
+      return <ProductDetailSheet key={modal.productId} productId={modal.productId} onClose={closeModal} />;
     case 'trace_lot':
-      return <TraceLotSheet product={modal.product} onClose={closeModal} />;
+      return <TraceLotSheet productId={modal.productId} onClose={closeModal} />;
     case 'cart':
       return <CartSheet onClose={closeModal} />;
     case 'checkout':
-      return <CheckoutSheet onClose={closeModal} />;
-    case 'address_sheet':
-      return <AddressSheet onClose={closeModal} />;
-    case 'new_address':
-      return <NewAddressSheet onClose={closeModal} />;
-    case 'ticket_form':
-      return <TicketFormSheet onClose={closeModal} />;
+      return <CheckoutSheet source={modal.source} onClose={closeModal} />;
+    case 'payment':
+      return <PaymentSheet txId={modal.txId} onClose={closeModal} />;
+    case 'order_detail':
+      return <OrderDetailSheet key={modal.orderId} orderId={modal.orderId} onClose={closeModal} />;
+    case 'address_book':
+      return <AddressBookSheet onClose={closeModal} />;
+    case 'address_form':
+      return <AddressFormSheet key={modal.addressId ?? 'new'} addressId={modal.addressId} onClose={closeModal} />;
+    case 'complaint':
+      return <ComplaintSheet orderId={modal.orderId} onClose={closeModal} />;
+    case 'coop_order':
+      return <CoopOrderSheet key={modal.orderId} orderId={modal.orderId} onClose={closeModal} />;
+    case 'demo_panel':
+      return <DemoPanel onClose={closeModal} />;
     case 'auth':
       return <AuthSheet initialStep={modal.step} onClose={closeModal} />;
     case 'silent_locked':
       return <SilentLockedModal onClose={closeModal} />;
     case 'face_id_scan':
       return <FaceIdModal />;
-    case 'ledger_adjust':
-      return <LedgerAdjustSheet row={modal.row} onClose={closeModal} />;
   }
 }

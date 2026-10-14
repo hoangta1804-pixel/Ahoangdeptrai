@@ -1,143 +1,227 @@
 /**
- * Kiểu dữ liệu dùng chung của app.
- *
- * Phần "UI hiện tại" là các kiểu chuyển nguyên từ src/App.tsx cũ để màn hình vẫn chạy
- * trong Giai đoạn 1. Phần "Mô hình nghiệp vụ" là mô hình mới theo SRS mà các hàm thuần
- * trong src/domain dùng; Giai đoạn 2–3 sẽ chuyển dần màn hình sang mô hình này.
+ * Mô hình dữ liệu nghiệp vụ theo SRS. Mọi thay đổi dữ liệu đi qua các hàm trong src/domain.
  */
+import type { Params, ParamChange } from './params';
+import type { OrderPricing, PaymentMethod } from './pricing';
+import type { Voucher } from './voucher';
 
 // ==========================================
-// UI hiện tại (chuyển từ src/App.tsx)
+// Kết quả hàm nghiệp vụ
+// ==========================================
+
+/** Kết quả của một hàm nghiệp vụ: thành công kèm giá trị, hoặc thất bại kèm lý do hiển thị cho người dùng. */
+export type Result<T> = { ok: true; value: T } | { ok: false; error: string };
+
+export const ok = <T>(value: T): Result<T> => ({ ok: true, value });
+export const fail = <T = never>(error: string): Result<T> => ({ ok: false, error });
+
+// ==========================================
+// Vai trò, người thực hiện
 // ==========================================
 
 export type UserRole = 'customer' | 'coop' | 'shipper' | 'regulator' | 'admin';
-export type AdminSubGroup = 'operations' | 'quality' | 'finance' | 'cskh';
+export type AdminSubGroup = 'operations' | 'quality' | 'cskh' | 'finance';
 
-export interface Product {
-  id: string;
-  name: string;
-  coopId: string;
-  coopName: string;
-  price: number;
-  unit: string;
-  image: string;
-  fallbackGradient: string;
-  isPreorder: boolean;
-  /** Tổng số suất đặt trước HTX mở bán. Số đã giữ tính từ đơn (stock.ts), không lưu cứng. */
-  preorderStock?: number;
-  deliveryDate?: string;
-  depositPercent: number;
-  certType: 'OCOP 5 Sao' | 'OCOP 4 Sao' | 'VietGAP' | 'Hữu Cơ';
-  certNumber: string;
-  originDistrict: 'Bắc Hà' | 'Mường Khương' | 'Sa Pa' | 'Bát Xát';
-  description: string;
-  rating: number;
-  reviewCount: number;
-  status: 'active' | 'pending';
+export const ADMIN_GROUP_LABEL: Record<AdminSubGroup, string> = {
+  operations: 'Vận hành',
+  quality: 'Chất lượng',
+  cskh: 'CSKH',
+  finance: 'Tài chính',
+};
+
+/** Ai thực hiện một thao tác: người dùng (theo vai trò) hoặc hệ thống. */
+export type ActorKind = 'customer' | 'coop' | 'admin' | 'regulator' | 'system' | 'carrier_sim' | 'gateway_sim';
+
+export interface Actor {
+  kind: ActorKind;
+  id?: string;
+  name?: string;
+  /** Nhóm quyền của Admin. */
+  adminGroup?: AdminSubGroup;
 }
 
-export interface Address {
-  id: string;
-  title: string;
-  receiverName: string;
-  receiverPhone: string;
-  houseType: 'apartment' | 'ground';
-  buildingName?: string;
-  buildingBlock?: string;
-  apartmentNumber?: string;
-  streetDetails?: string;
-  district: string;
-  ward: string;
-  city: string;
-  isDefault: boolean;
-  lat: number;
-  lng: number;
-}
-
-export interface CartItem {
-  product: Product;
-  quantity: number;
-}
-
-export interface Order {
-  id: string;
-  createdAt: string;
-  customerName: string;
-  customerPhone: string;
-  items: { product: Product; quantity: number; unitPrice: number }[];
-  totalItemAmount: number;
-  shippingFee: number;
-  voucherDiscount: number;
-  totalAmount: number;
-  depositPaid: number;
-  remainingCod: number;
-  shippingMethod: 'standard' | 'express';
-  frozenAddressSnapshot: string;
-  houseType: 'apartment' | 'ground';
-  district: string;
-  status: 'pending_deposit' | 'confirmed' | 'harvesting' | 'delivering' | 'completed' | 'delayed' | 'cancelled';
-  expectedDelivery: string;
-  isPreorder: boolean;
-  assignedShipper?: string;
-  isRefunded?: boolean;
-}
-
-export interface Ticket {
-  id: string;
-  orderId: string;
-  coopName: string;
-  customerName: string;
-  customerPhone: string;
-  issueType: 'damaged_fruit' | 'wrong_weight' | 'packaging_torn' | 'late_delivery';
-  description: string;
-  imageUrl?: string;
-  createdAt: string;
-  status: 'open' | 'investigating' | 'resolved';
-  coopExplanation?: string;
-  refundDecision?: {
-    approved: boolean;
-    refundAmount: number;
-    bearer: 'HTX' | 'ĐVVC' | 'Hệ thống';
-  };
-}
-
-export interface LedgerEntry {
-  id: string;
-  type: 'goods_sale' | 'commission' | 'shipping_fee' | 'refund' | 'gateway_fee';
-  amount: number;
-  orderId: string;
-  coopName: string;
-  date: string;
-  status: 'matched' | 'mismatched' | 'adjusted';
-  bearer?: 'HTX' | 'ĐVVC' | 'Hệ thống';
-  notes?: string;
-}
-
-export interface AuditLog {
-  id: string;
-  timestamp: string;
-  adminName: string;
-  action: string;
-  target: string;
-  oldValue: string;
-  newValue: string;
-}
-
-export interface RefundBank {
-  bankName: string;
-  accountNumber: string;
-  accountHolder: string;
-}
+export const SYSTEM: Actor = { kind: 'system', name: 'Hệ thống' };
 
 // ==========================================
-// Mô hình nghiệp vụ (SRS)
+// Danh mục, HTX, sản phẩm
 // ==========================================
 
 /** Loại đơn: Mua sẵn hoặc Đặt trước (BR-DAT-02). */
 export type OrderKind = 'ready' | 'preorder';
 
-/** Nhóm hàng, dùng cho hạn trả hàng RET-01 và tự chuyển Đã giao PAR-26. */
+export const ORDER_KIND_LABEL: Record<OrderKind, string> = { ready: 'Mua sẵn', preorder: 'Đặt trước' };
+
+/** Nhóm hàng. */
+export type Category = 'dry' | 'processed' | 'fresh';
+
+export const CATEGORY_LABEL: Record<Category, string> = {
+  dry: 'Hàng khô',
+  processed: 'Chế biến',
+  fresh: 'Nông sản tươi',
+};
+
+/** Nhóm hạn: hàng tươi / hàng khô, dùng cho RET-01 và PAR-26. */
 export type GoodsGroup = 'fresh' | 'dry';
+
+export const goodsGroupOf = (category: Category): GoodsGroup => (category === 'fresh' ? 'fresh' : 'dry');
+
+export interface Coop {
+  id: string;
+  name: string;
+  region: string;
+  /** Tài khoản nhận chi trả đối soát, luôn hiện dạng che. */
+  payoutAccountMasked: string;
+  status: 'active' | 'suspended';
+}
+
+export interface PreorderConfig {
+  totalSlots: number;
+  /** Khoảng ngày giao HTX khai, dạng yyyy-mm-dd. */
+  deliveryFrom: string;
+  deliveryTo: string;
+  open: boolean;
+}
+
+export interface Product {
+  id: string;
+  coopId: string;
+  name: string;
+  category: Category;
+  /** Vùng sản xuất, cùng một cấp cho mọi sản phẩm (dùng cho bộ lọc vùng). */
+  region: string;
+  unit: string;
+  price: number;
+  description: string;
+  image?: string;
+  fallbackGradient: string;
+  /** Chứng nhận HTX khai (chưa xác minh). */
+  certLabel?: string;
+  kind: OrderKind;
+  /** Tồn kho (hàng mua sẵn). Tồn khả dụng = tồn kho − số đang giữ. */
+  stockOnHand: number;
+  /** Cờ hoả tốc đã được duyệt. */
+  expressApproved: boolean;
+  preorder?: PreorderConfig;
+  status: 'active' | 'hidden';
+  /** Ngưỡng tồn thấp riêng; không có thì dùng PAR-02. */
+  lowStockThreshold?: number;
+}
+
+export type ChangeRequestStatus = 'pending' | 'approved' | 'rejected';
+
+/** Yêu cầu thay đổi của HTX cần Admin – Chất lượng duyệt (FR-SP-04): đổi giá, báo thu hoạch / mở đặt trước. */
+export interface ProductChangeRequest {
+  id: string;
+  productId: string;
+  coopId: string;
+  type: 'price' | 'preorder';
+  newPrice?: number;
+  preorder?: PreorderConfig;
+  note?: string;
+  status: ChangeRequestStatus;
+  createdAt: string;
+  decidedAt?: string;
+  decidedBy?: string;
+  rejectReason?: string;
+}
+
+// ==========================================
+// Khách hàng, địa chỉ
+// ==========================================
+
+export interface BankAccount {
+  bankName: string;
+  accountNumber: string;
+  holder: string;
+}
+
+export interface Customer {
+  id: string;
+  name: string;
+  phone: string;
+  refundAccount?: BankAccount;
+}
+
+/** Phường/xã giao hàng (danh sách cấu hình). Không dùng quận/huyện (bỏ cấp này từ 1/7/2025). */
+export interface Ward {
+  id: string;
+  name: string;
+  /** Khoảng cách mẫu từ kho tới phường, để tính phụ phí hoả tốc. Không gọi API bản đồ. */
+  distanceKm: number;
+}
+
+export type HouseType = 'apartment' | 'ground';
+
+export interface Address {
+  id: string;
+  customerId: string;
+  label: string;
+  receiverName: string;
+  receiverPhone: string;
+  houseType: HouseType;
+  wardId: string;
+  /** Số nhà, đường. Bắt buộc với nhà mặt đất. */
+  street: string;
+  /** Toà (chung cư). */
+  building?: string;
+  /** Căn hộ (chung cư). */
+  unit?: string;
+  isDefault: boolean;
+}
+
+/** Địa chỉ chốt vào đơn (BR-DAT-06). */
+export interface AddressSnapshot {
+  receiverName: string;
+  receiverPhone: string;
+  text: string;
+  wardName: string;
+  distanceKm: number;
+}
+
+// ==========================================
+// Giỏ, hộp quà, đơn
+// ==========================================
+
+export interface CartLine {
+  productId: string;
+  quantity: number;
+  /** Ngày giao D khách chọn (đơn đặt trước), yyyy-mm-dd. */
+  deliveryDate?: string;
+  /** Giá lúc thêm vào giỏ, để phát hiện đổi giá (BR-DAT-03). */
+  seenPrice: number;
+}
+
+export interface GiftBoxType {
+  id: string;
+  name: string;
+  fee: number;
+  description: string;
+}
+
+export interface GiftRecipient {
+  name: string;
+  phone: string;
+  wardId: string;
+  street: string;
+}
+
+export interface GiftOption {
+  boxTypeId: string;
+  boxName: string;
+  fee: number;
+  message: string;
+  sendToOther: boolean;
+  recipient?: GiftRecipient;
+}
+
+export interface OrderItem {
+  productId: string;
+  name: string;
+  unit: string;
+  unitPrice: number;
+  quantity: number;
+  category: Category;
+}
 
 /** 11 trạng thái đơn (mục 5.5). */
 export type OrderStatus =
@@ -167,6 +251,8 @@ export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
   cancelled: 'Đã huỷ',
 };
 
+export const ORDER_STATUSES = Object.keys(ORDER_STATUS_LABEL) as OrderStatus[];
+
 /** Tình trạng thanh toán, cột riêng song song với trạng thái đơn (mục 5.5). */
 export type PaymentStatus =
   | 'cod_unpaid'
@@ -187,15 +273,6 @@ export const PAYMENT_STATUS_LABEL: Record<PaymentStatus, string> = {
   refunded: 'Đã hoàn tiền',
 };
 
-/** Ai thực hiện một thao tác: người dùng (theo vai trò) hoặc hệ thống. */
-export type ActorKind = 'customer' | 'coop' | 'admin' | 'system' | 'carrier_sim';
-
-export interface Actor {
-  kind: ActorKind;
-  id?: string;
-  name?: string;
-}
-
 export interface StatusChange {
   from: OrderStatus | null;
   to: OrderStatus;
@@ -204,8 +281,249 @@ export interface StatusChange {
   reason?: string;
 }
 
-/** Kết quả của một hàm nghiệp vụ: thành công kèm giá trị, hoặc thất bại kèm lý do hiển thị cho người dùng. */
-export type Result<T> = { ok: true; value: T } | { ok: false; error: string };
+export interface DeliveryEvent {
+  at: string;
+  event: 'picked_up' | 'delivered_reported' | 'failed' | 'refused';
+  reason?: string;
+}
 
-export const ok = <T>(value: T): Result<T> => ({ ok: true, value });
-export const fail = <T = never>(error: string): Result<T> => ({ ok: false, error });
+export interface Order {
+  id: string;
+  checkoutId: string;
+  customerId: string;
+  coopId: string;
+  coopName: string;
+  kind: OrderKind;
+  /** Ngày giao D (đơn đặt trước), yyyy-mm-dd. */
+  deliveryDate?: string;
+  deliveryDateChanged?: boolean;
+  items: OrderItem[];
+  pricing: OrderPricing;
+  /** Mua sẵn: cách trả cả đơn. Đặt trước: cách trả phần còn lại (cọc luôn online). */
+  paymentMethod: PaymentMethod;
+  paymentStatus: PaymentStatus;
+  status: OrderStatus;
+  statusHistory: StatusChange[];
+  shipping: 'standard' | 'express';
+  address: AddressSnapshot;
+  note: string;
+  gift?: GiftOption;
+  voucherCode?: string;
+  /** Bản chốt tham số lúc tạo đơn (BR-DAT-06). */
+  params: Params;
+  /** Điều kiện huỷ khách đã đồng ý (đơn đặt trước). */
+  cancelPolicy?: string;
+  createdAt: string;
+  /** Hạn HTX xác nhận (PAR-11), tính từ lúc thanh toán thành công hoặc lúc tạo đơn COD. */
+  confirmDeadline?: string;
+  /** Tiền khách đã trả online cho đơn này. */
+  amountPaidOnline: number;
+  /** Tiền thu khi nhận hàng (COD) đã thu. */
+  codCollected: number;
+  /** HTX báo sẵn sàng giao (đơn đặt trước). */
+  readyReportedAt?: string;
+  /** Hạn trả phần còn lại (PAR-24). */
+  remainingDueAt?: string;
+  remainingMethodChanged?: boolean;
+  deliveryAttempts: number;
+  deliveryLog: DeliveryEvent[];
+  /** ĐVVC mô phỏng báo giao thành công; khách chưa bấm Đã nhận. */
+  carrierDeliveredAt?: string;
+  deliveredAt?: string;
+  cancelRequest?: { reason: string; at: string; status: ChangeRequestStatus; rejectReason?: string };
+  cancelReason?: string;
+}
+
+export interface Checkout {
+  id: string;
+  idempotencyKey: string;
+  customerId: string;
+  orderIds: string[];
+  transactionId?: string;
+  voucherId?: string;
+  createdAt: string;
+}
+
+export type TransactionStatus = 'pending' | 'paid' | 'failed' | 'expired' | 'cancelled';
+
+export const TRANSACTION_STATUS_LABEL: Record<TransactionStatus, string> = {
+  pending: 'Chờ thanh toán',
+  paid: 'Đã thanh toán',
+  failed: 'Thất bại',
+  expired: 'Hết hạn',
+  cancelled: 'Đã huỷ',
+};
+
+/** Giao dịch thanh toán online (mô phỏng). Một lần đặt gộp mọi đơn online và tiền cọc vào một giao dịch. */
+export interface Transaction {
+  id: string;
+  kind: 'checkout' | 'remaining';
+  checkoutId?: string;
+  customerId: string;
+  orderIds: string[];
+  /** Số tiền từng đơn trong giao dịch. */
+  amounts: Record<string, number>;
+  amount: number;
+  status: TransactionStatus;
+  createdAt: string;
+  expiresAt: string;
+  /** Các gatewayRef đã xử lý, để gọi lặp không xử lý lần hai. */
+  processedRefs: string[];
+  paidRef?: string;
+  remindedAt?: string;
+}
+
+export interface VoucherUsage {
+  id: string;
+  voucherId: string;
+  checkoutId: string;
+  customerId: string;
+  orderIds: string[];
+  status: 'held' | 'used' | 'released';
+}
+
+export type RefundStatus = 'refund_pending' | 'refunding' | 'refunded';
+
+export type RefundSource = 'cancel' | 'late_payment' | 'duplicate_payment' | 'return';
+
+export const REFUND_SOURCE_LABEL: Record<RefundSource, string> = {
+  cancel: 'Huỷ đơn',
+  late_payment: 'Tiền về sau khi đơn đã huỷ',
+  duplicate_payment: 'Thanh toán trùng',
+  return: 'Trả hàng',
+};
+
+export interface RefundRecord {
+  id: string;
+  orderId: string;
+  customerId: string;
+  amount: number;
+  status: RefundStatus;
+  source: RefundSource;
+  reason: string;
+  /** Đơn online hoàn về nguồn ban đầu; đơn COD chuyển khoản vào tài khoản khách đã khai. */
+  destination: 'original_source' | 'bank_account';
+  createdAt: string;
+  bankRef?: string;
+  completedAt?: string;
+}
+
+// ==========================================
+// Khiếu nại, đối soát, nhật ký
+// ==========================================
+
+export type ComplaintReason = 'damaged' | 'wrong_item' | 'expired' | 'foreign_object' | 'qr_abnormal' | 'health' | 'changed_mind';
+
+export const COMPLAINT_REASON_LABEL: Record<ComplaintReason, string> = {
+  damaged: 'Hàng hư hỏng, dập nát',
+  wrong_item: 'Sai hoặc thiếu hàng',
+  expired: 'Hàng quá hạn',
+  foreign_object: 'Có dị vật',
+  qr_abnormal: 'QR / tem bất thường',
+  health: 'Ảnh hưởng sức khoẻ',
+  changed_mind: 'Đổi ý (không phải căn cứ hoàn tiền mặc định)',
+};
+
+/** Lý do tự gắn ưu tiên Cao (mục 5.8). */
+export const HIGH_PRIORITY_REASONS: ComplaintReason[] = ['expired', 'foreign_object', 'qr_abnormal', 'health'];
+
+export type TicketStatus = 'open' | 'processing' | 'resolved' | 'rejected' | 'closed';
+
+export const TICKET_STATUS_LABEL: Record<TicketStatus, string> = {
+  open: 'Mới tiếp nhận',
+  processing: 'Đang xử lý',
+  resolved: 'Đã xử lý',
+  rejected: 'Từ chối',
+  closed: 'Đóng',
+};
+
+export interface TicketEvent {
+  at: string;
+  actor: Actor;
+  action: string;
+  note?: string;
+}
+
+export interface Ticket {
+  id: string;
+  orderId: string;
+  coopId: string;
+  customerId: string;
+  productIds: string[];
+  reason: ComplaintReason;
+  description: string;
+  /** Ảnh thu nhỏ lưu trên trình duyệt (data URL). */
+  photos: string[];
+  requestRefund: boolean;
+  priority: 'normal' | 'high';
+  status: TicketStatus;
+  createdAt: string;
+  ackDueAt: string;
+  resolveDueAt: string;
+  history: TicketEvent[];
+}
+
+export interface SettlementLine {
+  orderId: string;
+  deliveredAt: string;
+  goods: number;
+  refunded: number;
+  retained: number;
+  commission: number;
+  payout: number;
+}
+
+export interface PayoutPeriod {
+  id: string;
+  coopId: string;
+  /** Đầu kỳ (thứ Hai 00:00) và giờ cắt kỳ (thứ Hai tuần sau 00:00), ISO. */
+  start: string;
+  end: string;
+  status: 'closed' | 'paid';
+  lines: SettlementLine[];
+  retained: number;
+  commission: number;
+  payout: number;
+  closedAt: string;
+  closedBy: string;
+  paidAt?: string;
+  paidRef?: string;
+}
+
+export interface AuditLog {
+  id: string;
+  at: string;
+  actor: Actor;
+  action: string;
+  target: string;
+  detail?: string;
+}
+
+// ==========================================
+// Toàn bộ dữ liệu demo
+// ==========================================
+
+export interface DemoState {
+  /** Độ lệch đồng hồ demo (tua thời gian), ms. */
+  clockOffsetMs: number;
+  customers: Customer[];
+  coops: Coop[];
+  products: Product[];
+  productChanges: ProductChangeRequest[];
+  wards: Ward[];
+  addresses: Address[];
+  /** Giỏ theo khách hàng. */
+  carts: Record<string, CartLine[]>;
+  checkouts: Checkout[];
+  orders: Order[];
+  transactions: Transaction[];
+  vouchers: Voucher[];
+  voucherUsages: VoucherUsage[];
+  giftBoxTypes: GiftBoxType[];
+  refunds: RefundRecord[];
+  tickets: Ticket[];
+  payoutPeriods: PayoutPeriod[];
+  params: Params;
+  paramHistory: ParamChange[];
+  auditLogs: AuditLog[];
+}

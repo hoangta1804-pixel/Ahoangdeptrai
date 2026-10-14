@@ -1,133 +1,78 @@
-import { AlertCircle, AlertTriangle } from 'lucide-react';
+import { useState } from 'react';
+import { MessageSquareWarning } from 'lucide-react';
 import { useUi } from '../../app/UiContext';
+import { EmptyState } from '../../components/EmptyState';
+import { OrderStatusBadge, PaymentStatusBadge } from '../../components/StatusBadge';
 import { formatMoney } from '../../domain/pricing';
-import type { LedgerEntry } from '../../domain/types';
-import { useAppData } from '../../store/AppDataContext';
+import { ORDER_KIND_LABEL, ORDER_STATUS_LABEL, ORDER_STATUSES, type OrderStatus } from '../../domain/types';
+import { useStore } from '../../store/AppDataContext';
 
+/** Đơn mua của tôi theo tab trạng thái (FR-DH-01). Đơn mới hiện ngay sau khi đặt (L4). */
 export function OrdersTab() {
-  const { orders, setOrders, setLedger } = useAppData();
-  const { openModal, showToast } = useUi();
-
-  // Huỷ đơn đặt trước quá hạn (giữ nguyên hành vi bản cũ; Giai đoạn 2 chuyển sang orderStateMachine + refund)
-  const handleCancelOverduePreorder = (orderId: string) => {
-    setOrders((prev) => prev.map((ord) => (ord.id === orderId ? { ...ord, status: 'cancelled', isRefunded: true } : ord)));
-    const refundEntry: LedgerEntry = {
-      id: `LED-${Date.now()}`,
-      type: 'refund',
-      amount: -102000,
-      orderId,
-      coopName: 'HTX Nuôi Thủy Sản Nước Lạnh Sa Pa',
-      date: '13/10/2026',
-      status: 'matched',
-      bearer: 'HTX',
-      notes: 'Hoàn 100% tiền cọc do trễ hạn giao cam kết',
-    };
-    setLedger((prev) => [refundEntry, ...prev]);
-    showToast('Hủy đơn thành công! Đã hoàn trả 100% tiền cọc (102.000đ) vào tài khoản');
-  };
+  const { state } = useStore();
+  const { customerActor, openModal } = useUi();
+  const [filter, setFilter] = useState<OrderStatus | 'all'>('all');
+  const mine = state.orders
+    .filter((o) => o.customerId === customerActor.id)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const counts = Object.fromEntries(ORDER_STATUSES.map((s) => [s, mine.filter((o) => o.status === s).length])) as Record<OrderStatus, number>;
+  const shown = filter === 'all' ? mine : mine.filter((o) => o.status === filter);
 
   return (
-      <div className="p-4 space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold text-stone-900">Đơn Hàng Của Bạn</h3>
-          <button
-            onClick={() => openModal({ type: 'ticket_form' })}
-            className="text-xs text-emerald-800 font-semibold flex items-center gap-1 bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200"
-          >
-            <AlertCircle size={14} />
-            Gửi khiếu nại
-          </button>
-        </div>
-
-        <div className="space-y-3">
-          {orders.map((ord) => (
-            <div
-              key={ord.id}
-              className="bg-white rounded-2xl border border-stone-200/80 p-3.5 shadow-xs space-y-2.5"
-            >
-              <div className="flex items-center justify-between border-b border-stone-100 pb-2">
-                <div>
-                  <span className="text-xs font-bold text-stone-900">{ord.id}</span>
-                  <span className="text-[10px] text-stone-400 block">{ord.createdAt}</span>
-                </div>
-                <span
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
-                    ord.status === 'delayed'
-                      ? 'bg-rose-100 text-rose-700'
-                      : ord.status === 'delivering'
-                      ? 'bg-sky-100 text-sky-800'
-                      : ord.status === 'completed'
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : ord.status === 'cancelled'
-                      ? 'bg-stone-200 text-stone-600'
-                      : 'bg-amber-100 text-amber-800'
-                  }`}
-                >
-                  {ord.status === 'delayed' && 'Trễ hạn cam kết (>48h)'}
-                  {ord.status === 'delivering' && 'Đang giao hàng tại Hà Nội'}
-                  {ord.status === 'completed' && 'Đã giao thành công'}
-                  {ord.status === 'cancelled' && 'Đã hủy & Đã hoàn tiền'}
-                  {ord.status === 'confirmed' && 'Đã đặt cọc - Đang chuẩn bị'}
-                </span>
-              </div>
-
-              {/* Items list */}
-              <div className="space-y-1.5">
-                {ord.items.map((item, idx) => (
-                  <div key={idx} className="flex justify-between text-xs">
-                    <span className="text-stone-700">
-                      {item.quantity}x {item.product.name}
-                    </span>
-                    <span className="font-semibold text-stone-900 tabular-nums">
-                      {formatMoney(item.unitPrice * item.quantity)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Snapshot address */}
-              <div className="bg-stone-50 rounded-xl p-2 text-[11px] text-stone-600 border border-stone-100">
-                <span className="font-semibold text-stone-700 block">Địa chỉ Snapshot cố định:</span>
-                <span className="line-clamp-2">{ord.frozenAddressSnapshot}</span>
-              </div>
-
-              {/* Preorder Payment breakdown */}
-              {ord.isPreorder ? (
-                <div className="grid grid-cols-2 gap-2 bg-emerald-50/70 p-2 rounded-xl text-[11px] border border-emerald-100">
-                  <div>
-                    <span className="text-stone-500 block">Đã cọc Online (30%):</span>
-                    <span className="font-bold text-emerald-800 tabular-nums">{formatMoney(ord.depositPaid)}</span>
-                  </div>
-                  <div>
-                    <span className="text-stone-500 block">Còn lại thu COD (70% + Ship):</span>
-                    <span className="font-bold text-stone-900 tabular-nums">{formatMoney(ord.remainingCod)}</span>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex justify-between items-center text-xs pt-1 border-t border-stone-100">
-                  <span className="text-stone-500">Tổng thanh toán COD:</span>
-                  <span className="font-extrabold text-stone-900 tabular-nums">{formatMoney(ord.totalAmount)}</span>
-                </div>
-              )}
-
-              {/* Special button for delayed preorder cancellation */}
-              {ord.status === 'delayed' && (
-                <div className="pt-2 border-t border-rose-100 flex flex-col gap-1.5">
-                  <div className="text-[11px] text-rose-700 flex items-center gap-1 font-medium">
-                    <AlertTriangle size={14} />
-                    <span>Đơn hàng quá hạn cam kết giao {ord.expectedDelivery}</span>
-                  </div>
-                  <button
-                    onClick={() => handleCancelOverduePreorder(ord.id)}
-                    className="w-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold py-2 rounded-xl transition-colors shadow-xs"
-                  >
-                    Hủy đơn hợp lệ & Nhận hoàn 100% cọc ({formatMoney(ord.depositPaid)})
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+    <div className="space-y-3 p-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-base font-bold text-stone-900">Đơn mua của tôi</h2>
+        <button onClick={() => openModal({ type: 'complaint' })} className="flex min-h-11 items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 text-sm font-semibold text-emerald-900">
+          <MessageSquareWarning size={16} />
+          Khiếu nại
+        </button>
       </div>
+
+      <div className="no-scrollbar flex gap-2 overflow-x-auto" role="tablist" aria-label="Lọc đơn theo trạng thái">
+        <button role="tab" aria-selected={filter === 'all'} onClick={() => setFilter('all')} className={`min-h-10 whitespace-nowrap rounded-xl px-3 text-sm font-medium ${filter === 'all' ? 'bg-emerald-900 text-white' : 'border border-stone-200 bg-white text-stone-700'}`}>
+          Tất cả ({mine.length})
+        </button>
+        {ORDER_STATUSES.filter((s) => counts[s] > 0).map((s) => (
+          <button key={s} role="tab" aria-selected={filter === s} onClick={() => setFilter(s)} className={`min-h-10 whitespace-nowrap rounded-xl px-3 text-sm font-medium ${filter === s ? 'bg-emerald-900 text-white' : 'border border-stone-200 bg-white text-stone-700'}`}>
+            {ORDER_STATUS_LABEL[s]} ({counts[s]})
+          </button>
+        ))}
+      </div>
+
+      {shown.length === 0 ? (
+        <EmptyState>{mine.length === 0 ? 'Bạn chưa có đơn nào.' : 'Không có đơn ở trạng thái này.'}</EmptyState>
+      ) : (
+        <ul className="space-y-3">
+          {shown.map((o) => {
+            const tx = state.transactions.find((t) => t.status === 'pending' && t.orderIds.includes(o.id));
+            return (
+              <li key={o.id}>
+                <button onClick={() => openModal({ type: 'order_detail', orderId: o.id })} className="w-full space-y-2 rounded-2xl border border-stone-200 bg-white p-3.5 text-left shadow-xs hover:bg-stone-50">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <span className="block font-mono text-sm font-bold text-stone-900">{o.id}</span>
+                      <span className="text-xs text-stone-500">
+                        {new Date(o.createdAt).toLocaleString('vi-VN')} · {o.coopName} · {ORDER_KIND_LABEL[o.kind]}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      <OrderStatusBadge status={o.status} />
+                      <PaymentStatusBadge status={o.paymentStatus} />
+                    </div>
+                  </div>
+                  <p className="text-sm text-stone-700">{o.items.map((i) => `${i.name} × ${i.quantity}`).join(', ')}</p>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-stone-600">Tổng đơn</span>
+                    <span className="font-bold tabular-nums">{formatMoney(o.pricing.total)}</span>
+                  </div>
+                  {tx && <p className="rounded-lg bg-amber-100 px-2 py-1 text-sm font-semibold text-amber-900">Chờ thanh toán {formatMoney(tx.amounts[o.id] ?? 0)} – bấm để tiếp tục</p>}
+                  {o.cancelRequest?.status === 'pending' && <p className="text-sm text-amber-800">Đã gửi yêu cầu huỷ, chờ HTX duyệt.</p>}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
   );
 }

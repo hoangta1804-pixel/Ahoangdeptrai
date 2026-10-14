@@ -6,7 +6,7 @@
  * - Số tiền hoàn bằng 100% tiền khách đã thực trả cho phần được duyệt; không hoàn phần chưa thu.
  * - Mỗi yêu cầu hoàn chỉ thành công 1 lần.
  */
-import { fail, ok, type Result } from './types';
+import { fail, ok, type RefundStatus, type Result } from './types';
 
 /** Lý do huỷ, quyết định có hoàn cọc hay không. */
 export type CancelCause = 'customer' | 'coop_rejected' | 'confirm_timeout' | 'coop_cannot_supply' | 'payment_failed' | 'payment_expired';
@@ -52,8 +52,6 @@ export function refundableAmount(amountActuallyPaid: number, approvedValue: numb
   return Math.min(amountActuallyPaid, Math.round(amountActuallyPaid * share));
 }
 
-export type RefundStatus = 'refund_pending' | 'refunding' | 'refunded';
-
 export interface RefundRequest {
   id: string;
   orderId: string;
@@ -64,14 +62,14 @@ export interface RefundRequest {
 }
 
 /** Chuyển yêu cầu hoàn sang Đang hoàn tiền. */
-export function startRefund(req: RefundRequest): Result<RefundRequest> {
+export function startRefund<T extends RefundRequest>(req: T): Result<T> {
   if (req.status !== 'refund_pending') return fail('Yêu cầu hoàn không ở trạng thái Chờ hoàn tiền.');
   if (req.amount <= 0) return fail('Không có khoản đã thu để hoàn.');
   return ok({ ...req, status: 'refunding' });
 }
 
 /** Ghi nhận ngân hàng mô phỏng đã hoàn. Mỗi yêu cầu chỉ thành công 1 lần. */
-export function completeRefund(req: RefundRequest, bankRef: string): Result<RefundRequest> {
+export function completeRefund<T extends RefundRequest>(req: T, bankRef: string): Result<T> {
   if (req.status === 'refunded') return fail('Yêu cầu này đã được hoàn tiền, không hoàn lần hai.');
   if (req.status !== 'refunding') return fail('Phải chuyển sang Đang hoàn tiền trước khi ghi nhận.');
   return ok({ ...req, status: 'refunded', bankRef });

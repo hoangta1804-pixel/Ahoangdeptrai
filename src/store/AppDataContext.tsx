@@ -1,126 +1,119 @@
 /**
- * Store dữ liệu dùng chung của app, lưu localStorage, có hàm khôi phục dữ liệu mẫu.
- * Giai đoạn 3 sẽ mở rộng thành đủ các thực thể ở mục 7 (users, checkouts, transactions…).
+ * Store dữ liệu dùng chung, lưu localStorage (mục 7). Mở nhiều tab cùng trình duyệt thấy chung dữ liệu.
+ * Mọi thay đổi dữ liệu đi qua các hàm trong src/domain thông qua run().
+ * Tác vụ theo giờ (hết hạn thanh toán, quá hạn xác nhận…) chạy khi tải app, mỗi 5 giây và sau khi tua đồng hồ.
  */
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode, type SetStateAction } from 'react';
-import { DEFAULT_PARAMS, type ParamChange, type Params } from '../domain/params';
-import type { Address, AuditLog, CartItem, LedgerEntry, Order, Product, RefundBank, Ticket } from '../domain/types';
-import {
-  INITIAL_ADDRESSES,
-  INITIAL_AUDITS,
-  INITIAL_LEDGER,
-  INITIAL_ORDERS,
-  INITIAL_PRODUCTS,
-  INITIAL_REFUND_BANK,
-  INITIAL_TICKETS,
-} from '../data/seed';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { now as clockNow, setClockOffset } from '../domain/clock';
+import { jobsChanged, runScheduledJobs } from '../domain/jobs';
+import type { DemoState, Result } from '../domain/types';
+import { createSeedState } from '../data/seed';
 import { clearState, loadState, saveState, STORAGE_KEY } from './persistence';
 
-export interface AppData {
-  products: Product[];
-  addresses: Address[];
-  selectedAddressId: string;
-  orders: Order[];
-  tickets: Ticket[];
-  ledger: LedgerEntry[];
-  audits: AuditLog[];
-  cart: CartItem[];
-  refundBank: RefundBank;
-  params: Params;
-  paramHistory: ParamChange[];
-}
-
-export const createSeedData = (): AppData => structuredClone({
-  products: INITIAL_PRODUCTS,
-  addresses: INITIAL_ADDRESSES,
-  selectedAddressId: INITIAL_ADDRESSES[0].id,
-  orders: INITIAL_ORDERS,
-  tickets: INITIAL_TICKETS,
-  ledger: INITIAL_LEDGER,
-  audits: INITIAL_AUDITS,
-  cart: [],
-  refundBank: INITIAL_REFUND_BANK,
-  params: DEFAULT_PARAMS,
-  paramHistory: [],
-});
-
-type Setter<T> = (value: SetStateAction<T>) => void;
-
-interface AppDataContextValue extends AppData {
-  selectedAddress: Address;
-  setProducts: Setter<Product[]>;
-  setAddresses: Setter<Address[]>;
-  setSelectedAddressId: Setter<string>;
-  setOrders: Setter<Order[]>;
-  setTickets: Setter<Ticket[]>;
-  setLedger: Setter<LedgerEntry[]>;
-  setAudits: Setter<AuditLog[]>;
-  setCart: Setter<CartItem[]>;
-  setRefundBank: Setter<RefundBank>;
-  setParams: Setter<Params>;
-  setParamHistory: Setter<ParamChange[]>;
+interface StoreValue {
+  state: DemoState;
+  /** Giờ hiện tại của đồng hồ demo. */
+  now: () => Date;
+  /** Chạy một thao tác domain trên dữ liệu mới nhất. Thành công thì lưu và trả về kết quả. */
+  run: <T = DemoState>(op: (s: DemoState, at: Date) => Result<T>, pick?: (value: T) => DemoState) => Result<T>;
+  /** Tua đồng hồ demo thêm `ms` mili giây rồi chạy các tác vụ theo giờ. */
+  advanceClock: (ms: number) => void;
+  resetClock: () => void;
   /** Xoá dữ liệu đã lưu và nạp lại dữ liệu mẫu. */
   resetDemoData: () => void;
 }
 
-const AppDataContext = createContext<AppDataContextValue | null>(null);
+const StoreContext = createContext<StoreValue | null>(null);
+
+function initialState(): DemoState {
+  const loaded = loadState<DemoState>(() => createSeedState(new Date()));
+  setClockOffset(loaded.clockOffsetMs ?? 0);
+  return runScheduledJobs(loaded, clockNow()).state;
+}
 
 export function AppDataProvider({ children }: { children: ReactNode }) {
-  const [data, setData] = useState<AppData>(() => loadState(createSeedData));
+  const [state, setState] = useState<DemoState>(initialState);
+  const ref = useRef(state);
+
+  const commit = useCallback((next: DemoState) => {
+    ref.current = next;
+    setClockOffset(next.clockOffsetMs);
+    setState(next);
+  }, []);
 
   useEffect(() => {
-    saveState(data);
-  }, [data]);
+    saveState(state);
+  }, [state]);
 
-  // Tab khác cùng trình duyệt ghi dữ liệu thì nạp lại để các vai trò thấy chung một dữ liệu.
+  // Tab khác cùng trình duyệt ghi dữ liệu thì nạp lại.
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEY) setData(loadState(createSeedData));
+      if (e.key === STORAGE_KEY) commit(loadState<DemoState>(() => createSeedState(new Date())));
     };
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
-  }, []);
+  }, [commit]);
 
-  const field = useCallback(
-    <K extends keyof AppData>(key: K): Setter<AppData[K]> =>
-      (value) =>
-        setData((prev) => ({
-          ...prev,
-          [key]: typeof value === 'function' ? (value as (p: AppData[K]) => AppData[K])(prev[key]) : value,
-        })),
-    [],
+  const runJobs = useCallback(() => {
+    const { state: next, report } = runScheduledJobs(ref.current, clockNow());
+    if (jobsChanged(report)) commit(next);
+  }, [commit]);
+
+  useEffect(() => {
+    const t = setInterval(runJobs, 5_000);
+    return () => clearInterval(t);
+  }, [runJobs]);
+
+  const run = useCallback(
+    <T,>(op: (s: DemoState, at: Date) => Result<T>, pick?: (value: T) => DemoState): Result<T> => {
+      const r = op(ref.current, clockNow());
+      if (r.ok) commit(pick ? pick(r.value) : (r.value as unknown as DemoState));
+      return r;
+    },
+    [commit],
   );
+
+  const advanceClock = useCallback(
+    (ms: number) => {
+      const shifted = { ...ref.current, clockOffsetMs: ref.current.clockOffsetMs + ms };
+      setClockOffset(shifted.clockOffsetMs);
+      commit(runScheduledJobs(shifted, clockNow()).state);
+    },
+    [commit],
+  );
+
+  const resetClock = useCallback(() => {
+    setClockOffset(0);
+    commit(runScheduledJobs({ ...ref.current, clockOffsetMs: 0 }, clockNow()).state);
+  }, [commit]);
 
   const resetDemoData = useCallback(() => {
     clearState();
-    setData(createSeedData());
-  }, []);
+    setClockOffset(0);
+    commit(createSeedState(new Date()));
+  }, [commit]);
 
-  const value = useMemo<AppDataContextValue>(() => {
-    const selectedAddress = data.addresses.find((a) => a.id === data.selectedAddressId) ?? data.addresses[0];
-    return {
-      ...data,
-      selectedAddress,
-      setProducts: field('products'),
-      setAddresses: field('addresses'),
-      setSelectedAddressId: field('selectedAddressId'),
-      setOrders: field('orders'),
-      setTickets: field('tickets'),
-      setLedger: field('ledger'),
-      setAudits: field('audits'),
-      setCart: field('cart'),
-      setRefundBank: field('refundBank'),
-      setParams: field('params'),
-      setParamHistory: field('paramHistory'),
-      resetDemoData,
-    };
-  }, [data, field, resetDemoData]);
-
-  return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
+  const value = useMemo<StoreValue>(
+    () => ({ state, now: clockNow, run, advanceClock, resetClock, resetDemoData }),
+    [state, run, advanceClock, resetClock, resetDemoData],
+  );
+  return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 }
 
-export function useAppData(): AppDataContextValue {
-  const ctx = useContext(AppDataContext);
-  if (!ctx) throw new Error('useAppData phải dùng bên trong AppDataProvider');
+export function useStore(): StoreValue {
+  const ctx = useContext(StoreContext);
+  if (!ctx) throw new Error('useStore phải dùng bên trong AppDataProvider');
   return ctx;
+}
+
+/** Giờ demo, cập nhật mỗi `intervalMs` (dùng cho đồng hồ đếm ngược). */
+export function useNow(intervalMs = 1_000): Date {
+  const { state } = useStore();
+  const [tick, setTick] = useState(() => clockNow());
+  useEffect(() => {
+    setTick(clockNow());
+    const t = setInterval(() => setTick(clockNow()), intervalMs);
+    return () => clearInterval(t);
+  }, [intervalMs, state.clockOffsetMs]);
+  return tick;
 }

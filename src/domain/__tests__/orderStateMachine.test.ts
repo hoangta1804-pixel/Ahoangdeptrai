@@ -23,7 +23,7 @@ describe('Vòng đời đơn (mục 5.5)', () => {
     expect(transitionOrder(make('confirmed', 'ready'), { to: 'awaiting_harvest', actor: { kind: 'coop' }, at }).ok).toBe(false);
     expect(transitionOrder(make('awaiting_harvest', 'preorder'), { to: 'preparing', actor: { kind: 'coop' }, at }).ok).toBe(false);
     expect(
-      transitionOrder({ ...make('awaiting_harvest', 'preorder'), remainingSettled: true }, { to: 'preparing', actor: { kind: 'coop' }, at }).ok,
+      transitionOrder(make('awaiting_harvest', 'preorder'), { to: 'preparing', actor: { kind: 'coop' }, at, remainingSettled: true }).ok,
     ).toBe(true);
   });
 

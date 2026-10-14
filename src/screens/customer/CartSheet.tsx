@@ -1,41 +1,57 @@
 import { Minus, Plus, ShoppingBasket, Trash2 } from 'lucide-react';
+import { useUi } from '../../app/UiContext';
 import { BottomSheet } from '../../components/BottomSheet';
 import { ProductImage } from '../../components/ProductImage';
-import { formatMoney, sumLines } from '../../domain/pricing';
-import { remainingSlots } from '../../domain/stock';
-import type { CartItem } from '../../domain/types';
-import { useAppData } from '../../store/AppDataContext';
-import { toHoldingOrders } from '../../store/selectors';
-import { useUi } from '../../app/UiContext';
+import { formatMoney } from '../../domain/pricing';
+import { findProduct, formatDateKey, remainingFor } from '../../domain/state';
+import type { CartLine, OrderKind } from '../../domain/types';
+import { useStore } from '../../store/AppDataContext';
+import { useCartActions } from './useCartActions';
 
-/** Giỏ hàng dạng bottom sheet, chia hai nhóm Mua sẵn / Đặt trước (MHTT-01). Chuyển từ bản index.html cũ. */
+/** Giỏ hàng dạng bottom sheet, chia hai nhóm Mua sẵn / Đặt trước (MHTT-01). */
 export function CartSheet({ onClose }: { onClose: () => void }) {
-  const { cart, setCart, orders } = useAppData();
-  const { openModal, showToast } = useUi();
-  const holding = toHoldingOrders(orders);
+  const { state } = useStore();
+  const { openModal } = useUi();
+  const { cart, update, remove } = useCartActions();
 
-  const maxFor = (item: CartItem): number | undefined =>
-    item.product.isPreorder ? remainingSlots(item.product.preorderStock ?? 0, item.product.id, holding) : undefined;
-
-  const changeQty = (productId: string, delta: number) =>
-    setCart((prev) =>
-      prev.map((it) => {
-        if (it.product.id !== productId) return it;
-        const max = maxFor(it);
-        const next = Math.max(1, it.quantity + delta);
-        if (max !== undefined && next > max) {
-          showToast(`Chỉ còn ${max} suất đặt trước cho sản phẩm này.`);
-          return { ...it, quantity: Math.max(1, Math.min(it.quantity, max)) };
-        }
-        return { ...it, quantity: next };
-      }),
-    );
-
-  const groups: { title: string; items: CartItem[] }[] = [
-    { title: 'Mua sẵn', items: cart.filter((i) => !i.product.isPreorder) },
-    { title: 'Đặt trước', items: cart.filter((i) => i.product.isPreorder) },
+  const withProduct = cart.map((l) => ({ line: l, product: findProduct(state, l.productId) })).filter((x) => x.product);
+  const groups: { kind: OrderKind; title: string; items: typeof withProduct }[] = [
+    { kind: 'ready', title: 'Mua sẵn', items: withProduct.filter((x) => x.product!.kind === 'ready') },
+    { kind: 'preorder', title: 'Đặt trước', items: withProduct.filter((x) => x.product!.kind === 'preorder') },
   ];
-  const subtotal = sumLines(cart.map((i) => ({ unitPrice: i.product.price, quantity: i.quantity })));
+  const subtotal = withProduct.reduce((s, x) => s + x.product!.price * x.line.quantity, 0);
+
+  const row = (line: CartLine) => {
+    const product = findProduct(state, line.productId)!;
+    const remaining = remainingFor(state, product);
+    return (
+      <div key={line.productId} className="flex items-center gap-2.5 rounded-2xl border border-stone-200 bg-stone-50/50 p-2.5">
+        <ProductImage product={product} className="h-14 w-14 shrink-0 rounded-xl" />
+        <div className="min-w-0 flex-1">
+          <h5 className="truncate text-sm font-bold text-stone-900">{product.name}</h5>
+          <span className="block text-sm font-bold tabular-nums text-emerald-900">
+            {formatMoney(product.price)}/{product.unit}
+          </span>
+          <span className="text-xs text-stone-500">
+            Còn {remaining}
+            {line.deliveryDate ? ` · giao ${formatDateKey(line.deliveryDate)}` : ''}
+          </span>
+        </div>
+        <div className="flex items-center rounded-xl border border-stone-200 bg-white">
+          <button onClick={() => update(line.productId, { quantity: line.quantity - 1 })} disabled={line.quantity <= 1} aria-label={`Giảm số lượng ${product.name}`} className="flex h-11 w-9 items-center justify-center disabled:opacity-40">
+            <Minus size={14} />
+          </button>
+          <span className="w-6 text-center text-sm font-bold tabular-nums">{line.quantity}</span>
+          <button onClick={() => update(line.productId, { quantity: line.quantity + 1 })} disabled={line.quantity >= remaining} aria-label={`Tăng số lượng ${product.name}`} className="flex h-11 w-9 items-center justify-center disabled:opacity-40">
+            <Plus size={14} />
+          </button>
+        </div>
+        <button onClick={() => remove(line.productId)} aria-label={`Xoá ${product.name} khỏi giỏ`} className="flex h-11 w-11 items-center justify-center text-stone-500 hover:text-rose-700">
+          <Trash2 size={16} />
+        </button>
+      </div>
+    );
+  };
 
   return (
     <BottomSheet
@@ -46,13 +62,10 @@ export function CartSheet({ onClose }: { onClose: () => void }) {
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-stone-600">Tạm tính tiền hàng</span>
-              <span className="font-bold tabular-nums text-stone-900">{formatMoney(subtotal)}</span>
+              <span className="font-bold tabular-nums">{formatMoney(subtotal)}</span>
             </div>
-            <p className="text-xs text-stone-500">Phí giao, mã ưu đãi và tiền cọc được tính ở bước đặt hàng.</p>
-            <button
-              onClick={() => openModal({ type: 'checkout' })}
-              className="w-full rounded-2xl bg-emerald-900 py-3.5 text-sm font-bold text-white hover:bg-emerald-800"
-            >
+            <p className="text-xs text-stone-500">Phí giao, mã ưu đãi và tiền cọc tính ở bước đặt hàng. Thêm vào giỏ chưa giữ hàng.</p>
+            <button onClick={() => openModal({ type: 'checkout', source: { type: 'cart' } })} className="min-h-12 w-full rounded-2xl bg-emerald-900 text-sm font-bold text-white hover:bg-emerald-800">
               Tiến hành đặt hàng
             </button>
           </div>
@@ -68,47 +81,9 @@ export function CartSheet({ onClose }: { onClose: () => void }) {
         groups
           .filter((g) => g.items.length > 0)
           .map((g) => (
-            <section key={g.title} className="space-y-2">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-stone-500">{g.title}</h4>
-              {g.items.map((item) => {
-                const max = maxFor(item);
-                return (
-                  <div key={item.product.id} className="flex items-center gap-2.5 rounded-2xl border border-stone-200 bg-stone-50/50 p-2.5">
-                    <ProductImage product={item.product} className="h-14 w-14 shrink-0 rounded-xl" />
-                    <div className="min-w-0 flex-1">
-                      <h5 className="truncate text-sm font-bold text-stone-900">{item.product.name}</h5>
-                      <span className="block text-xs font-bold tabular-nums text-emerald-900">
-                        {formatMoney(item.product.price)}/{item.product.unit}
-                      </span>
-                      {max !== undefined && <span className="text-xs text-amber-800">Còn {max} suất</span>}
-                    </div>
-                    <div className="flex items-center rounded-xl border border-stone-200 bg-white">
-                      <button
-                        onClick={() => changeQty(item.product.id, -1)}
-                        aria-label={`Giảm số lượng ${item.product.name}`}
-                        className="flex h-11 w-9 items-center justify-center text-stone-700"
-                      >
-                        <Minus size={14} />
-                      </button>
-                      <span className="w-6 text-center text-sm font-bold tabular-nums">{item.quantity}</span>
-                      <button
-                        onClick={() => changeQty(item.product.id, 1)}
-                        aria-label={`Tăng số lượng ${item.product.name}`}
-                        className="flex h-11 w-9 items-center justify-center text-stone-700"
-                      >
-                        <Plus size={14} />
-                      </button>
-                    </div>
-                    <button
-                      onClick={() => setCart((prev) => prev.filter((it) => it.product.id !== item.product.id))}
-                      aria-label={`Xoá ${item.product.name} khỏi giỏ`}
-                      className="flex h-11 w-11 items-center justify-center text-stone-400 hover:text-rose-600"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                );
-              })}
+            <section key={g.kind} className="space-y-2">
+              <h4 className="text-sm font-bold text-stone-600">{g.title}</h4>
+              {g.items.map((x) => row(x.line))}
             </section>
           ))
       )}

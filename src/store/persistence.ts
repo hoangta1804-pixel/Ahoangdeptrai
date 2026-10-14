@@ -3,7 +3,7 @@
  * Mọi thao tác đọc/ghi bọc try/catch: trình duyệt chặn lưu trữ thì app vẫn chạy với dữ liệu mẫu.
  */
 export const STORAGE_KEY = 'dac-san-so-lao-cai:data';
-export const STORAGE_VERSION = 1;
+export const STORAGE_VERSION = 2;
 
 interface Envelope<T> {
   version: number;

@@ -1,53 +1,72 @@
+import { useUi } from '../../app/UiContext';
+import { EmptyState } from '../../components/EmptyState';
 import { formatMoney } from '../../domain/pricing';
-import { useAppData } from '../../store/AppDataContext';
+import { addMs, DAY_MS } from '../../domain/state';
+import { eligibleLines, summarize, weekStart } from '../../domain/settlement';
+import { useStore } from '../../store/AppDataContext';
 
+/**
+ * Doanh thu và đối soát của HTX (FR-DT-01..03, L13).
+ * Hoa hồng COM-01 trên tiền hàng thực giữ lại; phí giao không phải doanh thu HTX; không có nút rút tiền, không có dòng thuế TNCN.
+ */
 export function CoopWalletTab() {
-  const { ledger } = useAppData();
+  const { state, now } = useStore();
+  const { coopId } = useUi();
+  const coop = state.coops.find((c) => c.id === coopId);
+  const at = now();
+  const currentEnd = addMs(weekStart(at), 7 * DAY_MS);
+  const lines = eligibleLines(state, coopId, currentEnd);
+  const sum = summarize(lines);
+  const periods = state.payoutPeriods.filter((p) => p.coopId === coopId);
+
   return (
     <div className="space-y-3">
-      {/* Top Summary Card */}
-      <div className="bg-stone-900 text-white rounded-3xl p-4 shadow-sm space-y-2">
-        <span className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider block">
-          Số Tiền Thực Nhận Kỳ Này (Kỳ 19/2026)
-        </span>
-        <h3 className="text-2xl font-extrabold text-emerald-400 tabular-nums">14.500.000đ</h3>
-
-        <div className="bg-stone-800/80 rounded-2xl p-2.5 text-[10px] text-stone-300 space-y-1 font-mono border border-stone-700/60">
-          <div className="text-emerald-300 font-bold">Công thức chi trả minh bạch:</div>
-          <div>Thực nhận = Tổng tiền hàng đủ ĐK (17.500.000đ)</div>
-          <div>− Hoa hồng 5% (875.000đ)</div>
-          <div>− Tiền hoàn & phạt HTX (375.000đ)</div>
-          <div>− Khoản giữ lại kỳ này 10% (1.750.000đ)</div>
-          <div className="text-emerald-300">+ Hoàn trả khoản giữ lại từ 2 kỳ trước (+0đ)</div>
-        </div>
+      <div className="space-y-1 rounded-3xl bg-stone-900 p-4 text-white">
+        <p className="text-sm text-stone-300">
+          Kỳ tuần {weekStart(at).toLocaleDateString('vi-VN')} – {addMs(currentEnd, -1).toLocaleDateString('vi-VN')} (tạm tính)
+        </p>
+        <p className="text-2xl font-extrabold tabular-nums text-emerald-300">{formatMoney(sum.payout)}</p>
+        <p className="text-sm text-stone-300">
+          Tiền hàng thực giữ lại {formatMoney(sum.retained)} − hoa hồng sàn {state.params.commissionPercent}% ({formatMoney(sum.commission)})
+        </p>
+        <p className="text-xs text-stone-400">
+          Phí giao không tính vào doanh thu HTX. Mã ưu đãi do sàn chịu. Admin – Tài chính chốt kỳ và ghi nhận chi trả (mô phỏng) vào tài khoản {coop?.payoutAccountMasked}. HTX không tự rút tiền.
+        </p>
       </div>
 
-      {/* 4 Tabs Breakdown */}
-      <div className="bg-white rounded-2xl border border-stone-200/80 p-3 shadow-xs space-y-2">
-        <h4 className="text-xs font-bold text-stone-800 uppercase">Sao Kê 4 Khoản Chi Tiết</h4>
+      <section className="space-y-1 rounded-2xl border border-stone-200 bg-white p-3 text-sm">
+        <h4 className="font-bold">Đơn đủ điều kiện kỳ này</h4>
+        {lines.length === 0 ? (
+          <p className="text-stone-600">Chưa có đơn Đã giao nào đủ điều kiện (không còn khiếu nại hay trả hàng đang mở).</p>
+        ) : (
+          lines.map((l) => (
+            <div key={l.orderId} className="flex justify-between gap-2">
+              <span className="font-mono">{l.orderId}</span>
+              <span className="tabular-nums">
+                {formatMoney(l.retained)} − {formatMoney(l.commission)} = <strong>{formatMoney(l.payout)}</strong>
+              </span>
+            </div>
+          ))
+        )}
+      </section>
 
-        <div className="space-y-1.5">
-          {ledger
-            .filter((l) => l.coopName.includes('Bắc Hà'))
-            .map((row) => (
-              <div key={row.id} className="flex items-center justify-between py-2 border-b border-stone-100 text-xs">
-                <div>
-                  <span className="font-semibold text-stone-800 block">
-                    {row.type === 'goods_sale' && 'Tiền hàng đủ điều kiện'}
-                    {row.type === 'commission' && 'Phí hoa hồng nền tảng (5%)'}
-                    {row.type === 'shipping_fee' && 'Phí vận chuyển'}
-                    {row.type === 'refund' && 'Khấu trừ hoàn tiền / phạt'}
-                    {row.type === 'gateway_fee' && 'Phí cổng thanh toán'}
-                  </span>
-                  <span className="text-[10px] text-stone-400">{row.date} • Đơn {row.orderId}</span>
-                </div>
-                <span className={`font-bold tabular-nums ${row.amount > 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
-                  {row.amount > 0 ? `+${formatMoney(row.amount)}` : formatMoney(row.amount)}
-                </span>
-              </div>
-            ))}
-        </div>
-      </div>
+      <section className="space-y-2">
+        <h4 className="text-sm font-bold">Các kỳ đã chốt</h4>
+        {periods.length === 0 ? (
+          <EmptyState>Chưa có kỳ nào được chốt.</EmptyState>
+        ) : (
+          periods.map((p) => (
+            <div key={p.id} className="rounded-2xl border border-stone-200 bg-white p-3 text-sm">
+              <p className="font-bold">
+                {new Date(p.start).toLocaleDateString('vi-VN')} – {addMs(new Date(p.end), -1).toLocaleDateString('vi-VN')} · {p.lines.length} đơn
+              </p>
+              <p>
+                Chi trả {formatMoney(p.payout)} · {p.status === 'paid' ? `Đã chi trả (mô phỏng) ${new Date(p.paidAt!).toLocaleString('vi-VN')}` : 'Đã chốt, chờ chi trả'}
+              </p>
+            </div>
+          ))
+        )}
+      </section>
     </div>
   );
 }

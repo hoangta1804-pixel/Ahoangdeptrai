@@ -2,7 +2,7 @@ import { Lock } from 'lucide-react';
 import { useUi } from '../../app/UiContext';
 import { PARAM_CATALOG, type Params } from '../../domain/params';
 import { formatMoney } from '../../domain/pricing';
-import { useAppData } from '../../store/AppDataContext';
+import { useStore } from '../../store/AppDataContext';
 
 function formatValue(key: keyof Params, params: Params, unit: string): string {
   const value = params[key];
@@ -20,7 +20,7 @@ function formatValue(key: keyof Params, params: Params, unit: string): string {
 
 /** Tham số hệ thống (FR-HT-02), đọc từ store. Giai đoạn 4 thêm sửa giá trị kèm lý do và xem lịch sử. */
 export function AdminParamsTab() {
-  const { params } = useAppData();
+  const { params } = useStore().state;
   const { openModal, showToast } = useUi();
   return (
     <div className="space-y-3">

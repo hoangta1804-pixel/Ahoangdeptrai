@@ -1,63 +1,58 @@
 import { useState } from 'react';
 import { useUi } from '../../app/UiContext';
-import { useAppData } from '../../store/AppDataContext';
+import { EmptyState } from '../../components/EmptyState';
+import { OrderStatusBadge, PaymentStatusBadge } from '../../components/StatusBadge';
+import { formatMoney } from '../../domain/pricing';
+import { formatDateKey } from '../../domain/state';
+import { ORDER_KIND_LABEL, ORDER_STATUS_LABEL, ORDER_STATUSES, type OrderStatus } from '../../domain/types';
+import { useStore } from '../../store/AppDataContext';
 
+/** Danh sách đơn của HTX (FR-DH-07). HTX chỉ thấy đơn của HTX mình. */
 export function CoopOrdersTab() {
-  const { tickets, setTickets } = useAppData();
-  const { showToast } = useUi();
-  const [coopResponseText, setCoopResponseText] = useState('');
+  const { state } = useStore();
+  const { coopId, openModal } = useUi();
+  const [filter, setFilter] = useState<OrderStatus | 'all'>('all');
+  const mine = state.orders.filter((o) => o.coopId === coopId).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const shown = filter === 'all' ? mine : mine.filter((o) => o.status === filter);
+
   return (
     <div className="space-y-3">
-      <h4 className="text-xs font-bold text-stone-800 uppercase tracking-wider">
-        Ticket Khiếu Nại Cần Phản Hồi Giải Trình
-      </h4>
-
-      {tickets.map((tck) => (
-        <div key={tck.id} className="bg-white rounded-2xl border border-stone-200/80 p-3.5 shadow-xs space-y-2">
-          <div className="flex justify-between items-center border-b border-stone-100 pb-2">
-            <div>
-              <span className="text-xs font-bold text-stone-900">{tck.id}</span>
-              <span className="text-[10px] text-stone-400 block">Đơn: {tck.orderId}</span>
-            </div>
-            <span className="text-[10px] font-semibold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-md">
-              Chờ HTX giải trình
-            </span>
-          </div>
-
-          <div className="text-xs text-stone-700">
-            <span className="font-semibold block text-stone-900">Nội dung khiếu nại của khách:</span>
-            <p className="mt-0.5 italic text-stone-600 bg-stone-50 p-2 rounded-xl border border-stone-100">
-              "{tck.description}"
-            </p>
-          </div>
-
-          <div className="pt-2">
-            <label className="text-[11px] font-bold text-stone-700 block mb-1">
-              Giải trình của HTX gửi CSKH (Hệ thống bảo lưu, không đóng ticket):
-            </label>
-            <textarea
-              rows={2}
-              placeholder="Nhập thông tin kiểm tra lô hàng, khâu đóng gói tại vườn..."
-              value={tck.coopExplanation || coopResponseText}
-              onChange={(e) => setCoopResponseText(e.target.value)}
-              className="w-full bg-stone-50 border border-stone-200 rounded-xl p-2 text-xs focus:ring-1 focus:ring-emerald-700 focus:outline-none"
-            ></textarea>
-            <button
-              onClick={() => {
-                setTickets((prev) =>
-                  prev.map((item) =>
-                    item.id === tck.id ? { ...item, coopExplanation: coopResponseText } : item
-                  )
-                );
-                showToast('Đã gửi bản giải trình đến Admin CSKH thẩm định!');
-              }}
-              className="mt-1.5 w-full bg-emerald-800 hover:bg-emerald-700 text-white text-xs font-bold py-2 rounded-xl transition-colors shadow-xs"
-            >
-              Gửi giải trình cho CSKH
-            </button>
-          </div>
-        </div>
-      ))}
+      <div className="no-scrollbar flex gap-2 overflow-x-auto">
+        <button onClick={() => setFilter('all')} className={`min-h-10 whitespace-nowrap rounded-xl px-3 text-sm ${filter === 'all' ? 'bg-emerald-900 text-white' : 'border border-stone-200 bg-white'}`}>
+          Tất cả ({mine.length})
+        </button>
+        {ORDER_STATUSES.filter((s) => mine.some((o) => o.status === s)).map((s) => (
+          <button key={s} onClick={() => setFilter(s)} className={`min-h-10 whitespace-nowrap rounded-xl px-3 text-sm ${filter === s ? 'bg-emerald-900 text-white' : 'border border-stone-200 bg-white'}`}>
+            {ORDER_STATUS_LABEL[s]} ({mine.filter((o) => o.status === s).length})
+          </button>
+        ))}
+      </div>
+      {shown.length === 0 ? (
+        <EmptyState>Chưa có đơn nào.</EmptyState>
+      ) : (
+        <ul className="space-y-2">
+          {shown.map((o) => (
+            <li key={o.id}>
+              <button onClick={() => openModal({ type: 'coop_order', orderId: o.id })} className="w-full space-y-1.5 rounded-2xl border border-stone-200 bg-white p-3 text-left hover:bg-stone-50">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-mono text-sm font-bold">{o.id}</span>
+                  <span className="flex flex-wrap gap-1">
+                    <OrderStatusBadge status={o.status} />
+                    <PaymentStatusBadge status={o.paymentStatus} />
+                  </span>
+                </div>
+                <p className="text-sm text-stone-700">
+                  {ORDER_KIND_LABEL[o.kind]}
+                  {o.deliveryDate ? ` · giao ${formatDateKey(o.deliveryDate)}` : ''} · {o.items.map((i) => `${i.name} × ${i.quantity}`).join(', ')}
+                </p>
+                <p className="text-sm text-stone-600">Tiền hàng {formatMoney(o.pricing.itemsTotal)}</p>
+                {o.status === 'awaiting_confirmation' && o.confirmDeadline && <p className="text-sm font-semibold text-amber-800">Hạn xác nhận: {new Date(o.confirmDeadline).toLocaleString('vi-VN')}</p>}
+                {o.cancelRequest?.status === 'pending' && <p className="text-sm font-semibold text-rose-700">Khách yêu cầu huỷ – cần duyệt</p>}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

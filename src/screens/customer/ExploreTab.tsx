@@ -1,137 +1,156 @@
-import { useState } from 'react';
-import { CheckCircle2, Plus, Search, ShieldCheck } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Plus, Search } from 'lucide-react';
 import { useUi } from '../../app/UiContext';
+import { EmptyState } from '../../components/EmptyState';
 import { PreorderProgress } from '../../components/PreorderProgress';
 import { ProductImage } from '../../components/ProductImage';
+import { isOrderable } from '../../domain/cart';
 import { formatMoney } from '../../domain/pricing';
+import { remainingFor } from '../../domain/state';
 import { matchesSearch } from '../../domain/text';
-import { useAppData } from '../../store/AppDataContext';
-import { useAddToCart } from './useAddToCart';
+import { CATEGORY_LABEL, type Category } from '../../domain/types';
+import { useStore } from '../../store/AppDataContext';
+import { useCartActions } from './useCartActions';
+
+const ALL = 'all';
 
 export function ExploreTab() {
-  const { products } = useAppData();
+  const { state } = useStore();
   const { openModal } = useUi();
-  const addToCart = useAddToCart();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterCert, setFilterCert] = useState('all');
+  const { add } = useCartActions();
+  const [query, setQuery] = useState('');
+  const [region, setRegion] = useState<string>(ALL);
+  const [category, setCategory] = useState<Category | typeof ALL>(ALL);
 
-  const visible = products
-    .filter((p) => filterCert === 'all' || p.certType === filterCert)
-    .filter((p) => matchesSearch(searchQuery, [p.name, p.coopName, p.originDistrict]));
+  const listed = state.products.filter((p) => p.status === 'active');
+  // Bộ lọc vùng sinh từ dữ liệu sản phẩm, cùng một cấp (L9).
+  const regions = useMemo(() => [...new Set(listed.map((p) => p.region))].sort((a, b) => a.localeCompare(b, 'vi')), [listed]);
+  const categories = useMemo(() => (Object.keys(CATEGORY_LABEL) as Category[]).filter((c) => listed.some((p) => p.category === c)), [listed]);
+
+  const visible = listed
+    .filter((p) => region === ALL || p.region === region)
+    .filter((p) => category === ALL || p.category === category)
+    .filter((p) => matchesSearch(query, [p.name, p.region, state.coops.find((c) => c.id === p.coopId)?.name]));
+
+  const clearFilters = () => {
+    setQuery('');
+    setRegion(ALL);
+    setCategory(ALL);
+  };
+
+  const chip = (active: boolean) =>
+    `min-h-10 whitespace-nowrap rounded-xl px-3 text-sm font-medium transition-colors ${
+      active ? 'bg-emerald-900 text-white' : 'border border-stone-200 bg-white text-stone-700 hover:bg-stone-50'
+    }`;
 
   return (
     <div className="space-y-4 p-4">
-      {/* Banner (không dùng ảnh stock) */}
-      <div className="relative flex h-40 flex-col justify-end overflow-hidden rounded-3xl border border-stone-200/50 bg-gradient-to-br from-emerald-900 via-emerald-950 to-stone-900 p-4 text-white shadow-sm sm:h-48">
-        <div className="mb-1 flex items-center gap-1.5">
-          <span className="flex items-center gap-1 rounded-md bg-sky-500/90 px-2 py-0.5 text-[10px] font-semibold text-white">
-            <ShieldCheck size={12} />
-            CQQLNN Bảo chứng
-          </span>
-          <span className="rounded-md bg-amber-500/90 px-2 py-0.5 text-[10px] font-medium text-white">Giao tận cửa Hà Nội</span>
-        </div>
-        <h2 className="text-lg font-bold leading-tight">Đặc Sản Sương Mây Lào Cai</h2>
-        <p className="mt-0.5 text-xs text-stone-200">Thu hoạch tươi mới từ Bắc Hà, Mường Khương, Sa Pa</p>
+      <div className="flex h-36 flex-col justify-end rounded-3xl bg-gradient-to-br from-emerald-900 via-emerald-950 to-stone-900 p-4 text-white shadow-sm sm:h-44">
+        <h2 className="text-lg font-bold leading-tight">Đặc sản Lào Cai giao tại Hà Nội</h2>
+        <p className="mt-0.5 text-sm text-stone-200">Hàng mua sẵn và nông sản theo mùa đặt trước từ các HTX.</p>
       </div>
 
       <div className="relative">
-        <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
+        <Search size={16} className="absolute top-1/2 left-3.5 -translate-y-1/2 text-stone-400" />
         <input
           type="search"
           aria-label="Tìm sản phẩm"
-          placeholder="Tìm mận Bắc Hà, gạo Séng Cù..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Tìm sản phẩm, vùng, HTX…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
           className="w-full rounded-2xl border border-stone-200 bg-white py-2.5 pr-4 pl-10 text-sm text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-emerald-700/20"
         />
       </div>
 
-      <div className="no-scrollbar flex items-center gap-2 overflow-x-auto py-1">
-        {['all', 'OCOP 5 Sao', 'OCOP 4 Sao', 'VietGAP'].map((cert) => (
-          <button
-            key={cert}
-            onClick={() => setFilterCert(cert)}
-            className={`whitespace-nowrap rounded-xl px-3 py-1.5 text-xs font-medium transition-all ${
-              filterCert === cert ? 'bg-emerald-900 text-white shadow-sm' : 'border border-stone-200/80 bg-white text-stone-600 hover:bg-stone-50'
-            }`}
-          >
-            {cert === 'all' ? 'Tất cả nông sản' : cert}
+      <div className="space-y-2">
+        <div className="no-scrollbar flex items-center gap-2 overflow-x-auto" role="group" aria-label="Lọc theo vùng">
+          <button onClick={() => setRegion(ALL)} className={chip(region === ALL)}>
+            Mọi vùng
           </button>
-        ))}
+          {regions.map((r) => (
+            <button key={r} onClick={() => setRegion(r)} className={chip(region === r)}>
+              {r}
+            </button>
+          ))}
+        </div>
+        <div className="no-scrollbar flex items-center gap-2 overflow-x-auto" role="group" aria-label="Lọc theo nhóm hàng">
+          <button onClick={() => setCategory(ALL)} className={chip(category === ALL)}>
+            Mọi nhóm hàng
+          </button>
+          {categories.map((c) => (
+            <button key={c} onClick={() => setCategory(c)} className={chip(category === c)}>
+              {CATEGORY_LABEL[c]}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-bold uppercase tracking-wider text-stone-800">Danh Sách Chính Hãng</span>
-          <span className="text-[11px] text-stone-400">{visible.length} sản phẩm</span>
-        </div>
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-bold text-stone-800">Sản phẩm</span>
+        <span className="text-xs text-stone-500">{visible.length} sản phẩm</span>
+      </div>
 
-        {visible.length === 0 ? (
-          <div className="space-y-3 rounded-2xl border border-dashed border-stone-300 bg-white p-6 text-center text-sm text-stone-600">
-            <p>Không có sản phẩm phù hợp.</p>
-            <button
-              onClick={() => {
-                setSearchQuery('');
-                setFilterCert('all');
-              }}
-              className="rounded-xl bg-stone-100 px-4 py-2.5 text-sm font-semibold text-stone-800 hover:bg-stone-200"
-            >
+      {visible.length === 0 ? (
+        <EmptyState
+          action={
+            <button onClick={clearFilters} className="min-h-11 rounded-xl bg-stone-100 px-4 text-sm font-semibold text-stone-800 hover:bg-stone-200">
               Xoá tìm kiếm và bộ lọc
             </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {visible.map((prod) => (
+          }
+        >
+          Không có sản phẩm phù hợp.
+        </EmptyState>
+      ) : (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {visible.map((p) => {
+            const remaining = remainingFor(state, p);
+            const soldOut = remaining <= 0 || !isOrderable(p);
+            const coop = state.coops.find((c) => c.id === p.coopId);
+            return (
               <div
-                key={prod.id}
-                onClick={() => openModal({ type: 'product_detail', product: prod })}
-                className="flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-stone-200/70 bg-white shadow-[0_4px_20px_rgb(0,0,0,0.03)] transition-transform active:scale-[0.98]"
+                key={p.id}
+                onClick={() => openModal({ type: 'product_detail', productId: p.id })}
+                className="flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-stone-200/70 bg-white shadow-[0_4px_20px_rgb(0,0,0,0.03)]"
               >
-                <div className="relative h-28 w-full overflow-hidden bg-stone-100">
-                  <ProductImage product={prod} className="h-full w-full" />
-                  <div className="absolute top-2 left-2 flex flex-col gap-1">
-                    <span className="flex items-center gap-0.5 rounded-md bg-sky-600/95 px-1.5 py-0.5 text-[9px] font-semibold text-white">
-                      <CheckCircle2 size={10} />
-                      Bảo chứng
-                    </span>
-                    {prod.isPreorder && (
-                      <span className="rounded-md bg-amber-600 px-1.5 py-0.5 text-[9px] font-bold text-white">Cọc 30%</span>
-                    )}
+                <div className="relative h-28 w-full bg-stone-100">
+                  <ProductImage product={p} className="h-full w-full" />
+                  <div className="absolute top-2 left-2 flex flex-col items-start gap-1">
+                    {p.kind === 'preorder' && <span className="rounded-md bg-amber-600 px-1.5 py-0.5 text-xs font-bold text-white">Đặt trước</span>}
+                    {soldOut && <span className="rounded-md bg-stone-900/85 px-1.5 py-0.5 text-xs font-bold text-white">Hết hàng</span>}
                   </div>
                 </div>
-
-                <div className="flex flex-1 flex-col justify-between p-2.5">
+                <div className="flex flex-1 flex-col justify-between gap-2 p-2.5">
                   <div>
-                    <span className="block truncate text-[10px] font-semibold text-emerald-800">{prod.coopName}</span>
-                    <h3 className="mt-0.5 line-clamp-2 text-xs font-bold text-stone-900">{prod.name}</h3>
+                    <span className="block truncate text-xs font-semibold text-emerald-800">{coop?.name}</span>
+                    <h3 className="mt-0.5 line-clamp-2 text-sm font-bold text-stone-900">{p.name}</h3>
+                    <span className="text-xs text-stone-500">
+                      {p.region} · {CATEGORY_LABEL[p.category]}
+                    </span>
                   </div>
-                  {prod.isPreorder && (
-                    <div className="mt-2">
-                      <PreorderProgress product={prod} />
-                    </div>
-                  )}
-                  <div className="mt-2.5 flex items-center justify-between border-t border-stone-100 pt-2">
+                  {p.kind === 'preorder' && <PreorderProgress product={p} />}
+                  <div className="flex items-center justify-between border-t border-stone-100 pt-2">
                     <div>
-                      <span className="text-xs font-extrabold tabular-nums text-stone-900">{formatMoney(prod.price)}</span>
-                      <span className="text-[10px] text-stone-400">/{prod.unit}</span>
+                      <span className="text-sm font-extrabold tabular-nums text-stone-900">{formatMoney(p.price)}</span>
+                      <span className="text-xs text-stone-500">/{p.unit}</span>
                     </div>
                     <button
+                      disabled={soldOut}
                       onClick={(e) => {
                         e.stopPropagation();
-                        addToCart(prod, 1);
+                        add(p.id, 1);
                       }}
-                      aria-label={`Thêm ${prod.name} vào giỏ`}
-                      className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-900 text-white transition-colors hover:bg-emerald-800"
+                      aria-label={`Thêm ${p.name} vào giỏ`}
+                      className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-900 text-white hover:bg-emerald-800 disabled:bg-stone-300"
                     >
                       <Plus size={16} />
                     </button>
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

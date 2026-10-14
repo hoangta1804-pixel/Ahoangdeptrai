@@ -7,7 +7,16 @@
 import { useState } from 'react';
 import { Phone, QrCode, X } from 'lucide-react';
 import { formatMoney } from '../../domain/pricing';
-import type { Order } from '../../domain/types';
+/** Kiểu đơn của src/App.tsx cũ, giữ riêng cho màn tạm ẩn này. */
+interface Order {
+  id: string;
+  customerName: string;
+  customerPhone: string;
+  houseType: 'apartment' | 'ground';
+  frozenAddressSnapshot: string;
+  remainingCod: number;
+  status: string;
+}
 
 interface ShipperScreenProps {
   orders: Order[];

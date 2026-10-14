@@ -1,30 +1,37 @@
 import { BottomSheet } from '../../components/BottomSheet';
 import { ProductImage } from '../../components/ProductImage';
-import type { Product } from '../../domain/types';
+import { findProduct, formatDateKey } from '../../domain/state';
+import { CATEGORY_LABEL, ORDER_KIND_LABEL } from '../../domain/types';
+import { useStore } from '../../store/AppDataContext';
 
 /**
- * Trang thông tin lô / nguồn gốc của đúng sản phẩm được chọn (L10).
+ * Thông tin nguồn gốc của đúng sản phẩm được chọn (L10).
  * Chỉ hiện dữ liệu có trong hồ sơ sản phẩm; không dựng nhật ký thu hái, toạ độ hay lời xác nhận của cơ quan nhà nước.
  */
-export function TraceLotSheet({ product, onClose }: { product: Product; onClose: () => void }) {
+export function TraceLotSheet({ productId, onClose }: { productId: string; onClose: () => void }) {
+  const { state } = useStore();
+  const product = findProduct(state, productId);
+  if (!product) return null;
+  const coop = state.coops.find((c) => c.id === product.coopId);
   const rows: [string, string | undefined][] = [
     ['Sản phẩm', product.name],
-    ['Đơn vị bán', product.coopName],
-    ['Vùng sản xuất', `${product.originDistrict}, Lào Cai`],
-    ['Chứng nhận HTX khai', `${product.certType} – ${product.certNumber}`],
+    ['Đơn vị bán', coop?.name],
+    ['Vùng sản xuất', `${product.region}, Lào Cai`],
+    ['Nhóm hàng', CATEGORY_LABEL[product.category]],
+    ['Loại đơn', ORDER_KIND_LABEL[product.kind]],
     ['Quy cách', product.unit],
-    ['Ngày giao dự kiến', product.isPreorder ? product.deliveryDate : undefined],
+    ['Chứng nhận', product.certLabel],
+    ['Khoảng ngày giao', product.preorder ? `${formatDateKey(product.preorder.deliveryFrom)} – ${formatDateKey(product.preorder.deliveryTo)}` : undefined],
   ];
   return (
     <BottomSheet title="Thông tin nguồn gốc" onClose={onClose}>
       <div className="flex gap-3">
         <ProductImage product={product} className="h-20 w-20 shrink-0 rounded-2xl" />
         <div className="min-w-0">
-          <h3 className="text-sm font-bold text-stone-900">{product.name}</h3>
-          <p className="text-xs text-stone-500">{product.coopName}</p>
+          <h3 className="text-base font-bold text-stone-900">{product.name}</h3>
+          <p className="text-sm text-stone-500">{coop?.name}</p>
         </div>
       </div>
-
       <dl className="divide-y divide-stone-100 rounded-2xl border border-stone-200 text-sm">
         {rows
           .filter(([, v]) => v)
@@ -35,10 +42,8 @@ export function TraceLotSheet({ product, onClose }: { product: Product; onClose:
             </div>
           ))}
       </dl>
-
       <p className="text-sm leading-relaxed text-stone-600">{product.description}</p>
-
-      <p className="rounded-2xl border border-amber-200 bg-amber-50 p-3 text-xs leading-relaxed text-amber-900">
+      <p className="rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm leading-relaxed text-amber-950">
         Thông tin lô (mã lô, ngày thu hoạch, ngày đóng gói) do HTX khai khi tạo lô hàng. Dữ liệu trên là dữ liệu mẫu, chờ HTX xác nhận.
       </p>
     </BottomSheet>

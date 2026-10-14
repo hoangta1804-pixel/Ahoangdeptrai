@@ -1,70 +1,60 @@
 import { useState } from 'react';
-import { CoopLegalTab } from './CoopLegalTab';
+import { useUi } from '../../app/UiContext';
+import { Select } from '../../components/form';
+import { useStore } from '../../store/AppDataContext';
 import { CoopOrdersTab } from './CoopOrdersTab';
 import { CoopProductsTab } from './CoopProductsTab';
+import { CoopTicketsTab } from './CoopTicketsTab';
 import { CoopWalletTab } from './CoopWalletTab';
 
-
-type CoopTab = 'products' | 'orders' | 'wallet' | 'legal';
+type CoopTab = 'orders' | 'products' | 'tickets' | 'wallet';
+const TABS: { key: CoopTab; label: string }[] = [
+  { key: 'orders', label: 'Đơn hàng' },
+  { key: 'products', label: 'Sản phẩm' },
+  { key: 'tickets', label: 'Khiếu nại' },
+  { key: 'wallet', label: 'Đối soát' },
+];
 
 export function CoopScreen() {
-  const [tab, setTab] = useState<CoopTab>('products');
+  const { state } = useStore();
+  const { coopId, setCoopId } = useUi();
+  const [tab, setTab] = useState<CoopTab>('orders');
+  const coop = state.coops.find((c) => c.id === coopId);
+  const pendingConfirm = state.orders.filter((o) => o.coopId === coopId && o.status === 'awaiting_confirmation').length;
+
   return (
     <div className="flex flex-1 flex-col space-y-4 p-4">
-      {/* Coop Header */}
-      <div className="bg-emerald-950 text-white rounded-3xl p-4 shadow-md space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
-            Kênh Quản Trị Hợp Tác Xã
-          </span>
-          <span className="text-[10px] bg-emerald-800/80 px-2 py-0.5 rounded-md text-emerald-200">
-            Mã HTX: LC-BH-01
-          </span>
-        </div>
-        <h3 className="text-base font-bold">HTX Nông Nghiệp Hữu Cơ Bắc Hà</h3>
-        <p className="text-xs text-stone-300">Đại diện: Vàng A Sáng • Bắc Hà, Lào Cai</p>
+      <div className="space-y-2 rounded-3xl bg-emerald-950 p-4 text-white shadow-md">
+        <span className="text-xs font-bold uppercase tracking-wider text-emerald-300">Kênh HTX</span>
+        <h2 className="text-lg font-bold">{coop?.name}</h2>
+        <p className="text-sm text-emerald-100">
+          Vùng {coop?.region} · Tài khoản nhận chi trả {coop?.payoutAccountMasked}
+        </p>
+        <label className="block text-sm text-emerald-100">
+          <span className="mb-1 block text-xs">Đang xem với tư cách HTX (demo, Giai đoạn 3 thay bằng đăng nhập)</span>
+          <Select value={coopId} onChange={(e) => setCoopId(e.target.value)} className="text-stone-900">
+            {state.coops.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </Select>
+        </label>
       </div>
 
-      {/* Sub-nav for Coop */}
-      <div className="grid grid-cols-4 gap-1 bg-stone-200/70 p-1 rounded-2xl text-[11px] font-medium">
-        <button
-          onClick={() => setTab('products')}
-          className={`py-2 rounded-xl transition-all ${
-            tab === 'products' ? 'bg-white text-stone-900 font-bold shadow-xs' : 'text-stone-600'
-          }`}
-        >
-          Sản phẩm
-        </button>
-        <button
-          onClick={() => setTab('orders')}
-          className={`py-2 rounded-xl transition-all ${
-            tab === 'orders' ? 'bg-white text-stone-900 font-bold shadow-xs' : 'text-stone-600'
-          }`}
-        >
-          Đơn & Ticket
-        </button>
-        <button
-          onClick={() => setTab('wallet')}
-          className={`py-2 rounded-xl transition-all ${
-            tab === 'wallet' ? 'bg-white text-stone-900 font-bold shadow-xs' : 'text-stone-600'
-          }`}
-        >
-          Ví đối soát
-        </button>
-        <button
-          onClick={() => setTab('legal')}
-          className={`py-2 rounded-xl transition-all ${
-            tab === 'legal' ? 'bg-white text-stone-900 font-bold shadow-xs' : 'text-stone-600'
-          }`}
-        >
-          Hồ sơ
-        </button>
+      <div className="grid grid-cols-4 gap-1 rounded-2xl bg-stone-200/70 p-1 text-sm font-medium" role="tablist">
+        {TABS.map((t) => (
+          <button key={t.key} role="tab" aria-selected={tab === t.key} onClick={() => setTab(t.key)} className={`min-h-11 rounded-xl ${tab === t.key ? 'bg-white font-bold text-stone-900 shadow-xs' : 'text-stone-700'}`}>
+            {t.label}
+            {t.key === 'orders' && pendingConfirm > 0 && <span className="ml-1 rounded-full bg-amber-600 px-1.5 text-xs text-white">{pendingConfirm}</span>}
+          </button>
+        ))}
       </div>
 
-      {tab === 'products' && <CoopProductsTab />}
       {tab === 'orders' && <CoopOrdersTab />}
+      {tab === 'products' && <CoopProductsTab />}
+      {tab === 'tickets' && <CoopTicketsTab />}
       {tab === 'wallet' && <CoopWalletTab />}
-      {tab === 'legal' && <CoopLegalTab />}
     </div>
   );
 }

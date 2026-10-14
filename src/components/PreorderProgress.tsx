@@ -1,14 +1,14 @@
 import { reservedSlots } from '../domain/stock';
+import { formatDateKey } from '../domain/state';
 import type { Product } from '../domain/types';
-import { useAppData } from '../store/AppDataContext';
-import { toHoldingOrders } from '../store/selectors';
+import { useStore } from '../store/AppDataContext';
 
 /** Thanh "Đã giữ x/y suất", tính từ đơn trong store (mục 5.6), không gõ cứng. */
 export function PreorderProgress({ product }: { product: Product }) {
-  const { orders } = useAppData();
-  const total = product.preorderStock ?? 0;
-  if (!product.isPreorder || total <= 0) return null;
-  const reserved = Math.min(total, reservedSlots(product.id, toHoldingOrders(orders)));
+  const { state } = useStore();
+  const total = product.preorder?.totalSlots ?? 0;
+  if (product.kind !== 'preorder' || total <= 0) return null;
+  const reserved = Math.min(total, reservedSlots(product.id, state.orders));
   const percent = Math.round((reserved / total) * 100);
   return (
     <div className="rounded-lg border border-amber-200/60 bg-amber-50 p-2">
@@ -16,7 +16,11 @@ export function PreorderProgress({ product }: { product: Product }) {
         <span>
           Đã giữ {reserved}/{total} suất
         </span>
-        {product.deliveryDate && <span>Giao {product.deliveryDate}</span>}
+        {product.preorder && (
+          <span>
+            Giao {formatDateKey(product.preorder.deliveryFrom)} – {formatDateKey(product.preorder.deliveryTo)}
+          </span>
+        )}
       </div>
       <div
         className="h-1.5 w-full overflow-hidden rounded-full bg-amber-200/70"
