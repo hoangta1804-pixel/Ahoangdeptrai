@@ -41,7 +41,7 @@ function ModalContent() {
     case 'cart':
       return <CartSheet onClose={closeModal} />;
     case 'checkout':
-      return <CheckoutSheet source={modal.source} onClose={closeModal} />;
+      return <CheckoutSheet source={modal.source} preferredAddressId={modal.addressId} onClose={closeModal} />;
     case 'payment':
       return <PaymentSheet txId={modal.txId} onClose={closeModal} />;
     case 'order_detail':
@@ -49,7 +49,7 @@ function ModalContent() {
     case 'address_book':
       return <AddressBookSheet onClose={closeModal} />;
     case 'address_form':
-      return <AddressFormSheet key={modal.addressId ?? 'new'} addressId={modal.addressId} onClose={closeModal} />;
+      return <AddressFormSheet key={modal.addressId ?? 'new'} addressId={modal.addressId} returnTo={modal.returnTo} onClose={closeModal} />;
     case 'complaint':
       return <ComplaintSheet orderId={modal.orderId} onClose={closeModal} />;
     case 'coop_order':

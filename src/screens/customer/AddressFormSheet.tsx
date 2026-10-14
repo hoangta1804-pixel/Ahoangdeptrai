@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useUi } from '../../app/UiContext';
+import { useUi, type ModalState } from '../../app/UiContext';
 import { BottomSheet } from '../../components/BottomSheet';
 import { Field, Input, PrimaryButton, Select } from '../../components/form';
 import { addAddress, updateAddress, type AddressInput } from '../../domain/address';
@@ -10,8 +10,9 @@ import { useStore } from '../../store/AppDataContext';
 /**
  * Form địa chỉ (BR-DAT-04, L14): Hà Nội cố định; phường/xã chọn từ danh sách; không dùng quận/huyện.
  * Chung cư bắt buộc toà và căn; nhà mặt đất bắt buộc số nhà. Không có nút GPS.
+ * Mở từ bước đặt hàng thì lưu xong quay lại bước đặt hàng, chọn sẵn địa chỉ vừa lưu.
  */
-export function AddressFormSheet({ addressId, onClose }: { addressId?: string; onClose: () => void }) {
+export function AddressFormSheet({ addressId, returnTo, onClose }: { addressId?: string; returnTo?: ModalState; onClose: () => void }) {
   const { state, run } = useStore();
   const { customerActor, openModal, showToast } = useUi();
   const existing = state.addresses.find((a) => a.id === addressId);
@@ -23,23 +24,32 @@ export function AddressFormSheet({ addressId, onClose }: { addressId?: string; o
   );
   const set = (patch: Partial<AddressInput>) => setForm((f) => ({ ...f, ...patch }));
 
+  const back = (savedId?: string) => {
+    if (returnTo?.type === 'checkout') openModal(savedId ? { ...returnTo, addressId: savedId } : returnTo);
+    else openModal(returnTo ?? { type: 'address_book' });
+  };
+
   const save = () => {
+    let savedId = existing?.id;
     const r = existing
       ? run((s) => updateAddress(s, customerActor.id!, existing.id, form))
       : run(
           (s) => addAddress(s, customerActor.id!, form),
-          (v) => v.state,
+          (v) => {
+            savedId = v.address.id;
+            return v.state;
+          },
         );
     if (!r.ok) return showToast(r.error);
     showToast(existing ? 'Đã cập nhật địa chỉ.' : 'Đã thêm địa chỉ.');
-    openModal({ type: 'address_book' });
+    back(savedId);
   };
 
   return (
     <BottomSheet
       title={existing ? 'Sửa địa chỉ' : 'Thêm địa chỉ'}
-      onClose={() => openModal({ type: 'address_book' })}
-      closeLabel="Quay lại sổ địa chỉ"
+      onClose={() => back()}
+      closeLabel={returnTo?.type === 'checkout' ? 'Quay lại đặt hàng' : 'Quay lại sổ địa chỉ'}
       footer={
         <PrimaryButton className="w-full" onClick={save}>
           Lưu địa chỉ

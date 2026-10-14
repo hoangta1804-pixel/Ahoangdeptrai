@@ -6,7 +6,7 @@
  * Mọi phép tính tiền nằm ở src/domain (planCheckout / placeCheckout).
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, Check, ChevronLeft, Gift, Ticket } from 'lucide-react';
+import { AlertTriangle, Check, ChevronLeft, Gift, Plus, Ticket } from 'lucide-react';
 import { useUi, type CheckoutSource } from '../../app/UiContext';
 import { BottomSheet } from '../../components/BottomSheet';
 import { Field, Input, PrimaryButton, SecondaryButton, Select, Textarea } from '../../components/form';
@@ -36,7 +36,7 @@ function noticeText(n: RevalidationNotice): string {
   }
 }
 
-export function CheckoutSheet({ source, onClose }: { source: CheckoutSource; onClose: () => void }) {
+export function CheckoutSheet({ source, preferredAddressId, onClose }: { source: CheckoutSource; preferredAddressId?: string; onClose: () => void }) {
   const { state, now, run } = useStore();
   const { customerActor, openModal, showToast, setCustomerTab } = useUi();
   const customerId = customerActor.id!;
@@ -45,7 +45,12 @@ export function CheckoutSheet({ source, onClose }: { source: CheckoutSource; onC
   const [step, setStep] = useState<Step>(1);
   const [lines, setLines] = useState<CartLine[]>(initialLines);
   const [notices, setNotices] = useState<RevalidationNotice[]>([]);
-  const [addressId, setAddressId] = useState(defaultAddressOf(state, customerId)?.id ?? '');
+  // Địa chỉ chọn sẵn: địa chỉ vừa thêm từ bước này (nếu có), không thì địa chỉ mặc định.
+  const [addressId, setAddressId] = useState(
+    (preferredAddressId && state.addresses.some((a) => a.id === preferredAddressId && a.customerId === customerId) ? preferredAddressId : undefined) ??
+      defaultAddressOf(state, customerId)?.id ??
+      '',
+  );
   const [options, setOptions] = useState<Record<string, GroupOptions>>({});
   const [voucherId, setVoucherId] = useState<string | undefined>();
   const [voucherCode, setVoucherCode] = useState('');
@@ -189,6 +194,7 @@ export function CheckoutSheet({ source, onClose }: { source: CheckoutSource; onC
           addresses={addresses.map((a) => ({ id: a.id, label: `${a.label}: ${snapshotAddress(state, a).text}` }))}
           addressId={addressId}
           setAddressId={setAddressId}
+          onAddAddress={() => openModal({ type: 'address_form', returnTo: { type: 'checkout', source } })}
           setLineDate={setLineDate}
           setOpt={setOpt}
           options={options}
@@ -395,6 +401,8 @@ function StepDelivery(props: {
   addresses: { id: string; label: string }[];
   addressId: string;
   setAddressId: (id: string) => void;
+  /** Thêm địa chỉ ngay từ bước này; lưu xong quay lại bước đặt hàng. */
+  onAddAddress: () => void;
   setLineDate: (productId: string, date: string) => void;
   setOpt: (key: string, patch: Partial<GroupOptions>) => void;
   options: Record<string, GroupOptions>;
@@ -406,16 +414,31 @@ function StepDelivery(props: {
   const params = state.params;
   return (
     <>
-      <Field label="Địa chỉ giao hàng (Hà Nội)" hint="Thêm hoặc sửa địa chỉ ở Tài khoản › Sổ địa chỉ.">
-        <Select value={props.addressId} onChange={(e) => props.setAddressId(e.target.value)}>
-          <option value="">— Chọn địa chỉ —</option>
-          {props.addresses.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.label}
-            </option>
-          ))}
-        </Select>
-      </Field>
+      {props.addresses.length === 0 ? (
+        <div className="space-y-2 rounded-2xl border border-dashed border-stone-300 bg-white p-4 text-center text-sm text-stone-700">
+          <p className="font-semibold text-ink">Bạn chưa có địa chỉ giao hàng.</p>
+          <p>Giai đoạn 1 chỉ giao trong Hà Nội. Thêm địa chỉ rồi quay lại đây để đặt hàng.</p>
+          <PrimaryButton className="w-full" onClick={props.onAddAddress}>
+            Thêm địa chỉ giao hàng
+          </PrimaryButton>
+        </div>
+      ) : (
+        <div className="space-y-1">
+          <Field label="Địa chỉ giao hàng (Hà Nội)">
+            <Select value={props.addressId} onChange={(e) => props.setAddressId(e.target.value)}>
+              <option value="">— Chọn địa chỉ —</option>
+              {props.addresses.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <button type="button" onClick={props.onAddAddress} className="flex min-h-11 items-center gap-1 text-sm font-semibold text-forest-700 hover:underline">
+            <Plus size={16} /> Thêm địa chỉ mới
+          </button>
+        </div>
+      )}
 
       {props.plan.map((o) => {
         const gift = props.options[o.key]?.gift;
@@ -456,7 +479,7 @@ function StepDelivery(props: {
                 </label>
                 <label className={`flex min-h-11 items-center gap-2 rounded-xl border px-3 text-sm ${o.shipping === 'express' ? 'border-forest-600 bg-forest-50 font-semibold' : 'border-stone-200'} ${o.express.available ? '' : 'opacity-50'}`}>
                   <input type="radio" name={`ship-${o.key}`} disabled={!o.express.available} checked={o.shipping === 'express'} onChange={() => props.setOpt(o.key, { shipping: 'express' })} />
-                  Hoả tốc · thêm {o.express.surcharge !== null ? formatMoney(o.express.surcharge) : '—'} ({o.address.distanceKm} km)
+                  Hoả tốc · thêm {o.express.surcharge !== null ? formatMoney(o.express.surcharge) : '—'} {Number.isFinite(o.address.distanceKm) ? `(${o.address.distanceKm} km)` : ''}
                 </label>
                 {!o.express.available && <p className="text-sm text-stone-600">Không có hoả tốc: {o.express.reasons.join(' ')}</p>}
               </div>

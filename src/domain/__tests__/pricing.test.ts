@@ -88,6 +88,12 @@ describe('Hoả tốc (BR-DAT-05)', () => {
     expect(late.reasons[0]).toMatch(/giờ chốt/);
   });
 
+  it('chưa chọn địa chỉ thì báo chưa chọn, không báo ngoài vùng', () => {
+    const none = checkExpress({ kind: 'ready', allItemsExpressApproved: true, orderTime: new Date(2026, 9, 14, 10, 0), distanceKm: Number.POSITIVE_INFINITY }, P);
+    expect(none.available).toBe(false);
+    expect(none.reasons).toEqual(['Chưa chọn địa chỉ giao hàng.']);
+  });
+
   it('đủ 4 điều kiện thì có hoả tốc với phụ phí theo bậc; quá 15 km thì không', () => {
     const okCase = checkExpress({ kind: 'ready', allItemsExpressApproved: true, orderTime: new Date(2026, 9, 14, 10, 0), distanceKm: 6.8 }, P);
     expect(okCase).toEqual({ available: true, surcharge: 30_000, reasons: [] });

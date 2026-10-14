@@ -26,10 +26,31 @@ npm test         # unit test vitest: src/domain, dữ liệu mẫu, quy ước g
 | Lệnh | Kết quả |
 |---|---|
 | `npm run lint` | Không lỗi |
-| `npm test` | 15 file, 124 test, tất cả đạt |
+| `npm test` | 15 file, 126 test, tất cả đạt |
 | `npm run build` | Thành công, không cảnh báo. Phần chung 431 kB (gzip 127 kB); màn HTX, Admin, QLNN tải riêng theo vai trò |
 | Luồng 1 và Luồng 2 (mục 11.2) bằng Playwright, chặn mọi request ngoài localhost | Đạt trọn vẹn. Không có request ra ngoài, không lỗi JS |
 | Kiểm tra giao diện tự động trên mọi màn và trong Luồng 1 (axe-core 4.10 + đo vùng bấm và cỡ chữ) | 0 lỗi tương phản AA, 0 nút thiếu tên, 0 vùng bấm dưới 44×44, 0 chữ dưới 12px |
+
+---
+
+## Sau Giai đoạn 6 – Sửa lỗi chọn địa chỉ giao hàng
+
+Chủ repo báo lỗi khi chọn địa chỉ giao hàng tại Hà Nội. Thử lại trên trình duyệt thấy 3 lỗi, đã sửa cả 3:
+
+| Lỗi | Cách sửa |
+|---|---|
+| Khách chưa có địa chỉ (vd. vừa đăng ký) vào bước đặt hàng thì ô địa chỉ trống, nút "Tiếp tục" bị khoá, không thêm được địa chỉ tại đó | Bước đặt hàng hiện khung "Bạn chưa có địa chỉ giao hàng" kèm nút "Thêm địa chỉ giao hàng"; khi đã có địa chỉ thì có nút "Thêm địa chỉ mới". Lưu xong tự quay lại bước đặt hàng, chọn sẵn địa chỉ vừa thêm |
+| Bấm vào một địa chỉ trong sổ địa chỉ không đổi được địa chỉ giao; phải tìm nút "Đặt mặc định" | Bấm vào địa chỉ nào là chọn giao tới địa chỉ đó: địa chỉ thành mặc định, thanh "Giao tới" cập nhật, sổ địa chỉ đóng lại. Địa chỉ đang chọn có dấu tích và nhãn "Đang giao tới" |
+| Chưa chọn địa chỉ thì dòng hoả tốc hiện "(Infinity km)" và báo "Địa chỉ nằm ngoài vùng giao hoả tốc" | Không hiện khoảng cách khi chưa có địa chỉ; lý do ghi "Chưa chọn địa chỉ giao hàng." |
+
+- **Kiểm tra trên trình duyệt:**
+  - khách mới thêm địa chỉ ngay tại bước đặt hàng rồi đặt được đơn;
+  - thêm địa chỉ thứ 2 từ bước đặt hàng thì địa chỉ đó được chọn sẵn;
+  - chọn địa chỉ trong sổ địa chỉ thì thanh "Giao tới" đổi theo;
+  - sửa, xoá địa chỉ vẫn chạy;
+  - đổi địa chỉ ở bước đặt hàng thì đơn giao tới đúng địa chỉ đã chọn;
+  - kiểm tra giao diện tự động không có lỗi.
+- **Test mới:** `pricing.test.ts`, ca chưa chọn địa chỉ.
 
 ---
 

@@ -16,11 +16,13 @@ export type ModalState =
   | { type: 'product_detail'; productId: string }
   | { type: 'trace_lot'; productId: string }
   | { type: 'cart' }
-  | { type: 'checkout'; source: CheckoutSource }
+  /** `addressId`: địa chỉ chọn sẵn, vd. địa chỉ vừa thêm từ bước đặt hàng. */
+  | { type: 'checkout'; source: CheckoutSource; addressId?: string }
   | { type: 'payment'; txId: string }
   | { type: 'order_detail'; orderId: string }
   | { type: 'address_book' }
-  | { type: 'address_form'; addressId?: string }
+  /** `returnTo`: màn mở lại sau khi lưu hoặc đóng form (mặc định là sổ địa chỉ). */
+  | { type: 'address_form'; addressId?: string; returnTo?: ModalState }
   | { type: 'complaint'; orderId?: string }
   | { type: 'coop_order'; orderId: string }
   | { type: 'notifications' }

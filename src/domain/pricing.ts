@@ -197,7 +197,10 @@ export function checkExpress(input: ExpressCheckInput, params: Pick<Params, 'exp
     reasons.push(`Đã qua giờ chốt nhận đơn hoả tốc (${params.expressCutoff}).`);
   }
   const surcharge = expressSurchargeFor(input.distanceKm, params.expressTiers);
-  if (surcharge === null) {
+  if (!Number.isFinite(input.distanceKm)) {
+    // Chưa chọn địa chỉ: chưa biết khoảng cách.
+    reasons.push('Chưa chọn địa chỉ giao hàng.');
+  } else if (surcharge === null) {
     reasons.push('Địa chỉ nằm ngoài vùng giao hoả tốc.');
   }
   return { available: reasons.length === 0, surcharge, reasons };
