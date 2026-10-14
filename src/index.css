@@ -1,14 +1,51 @@
-@import "tailwindcss";
+@import "tailwindcss" source(none);
+@source "../index.html";
+@source "./DacSanApp.jsx";
 
+/* Giữ hành vi mặc định giống Tailwind v3 (bản CDN cũ) để giao diện không đổi */
 @layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentColor);
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-gray-400);
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
   body {
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    -webkit-tap-highlight-color: transparent;
+    overflow-x: hidden;
+  }
+  /* Bỏ trễ 300ms khi chạm trên mobile */
+  button, a, input, select, textarea, [role="button"] {
+    touch-action: manipulation;
+  }
+  img {
+    max-width: 100%;
   }
 }
 
-/* Custom scrollbar hiding for native mobile app feel */
+.price-num, .tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* Ẩn thanh cuộn cho cảm giác app native */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -21,7 +58,20 @@
   0% { transform: translateY(-100%); }
   100% { transform: translateY(100%); }
 }
-
 .animate-scanline {
   animation: scanline 2s linear infinite;
+}
+
+.hero-shade {
+  background: linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.75) 100%);
+}
+
+/* Tôn trọng thiết lập giảm chuyển động của người dùng */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
