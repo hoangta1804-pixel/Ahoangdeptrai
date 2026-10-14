@@ -41,7 +41,11 @@ export function CheckoutSheet({ source, preferredAddressId, onClose }: { source:
   const { customerActor, openModal, showToast, setCustomerTab } = useUi();
   const customerId = customerActor.id!;
 
-  const initialLines = source.type === 'cart' ? state.carts[customerId] ?? [] : [source.line];
+  // Đặt từ giỏ: chỉ các sản phẩm khách đã chọn; sản phẩm không chọn vẫn ở lại giỏ.
+  const initialLines =
+    source.type === 'cart'
+      ? (state.carts[customerId] ?? []).filter((l) => !source.productIds || source.productIds.includes(l.productId))
+      : [source.line];
   const [step, setStep] = useState<Step>(1);
   const [lines, setLines] = useState<CartLine[]>(initialLines);
   const [notices, setNotices] = useState<RevalidationNotice[]>([]);
