@@ -57,10 +57,11 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
     <BottomSheet
       title={
         <>
-          <span className="block">{product.name}</span>
-          <span className="block text-sm font-normal text-muted">
-            {coop?.name} · {product.region} · {CATEGORY_LABEL[product.category]}
+          <span className="block text-xs font-semibold uppercase tracking-wider text-champagne-700">
+            {product.region} · {CATEGORY_LABEL[product.category]}
           </span>
+          <span className="block font-display text-2xl font-semibold leading-tight">{product.name}</span>
+          <span className="block text-sm font-normal text-muted">{coop?.name}</span>
         </>
       }
       onClose={onClose}
@@ -88,7 +89,7 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
         </div>
       }
     >
-      <div className="relative h-44 overflow-hidden rounded-2xl border border-stone-200 sm:h-56">
+      <div className="relative aspect-[4/3] max-h-80 w-full overflow-hidden rounded-3xl">
         <ProductImage product={product} variant="cover" className="h-full w-full" />
         <button
           onClick={() => openModal({ type: 'trace_lot', productId: product.id })}

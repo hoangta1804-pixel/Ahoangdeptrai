@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Plus, Search } from 'lucide-react';
 import { useUi } from '../../app/UiContext';
 import { EmptyState } from '../../components/EmptyState';
+import { LandscapeArt } from '../../components/LandscapeArt';
 import { PreorderProgress } from '../../components/PreorderProgress';
 import { ProductImage } from '../../components/ProductImage';
 import { isOrderableIn } from '../../domain/cart';
@@ -38,17 +39,26 @@ export function ExploreTab() {
     setCategory(ALL);
   };
 
+  const coopCount = new Set(listed.map((p) => p.coopId)).size;
+
   const chip = (active: boolean) =>
-    `min-h-11 whitespace-nowrap rounded-xl px-3 text-sm font-medium transition-colors ${
-      active ? 'bg-forest-800 text-white' : 'border border-stone-200 bg-white text-stone-700 hover:bg-stone-50'
+    `min-h-11 whitespace-nowrap rounded-full px-4 text-sm font-medium transition-colors ${
+      active ? 'bg-forest-800 text-white' : 'border border-stone-300/80 bg-white text-stone-700 hover:border-forest-600'
     }`;
 
   return (
     <div className="space-y-4 p-4">
-      <div className="flex h-36 flex-col justify-end rounded-3xl bg-gradient-to-br from-forest-800 via-forest-900 to-stone-900 p-4 text-white shadow-sm sm:h-44">
-        <h2 className="text-lg font-bold leading-tight">Đặc sản Lào Cai giao tại Hà Nội</h2>
-        <p className="mt-0.5 text-sm text-stone-200">Hàng mua sẵn và nông sản theo mùa đặt trước từ các HTX.</p>
-      </div>
+      <section className="relative overflow-hidden rounded-[28px] bg-forest-900 text-white shadow-sm">
+        <LandscapeArt className="absolute inset-0 h-full w-full" />
+        <div className="relative space-y-2 px-5 pt-6 pb-28 sm:pb-32">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-champagne-300">Từ các hợp tác xã vùng cao Lào Cai</p>
+          <h2 className="font-display text-[1.7rem] font-semibold leading-tight text-balance">Đặc sản núi rừng, giao tận nhà tại Hà Nội</h2>
+          <p className="max-w-sm text-sm text-forest-100">Hàng mua sẵn và nông sản theo mùa, đặt trước để giữ suất.</p>
+          <p className="inline-flex rounded-full border border-champagne-300/50 px-3 py-1 text-xs font-semibold text-champagne-200">
+            {listed.length} sản phẩm · {coopCount} HTX
+          </p>
+        </div>
+      </section>
 
       <div className="relative">
         <Search size={16} className="absolute top-1/2 left-3.5 -translate-y-1/2 text-muted" />
@@ -85,8 +95,8 @@ export function ExploreTab() {
         </div>
       </div>
 
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-bold text-stone-800">Sản phẩm</span>
+      <div className="flex items-baseline justify-between">
+        <h3 className="font-display text-xl font-semibold text-ink">Sản phẩm</h3>
         <span className="text-xs text-muted">{visible.length} sản phẩm</span>
       </div>
 
@@ -107,47 +117,49 @@ export function ExploreTab() {
             const soldOut = remaining <= 0 || !isOrderableIn(state, p);
             const coop = state.coops.find((c) => c.id === p.coopId);
             return (
-              <div
-                key={p.id}
-                onClick={() => openModal({ type: 'product_detail', productId: p.id })}
-                className="flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-stone-200/70 bg-white shadow-[0_4px_20px_rgb(0,0,0,0.03)]"
-              >
-                <div className="relative h-28 w-full bg-stone-100">
-                  <ProductImage product={p} variant="card" className="h-full w-full" />
-                  <div className="absolute top-2 left-2 flex flex-col items-start gap-1">
-                    {p.kind === 'preorder' && <span className="rounded-md bg-champagne-600 px-1.5 py-0.5 text-xs font-bold text-white">Đặt trước</span>}
-                    {soldOut && <span className="rounded-md bg-stone-900/85 px-1.5 py-0.5 text-xs font-bold text-white">{isOrderableIn(state, p) ? 'Hết hàng' : 'Tạm ngừng bán'}</span>}
+              <article key={p.id} className="flex flex-col overflow-hidden rounded-3xl bg-white shadow-[0_1px_2px_rgb(0,0,0,0.04),0_10px_28px_rgb(31,77,58,0.07)] ring-1 ring-stone-200/60">
+                <button
+                  type="button"
+                  onClick={() => openModal({ type: 'product_detail', productId: p.id })}
+                  aria-label={`Xem ${p.name}`}
+                  className="flex flex-1 flex-col text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-600"
+                >
+                  <div className="relative aspect-square w-full">
+                    <ProductImage product={p} variant="card" className="h-full w-full" />
+                    <div className="absolute top-2.5 left-2.5 flex flex-col items-start gap-1">
+                      {p.kind === 'preorder' && <span className="rounded-full bg-champagne-600 px-2 py-0.5 text-xs font-bold text-white">Đặt trước</span>}
+                      {soldOut && <span className="rounded-full bg-ink/85 px-2 py-0.5 text-xs font-bold text-white">{isOrderableIn(state, p) ? 'Hết hàng' : 'Tạm ngừng bán'}</span>}
+                    </div>
                   </div>
-                </div>
-                <div className="flex flex-1 flex-col justify-between gap-2 p-2.5">
-                  <div>
-                    <span className="block truncate text-xs font-semibold text-forest-700">{coop?.name}</span>
-                    <h3 className="mt-0.5 line-clamp-2 text-sm font-bold text-ink">{p.name}</h3>
-                    <span className="text-xs text-muted">
-                      {p.region} · {CATEGORY_LABEL[p.category]}
+                  <div className="flex flex-1 flex-col gap-1 p-3">
+                    <span className="truncate text-xs font-semibold uppercase tracking-wider text-champagne-700">{p.region}</span>
+                    <h3 className="line-clamp-2 font-display text-base font-semibold leading-snug text-ink">{p.name}</h3>
+                    <span className="truncate text-xs text-muted">{coop?.name}</span>
+                    {p.kind === 'preorder' && (
+                      <div className="mt-1">
+                        <PreorderProgress product={p} compact />
+                      </div>
+                    )}
+                  </div>
+                </button>
+                <div className="flex items-center justify-between gap-2 border-t border-stone-100 px-3 py-2">
+                  <div className="min-w-0">
+                    <span className="block text-base font-bold tabular-nums text-ink">{formatMoney(p.price)}</span>
+                    <span className="block truncate text-xs text-muted">
+                      /{p.unit}
+                      {isSamplePrice(p) && <span className="font-semibold text-champagne-800"> · giá mẫu</span>}
                     </span>
                   </div>
-                  {p.kind === 'preorder' && <PreorderProgress product={p} />}
-                  <div className="flex items-center justify-between border-t border-stone-100 pt-2">
-                    <div>
-                      <span className="text-sm font-extrabold tabular-nums text-ink">{formatMoney(p.price)}</span>
-                      <span className="text-xs text-muted">/{p.unit}</span>
-                      {isSamplePrice(p) && <span className="block text-xs font-semibold text-champagne-800">Giá mẫu</span>}
-                    </div>
-                    <button
-                      disabled={soldOut}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        add(p.id, 1);
-                      }}
-                      aria-label={`Thêm ${p.name} vào giỏ`}
-                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-forest-800 text-white hover:bg-forest-700 disabled:bg-stone-300"
-                    >
-                      <Plus size={16} />
-                    </button>
-                  </div>
+                  <button
+                    disabled={soldOut}
+                    onClick={() => add(p.id, 1)}
+                    aria-label={`Thêm ${p.name} vào giỏ`}
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-forest-800 text-white hover:bg-forest-700 disabled:bg-stone-300"
+                  >
+                    <Plus size={18} />
+                  </button>
                 </div>
-              </div>
+              </article>
             );
           })}
         </div>

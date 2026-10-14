@@ -33,6 +33,56 @@ npm test         # unit test vitest: src/domain, dữ liệu mẫu, quy ước g
 
 ---
 
+## Sau Giai đoạn 6 – Tranh minh hoạ sản phẩm và giao diện cao cấp
+
+**Yêu cầu của chủ repo:** thêm ảnh minh hoạ cho sản phẩm. Giao diện còn đơn giản, chưa toát ra không khí bán đặc sản cho phân khúc giá cao.
+
+### Ảnh minh hoạ
+
+Mục 9.4 không cho dùng ảnh stock trông như ảnh thật của sản phẩm, vì nhóm chưa có quyền dùng ảnh. Vì vậy app dùng **tranh tự vẽ bằng SVG** (`src/components/ProductIllustration.tsx`), mỗi sản phẩm một tranh:
+
+| Sản phẩm | Tranh |
+|---|---|
+| Chè Shan tuyết | Cành chè có búp trắng, chén chè |
+| Thảo quả khô | Mấy quả thảo quả trên mẹt tre |
+| Mứt / ô mai mận | Hũ thuỷ tinh, nắp phủ vải |
+| Mật ong Thanh Xuân | Chai mật, tổ ong, que múc |
+| Gạo Séng Cù | Bao gạo mở miệng, bông lúa |
+| Phở hồng Bắc Hà | Nắm phở trên mẹt, đôi đũa |
+| Mận tam hoa tươi | Cành mận có quả |
+| Cốm Tú Lệ | Cốm xanh trên lá sen |
+| Bưởi Đại Minh | Quả bưởi có lá, một múi bổ sẵn |
+
+- **Nền tranh:** núi xa và ruộng bậc thang, tông xanh rừng – vàng champagne trên nền giấy ấm.
+- **Sản phẩm HTX tự tạo:** nhận tranh theo tên nếu khớp loại hàng đã có tranh, không thì nhận hình theo nhóm hàng.
+- **Nhãn:** ảnh lớn ở trang chi tiết có nhãn "Ảnh minh hoạ". Trình đọc màn hình đọc "Ảnh minh hoạ: tên sản phẩm".
+- **Ảnh thật:** ảnh HTX tự tải lên vẫn được ưu tiên hiện.
+- **Thay cho:** ảnh giữ chỗ ghi tên sản phẩm của Giai đoạn 5.
+
+### Giao diện
+
+- **Phông tiêu đề:** Fraunces, có chân, có bộ chữ tiếng Việt, thêm gói `@fontsource/fraunces`. Dùng cho tên sản phẩm, đề mục và tên app; chữ nội dung vẫn là Plus Jakarta Sans. Token `--font-display` và màu nền giấy `--color-paper` khai báo trong theme.
+- **Đầu trang:** Khám phá, Vụ mùa và màn đăng nhập có tranh phong cảnh vùng cao (`LandscapeArt`): núi, ruộng bậc thang, mặt trời lặn. Chữ nằm phía trên, tranh ở nửa dưới để chữ luôn đọc rõ.
+  - Đầu trang Khám phá có dòng "9 sản phẩm · 7 HTX", số tính từ dữ liệu.
+  - Không thêm lời quảng cáo hay cam kết nào.
+- **Thẻ sản phẩm:**
+  - ảnh vuông lớn, vùng sản xuất viết hoa màu vàng, tên sản phẩm phông có chân;
+  - thanh suất đặt trước gọn: còn bao nhiêu suất, giao từ ngày nào;
+  - nút thêm vào giỏ tròn.
+  - Cả thẻ là một nút (bấm bằng bàn phím được); nút thêm vào giỏ tách riêng, không lồng nút trong nút.
+- **Trang chi tiết:** ảnh lớn tỉ lệ 4:3, tên sản phẩm cỡ lớn phông có chân, dòng vùng và nhóm hàng phía trên.
+- **Vụ mùa:** mỗi sản phẩm đặt trước có ảnh lớn ở đầu thẻ; bấm ảnh mở trang chi tiết.
+- **Chip lọc:** bo tròn.
+- **Sửa thêm:** chuyển tab hoặc vừa đăng nhập, đăng xuất thì về đầu trang. Trước đây trang giữ vị trí cuộn cũ, nên có khi mở ra ở giữa danh sách.
+
+### Kiểm thử
+
+- Lint không lỗi, 127 test đạt, build thành công. Phần chung 452 kB (gzip 133 kB); tăng khoảng 21 kB do tranh vẽ.
+- Kiểm tra giao diện tự động trên mọi màn và trong Luồng 1: không có lỗi tương phản, nút thiếu tên, vùng bấm dưới 44px hay chữ dưới 12px.
+- Luồng 1, Luồng 2, chọn sản phẩm trong giỏ, địa chỉ giao hàng, mã ưu đãi đều chạy lại đạt. Không lỗi JS.
+
+---
+
 ## Sau Giai đoạn 6 – Chọn nhiều sản phẩm trong giỏ để đặt chung
 
 **Yêu cầu của chủ repo:** cho chọn nhiều sản phẩm trong giỏ hàng để thanh toán một thể. Trước đây bấm đặt hàng là đặt cả giỏ.
@@ -305,6 +355,8 @@ Nội dung ảnh theo kích thước:
 | Ảnh nhỏ (giỏ hàng, vụ mùa, danh sách HTX) | Hình lá / hũ / quả theo nhóm hàng, vì chữ ở cỡ đó quá nhỏ để đọc. Tên sản phẩm luôn hiện ngay bên cạnh và có trong `aria-label` |
 
 Ảnh do HTX tự tải lên (nếu có) vẫn được ưu tiên hiện.
+
+> Cập nhật sau Giai đoạn 6: theo yêu cầu của chủ repo, ảnh giữ chỗ ghi tên đã được thay bằng tranh minh hoạ vẽ bằng SVG. Đây vẫn không phải ảnh chụp, và trang chi tiết có nhãn "Ảnh minh hoạ". Xem mục "Tranh minh hoạ sản phẩm và giao diện cao cấp".
 
 ### Số điện thoại và tài khoản (mục 9.5)
 
