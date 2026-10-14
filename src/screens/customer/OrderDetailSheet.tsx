@@ -19,6 +19,7 @@ import {
 import { formatMoney } from '../../domain/pricing';
 import { depositRefundDeadline } from '../../domain/refund';
 import { findProduct, formatDateKey, fromDateKey, snapshotAddress } from '../../domain/state';
+import { PHONE_RULE } from '../../domain/phone';
 import { ORDER_KIND_LABEL, ORDER_STATUS_LABEL, REFUND_SOURCE_LABEL } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
 
@@ -215,8 +216,8 @@ export function OrderDetailSheet({ orderId, onClose }: { orderId: string; onClos
                   <Field label="Tên người nhận">
                     <Input value={recipient.name} onChange={(e) => setRecipient({ ...recipient, name: e.target.value })} />
                   </Field>
-                  <Field label="SĐT người nhận">
-                    <Input value={recipient.phone} onChange={(e) => setRecipient({ ...recipient, phone: e.target.value })} />
+                  <Field label="SĐT người nhận" hint={PHONE_RULE}>
+                    <Input inputMode="tel" value={recipient.phone} onChange={(e) => setRecipient({ ...recipient, phone: e.target.value })} />
                   </Field>
                   <Field label="Phường/xã">
                     <Select value={recipient.wardId} onChange={(e) => setRecipient({ ...recipient, wardId: e.target.value })}>

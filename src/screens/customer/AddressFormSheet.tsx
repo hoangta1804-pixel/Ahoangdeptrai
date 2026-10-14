@@ -3,6 +3,7 @@ import { useUi } from '../../app/UiContext';
 import { BottomSheet } from '../../components/BottomSheet';
 import { Field, Input, PrimaryButton, Select } from '../../components/form';
 import { addAddress, updateAddress, type AddressInput } from '../../domain/address';
+import { PHONE_RULE } from '../../domain/phone';
 import type { HouseType } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
 
@@ -52,7 +53,7 @@ export function AddressFormSheet({ addressId, onClose }: { addressId?: string; o
         <Field label="Người nhận">
           <Input value={form.receiverName} onChange={(e) => set({ receiverName: e.target.value })} />
         </Field>
-        <Field label="SĐT người nhận">
+        <Field label="SĐT người nhận" hint={PHONE_RULE}>
           <Input inputMode="tel" value={form.receiverPhone} onChange={(e) => set({ receiverPhone: e.target.value })} placeholder="0900 000 000" />
         </Field>
       </div>

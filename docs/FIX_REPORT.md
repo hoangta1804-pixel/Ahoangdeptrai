@@ -26,10 +26,32 @@ npm test         # unit test vitest: src/domain, dữ liệu mẫu, quy ước g
 | Lệnh | Kết quả |
 |---|---|
 | `npm run lint` | Không lỗi |
-| `npm test` | 14 file, 105 test, tất cả đạt |
+| `npm test` | 15 file, 124 test, tất cả đạt |
 | `npm run build` | Thành công, không cảnh báo. Phần chung 431 kB (gzip 127 kB); màn HTX, Admin, QLNN tải riêng theo vai trò |
 | Luồng 1 và Luồng 2 (mục 11.2) bằng Playwright, chặn mọi request ngoài localhost | Đạt trọn vẹn. Không có request ra ngoài, không lỗi JS |
 | Kiểm tra giao diện tự động trên mọi màn và trong Luồng 1 (axe-core 4.10 + đo vùng bấm và cỡ chữ) | 0 lỗi tương phản AA, 0 nút thiếu tên, 0 vùng bấm dưới 44×44, 0 chữ dưới 12px |
+
+---
+
+## Sau Giai đoạn 6 – Số điện thoại nhập 9 số
+
+Theo yêu cầu của chủ repo, mọi ô nhập SĐT nhận cả 3 dạng:
+
+| Dạng nhập | Ví dụ |
+|---|---|
+| 9 chữ số, bỏ số 0 đầu | `912345678` |
+| 10 chữ số, có số 0 đầu | `0912345678` |
+| Có mã nước | `+84 912 345 678` |
+
+- **Áp dụng ở:** đăng nhập, đăng ký, Admin cấp tài khoản, sổ địa chỉ, người nhận quà, sửa người nhận quà.
+- **Lưu thống nhất:** app luôn lưu, so khớp và hiển thị dạng 10 số bắt đầu bằng 0. Vì vậy cùng một số nhập theo dạng nào cũng ra cùng một tài khoản, và không đăng ký trùng được bằng dạng khác.
+- **Gợi ý và báo lỗi:** ô nhập có dòng gợi ý; nhập sai thì báo "Nhập 9 chữ số (vd. 912 345 678), có thể thêm số 0 hoặc +84 ở đầu."
+- **Mã nguồn:** `src/domain/phone.ts`; test `src/domain/__tests__/phone.test.ts` (19 test).
+- **Kiểm tra trên trình duyệt:**
+  - đăng nhập bằng `900000001` và `+84 900 000 002` ra đúng tài khoản;
+  - nhập 8 số thì báo lỗi;
+  - lưu địa chỉ với `912 345 678` thì số được lưu là `0912345678`;
+  - kiểm tra giao diện tự động không có lỗi.
 
 ---
 
@@ -667,6 +689,7 @@ Ngoài các ca trên còn có test cho:
 45. **Dải demo dùng chữ 12px đậm** vì là nhãn, không phải nội dung; ở 320px dải xuống 2 dòng.
 46. **Màn QLNN đổi thẻ đầu trang từ xanh lam sang xanh rừng** để theo bảng nhận diện. Nhãn trạng thái đơn và khung "Hoàn tiền" vẫn dùng màu thông tin (xanh lam).
 47. **Trạng thái lỗi của danh sách** gồm 2 trường hợp: lỗi khi hiển thị (bắt bằng error boundary) và lỗi không có quyền xem (hiện lý do). Dữ liệu demo đọc từ `localStorage` nên không có lỗi mạng.
+48. **SĐT nhập 9 số được hiểu là số di động bỏ số 0 đầu.** Chuỗi 11 số bắt đầu bằng `84` được hiểu là có mã nước. App lưu dạng 10 số `0xxxxxxxxx` để tương thích với dữ liệu đã có.
 
 ## Vấn đề chờ nhóm chốt
 

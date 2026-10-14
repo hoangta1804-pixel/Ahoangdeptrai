@@ -3,6 +3,7 @@ import { ShieldCheck } from 'lucide-react';
 import { SimBadge } from '../components/EmptyState';
 import { Field, Input, PrimaryButton, SecondaryButton } from '../components/form';
 import { DEMO_OTP, registerCustomer, requestOtp, verifyLogin } from '../domain/auth';
+import { formatPhone, PHONE_RULE } from '../domain/phone';
 import { ACCOUNT_ROLE_LABEL, ADMIN_GROUP_LABEL, type UserAccount } from '../domain/types';
 import { useStore } from '../store/AppDataContext';
 import { useUi } from './UiContext';
@@ -10,7 +11,6 @@ import { useUi } from './UiContext';
 type Step = 'phone' | 'otp' | 'register';
 
 const roleLabel = (u: UserAccount) => (u.role === 'admin' && u.adminGroup ? `Admin – ${ADMIN_GROUP_LABEL[u.adminGroup]}` : ACCOUNT_ROLE_LABEL[u.role]);
-const formatPhone = (p: string) => p.replace(/(\d{4})(\d{3})(\d{3})/, '$1 $2 $3');
 
 /**
  * Đăng nhập demo (mục 5.9): SĐT + OTP mô phỏng (luôn là 123456), có danh sách tài khoản demo để bấm nhanh.
@@ -76,7 +76,7 @@ export function LoginScreen() {
 
         {step === 'phone' && (
           <>
-            <Field label="Số điện thoại">
+            <Field label="Số điện thoại" hint={PHONE_RULE}>
               <Input inputMode="tel" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="0900 000 000" onKeyDown={(e) => e.key === 'Enter' && sendOtp()} />
             </Field>
             <PrimaryButton className="w-full" onClick={() => sendOtp()}>
@@ -98,7 +98,7 @@ export function LoginScreen() {
         {step === 'otp' && (
           <>
             <p className="text-sm text-stone-700">
-              Mã OTP mô phỏng cho số <strong>{formatPhone(phone.replace(/\D/g, ''))}</strong>.
+              Mã OTP mô phỏng cho số <strong>{formatPhone(phone)}</strong>.
             </p>
             <Field label="Mã OTP (6 số)">
               <Input inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))} onKeyDown={(e) => e.key === 'Enter' && confirm()} />
@@ -118,7 +118,7 @@ export function LoginScreen() {
             <Field label="Họ tên">
               <Input value={name} onChange={(e) => setName(e.target.value)} />
             </Field>
-            <Field label="Số điện thoại">
+            <Field label="Số điện thoại" hint={PHONE_RULE}>
               <Input inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="0900 000 000" />
             </Field>
             <Field label="Mã OTP (6 số)">

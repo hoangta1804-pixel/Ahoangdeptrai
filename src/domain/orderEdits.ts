@@ -8,6 +8,7 @@ import { validateGiftMessage } from './checkout';
 import { deliveryWindow } from './cart';
 import { expressSurchargeFor } from './pricing';
 import { depositRefundDeadline } from './refund';
+import { isValidPhone, normalizePhone, PHONE_RULE } from './phone';
 import { findOrder, findProduct, findWard, fromDateKey, replaceOrder, snapshotAddress } from './state';
 import { fail, ok, type Actor, type DemoState, type GiftRecipient, type Order, type OrderStatus, type Result } from './types';
 
@@ -63,9 +64,8 @@ export function customerEditGift(state: DemoState, actor: Actor, orderId: string
   if (msgErr) return fail(msgErr);
   let updated: Order = { ...order, gift: { ...order.gift, message: message.trim() } };
   if (order.gift.sendToOther) {
-    if (!recipient?.name.trim() || !/^0\d{9}$/.test(recipient.phone.replace(/\s/g, '')) || !recipient.street.trim()) {
-      return fail('Vui lòng nhập đủ tên, SĐT (10 số) và địa chỉ người nhận.');
-    }
+    if (!recipient?.name.trim() || !recipient.street.trim()) return fail('Vui lòng nhập đủ tên và địa chỉ người nhận.');
+    if (!isValidPhone(normalizePhone(recipient.phone))) return fail(`SĐT người nhận không hợp lệ. ${PHONE_RULE}`);
     const ward = findWard(state, recipient.wardId);
     if (!ward) return fail('Vui lòng chọn phường/xã của người nhận.');
     if (order.shipping === 'express' && expressSurchargeFor(ward.distanceKm, order.params.expressTiers) !== order.pricing.expressSurcharge) {
@@ -74,7 +74,7 @@ export function customerEditGift(state: DemoState, actor: Actor, orderId: string
     updated = {
       ...updated,
       gift: { ...updated.gift!, recipient },
-      address: { receiverName: recipient.name.trim(), receiverPhone: recipient.phone.replace(/\s/g, ''), text: `${recipient.street.trim()}, ${ward.name}, Hà Nội`, wardName: ward.name, distanceKm: ward.distanceKm },
+      address: { receiverName: recipient.name.trim(), receiverPhone: normalizePhone(recipient.phone), text: `${recipient.street.trim()}, ${ward.name}, Hà Nội`, wardName: ward.name, distanceKm: ward.distanceKm },
     };
   }
   return ok(replaceOrder(state, updated));

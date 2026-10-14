@@ -21,6 +21,7 @@ export * from './settlement';
 export * from './finance';
 export * from './stats';
 export * from './auth';
+export * from './phone';
 export * from './access';
 export * from './notifications';
 export * from './account';

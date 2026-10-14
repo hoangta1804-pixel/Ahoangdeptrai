@@ -3,15 +3,12 @@
  * Đổi vai trò bằng đăng xuất rồi đăng nhập tài khoản khác.
  */
 import { generateId } from './ids';
+import { isValidPhone, normalizePhone, PHONE_RULE } from './phone';
 import { iso } from './state';
 import { fail, ok, type Actor, type DemoState, type Result, type UserAccount } from './types';
 
 /** OTP mô phỏng, không gửi SMS thật. */
 export const DEMO_OTP = '123456';
-
-export const normalizePhone = (phone: string): string => phone.replace(/\D/g, '');
-
-const PHONE_RE = /^0\d{9}$/;
 
 export function findUserByPhone(state: DemoState, phone: string): UserAccount | undefined {
   const p = normalizePhone(phone);
@@ -21,7 +18,7 @@ export function findUserByPhone(state: DemoState, phone: string): UserAccount | 
 /** Bước 1: nhập SĐT. Không có tài khoản thì gợi ý đăng ký. */
 export function requestOtp(state: DemoState, phone: string): Result<UserAccount> {
   const p = normalizePhone(phone);
-  if (!PHONE_RE.test(p)) return fail('Số điện thoại phải gồm 10 chữ số, bắt đầu bằng 0.');
+  if (!isValidPhone(p)) return fail(`Số điện thoại không hợp lệ. ${PHONE_RULE}`);
   const user = findUserByPhone(state, p);
   if (!user) return fail('Số điện thoại chưa có tài khoản. Khách hàng có thể đăng ký mới.');
   if (user.status === 'locked') return fail('Tài khoản đang bị khoá. Vui lòng liên hệ CSKH.');
@@ -44,7 +41,7 @@ export function registerCustomer(
 ): Result<{ state: DemoState; user: UserAccount }> {
   const phone = normalizePhone(input.phone);
   if (!input.name.trim()) return fail('Vui lòng nhập họ tên.');
-  if (!PHONE_RE.test(phone)) return fail('Số điện thoại phải gồm 10 chữ số, bắt đầu bằng 0.');
+  if (!isValidPhone(phone)) return fail(`Số điện thoại không hợp lệ. ${PHONE_RULE}`);
   if (findUserByPhone(state, phone)) return fail('Số điện thoại đã có tài khoản. Vui lòng đăng nhập.');
   if (input.otp.trim() !== DEMO_OTP) return fail('Mã OTP không đúng.');
   const customerId = generateId('KH');

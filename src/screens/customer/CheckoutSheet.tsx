@@ -16,6 +16,7 @@ import { evaluateVoucherFor, groupKey, placeCheckout, planCheckout, type GroupOp
 import { generateId } from '../../domain/ids';
 import { formatMoney, type PaymentMethod } from '../../domain/pricing';
 import { findProduct, formatDateKey, snapshotAddress } from '../../domain/state';
+import { PHONE_RULE } from '../../domain/phone';
 import { ORDER_KIND_LABEL, type CartLine } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
 
@@ -506,7 +507,7 @@ function StepDelivery(props: {
                       <Field label="Tên người nhận">
                         <Input value={gift.recipient.name} onChange={(e) => props.setOpt(o.key, { gift: { ...gift, recipient: { ...gift.recipient!, name: e.target.value } } })} />
                       </Field>
-                      <Field label="SĐT người nhận">
+                      <Field label="SĐT người nhận" hint={PHONE_RULE}>
                         <Input inputMode="tel" value={gift.recipient.phone} onChange={(e) => props.setOpt(o.key, { gift: { ...gift, recipient: { ...gift.recipient!, phone: e.target.value } } })} />
                       </Field>
                       <Field label="Phường/xã (Hà Nội)">

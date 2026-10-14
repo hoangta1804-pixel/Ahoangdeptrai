@@ -5,6 +5,7 @@
  * - Tối đa 10 địa chỉ, đặt được một địa chỉ mặc định.
  */
 import { generateId } from './ids';
+import { isValidPhone, normalizePhone, PHONE_RULE } from './phone';
 import { findWard } from './state';
 import { fail, ok, type Address, type DemoState, type HouseType, type Result } from './types';
 
@@ -22,11 +23,9 @@ export interface AddressInput {
   isDefault?: boolean;
 }
 
-const PHONE_RE = /^0\d{9}$/;
-
 export function validateAddressInput(state: DemoState, input: AddressInput): Result<AddressInput> {
   if (!input.receiverName.trim()) return fail('Vui lòng nhập tên người nhận.');
-  if (!PHONE_RE.test(input.receiverPhone.replace(/\s/g, ''))) return fail('Số điện thoại phải gồm 10 chữ số, bắt đầu bằng 0.');
+  if (!isValidPhone(normalizePhone(input.receiverPhone))) return fail(`Số điện thoại người nhận không hợp lệ. ${PHONE_RULE}`);
   if (!findWard(state, input.wardId)) return fail('Vui lòng chọn phường/xã trong danh sách.');
   if (input.houseType === 'apartment') {
     if (!input.building?.trim() || !input.unit?.trim()) return fail('Chung cư bắt buộc nhập toà và căn hộ.');
@@ -51,7 +50,7 @@ export function addAddress(state: DemoState, customerId: string, input: AddressI
     customerId,
     label: input.label.trim() || 'Địa chỉ',
     receiverName: input.receiverName.trim(),
-    receiverPhone: input.receiverPhone.replace(/\s/g, ''),
+    receiverPhone: normalizePhone(input.receiverPhone),
     houseType: input.houseType,
     wardId: input.wardId,
     street: input.street.trim(),
@@ -73,7 +72,7 @@ export function updateAddress(state: DemoState, customerId: string, id: string, 
     ...existing,
     label: input.label.trim() || existing.label,
     receiverName: input.receiverName.trim(),
-    receiverPhone: input.receiverPhone.replace(/\s/g, ''),
+    receiverPhone: normalizePhone(input.receiverPhone),
     houseType: input.houseType,
     wardId: input.wardId,
     street: input.street.trim(),

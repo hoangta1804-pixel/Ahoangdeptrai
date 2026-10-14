@@ -10,6 +10,7 @@
 import { isOrderableIn, revalidateLines, validateDeliveryDate, type RevalidationNotice } from './cart';
 import { generateId, generateOrderCode } from './ids';
 import { initialStatus } from './orderStateMachine';
+import { isValidPhone, normalizePhone, PHONE_RULE } from './phone';
 import { snapshotParams } from './params';
 import {
   allocateDiscount,
@@ -98,7 +99,6 @@ export const groupKey = (coopId: string, kind: OrderKind, deliveryDate?: string)
 
 const URL_RE = /(https?:\/\/|www\.|\.(com|vn|net|org)\b)/i;
 const PHONE_IN_TEXT_RE = /(\d[\s.-]?){9,}/;
-const PHONE_RE = /^0\d{9}$/;
 
 /** Lời nhắn hộp quà: không bắt buộc, tối đa PAR-22 ký tự, không chứa link hay số điện thoại (BR-DAT-09). */
 export function validateGiftMessage(message: string, maxLength: number): string | null {
@@ -111,7 +111,7 @@ export function validateGiftMessage(message: string, maxLength: number): string 
 function validateRecipient(state: DemoState, r: GiftRecipient | undefined): string | null {
   if (!r) return 'Vui lòng nhập thông tin người nhận quà.';
   if (!r.name.trim()) return 'Vui lòng nhập tên người nhận quà.';
-  if (!PHONE_RE.test(r.phone.replace(/\s/g, ''))) return 'SĐT người nhận phải gồm 10 chữ số, bắt đầu bằng 0.';
+  if (!isValidPhone(normalizePhone(r.phone))) return `SĐT người nhận quà không hợp lệ. ${PHONE_RULE}`;
   if (!findWard(state, r.wardId)) return 'Vui lòng chọn phường/xã (Hà Nội) của người nhận.';
   if (!r.street.trim()) return 'Vui lòng nhập số nhà, đường của người nhận.';
   return null;
@@ -236,7 +236,7 @@ export function planCheckout(state: DemoState, input: CheckoutInput, at: Date): 
             const ward = findWard(state, r.wardId)!;
             orderAddress = {
               receiverName: r.name.trim(),
-              receiverPhone: r.phone.replace(/\s/g, ''),
+              receiverPhone: normalizePhone(r.phone),
               text: `${r.street.trim()}, ${ward.name}, Hà Nội`,
               wardName: ward.name,
               distanceKm: ward.distanceKm,

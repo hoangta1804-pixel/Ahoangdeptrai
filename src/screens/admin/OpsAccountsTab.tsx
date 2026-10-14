@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useUi } from '../../app/UiContext';
 import { DangerButton, Field, Input, PrimaryButton, SecondaryButton, Select } from '../../components/form';
 import { opsCreateAccount, opsSetAccountLocked, type NewAccountInput } from '../../domain/account';
+import { PHONE_RULE } from '../../domain/phone';
 import { ACCOUNT_ROLE_LABEL, ADMIN_GROUP_LABEL, type AdminSubGroup, type UserAccount } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
 
@@ -19,8 +20,8 @@ export function OpsAccountsTab() {
           <Field label="Tên">
             <Input value={form.name} onChange={(e) => set({ name: e.target.value })} />
           </Field>
-          <Field label="SĐT">
-            <Input value={form.phone} onChange={(e) => set({ phone: e.target.value })} placeholder="0900 000 000" />
+          <Field label="SĐT" hint={PHONE_RULE}>
+            <Input inputMode="tel" value={form.phone} onChange={(e) => set({ phone: e.target.value })} placeholder="0900 000 000" />
           </Field>
           <Field label="Vai trò">
             <Select value={form.role} onChange={(e) => set({ role: e.target.value as NewAccountInput['role'] })}>

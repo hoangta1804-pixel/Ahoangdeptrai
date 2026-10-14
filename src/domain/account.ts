@@ -4,12 +4,10 @@
  * - Admin – Vận hành cấp và khoá / mở khoá tài khoản (TK-10, TK-12); không tự khoá chính mình; khoá phải ghi lý do.
  * - Quản trị gốc phân quyền: đổi nhóm quyền của tài khoản Admin (TK-11).
  */
-import { normalizePhone } from './auth';
 import { generateId } from './ids';
+import { isValidPhone, normalizePhone, PHONE_RULE } from './phone';
 import { audit, iso } from './state';
 import { fail, ok, type Actor, type AdminSubGroup, type BankAccount, type DemoState, type Result, type UserAccount } from './types';
-
-const PHONE_RE = /^0\d{9}$/;
 
 export function updateCustomerProfile(state: DemoState, actor: Actor, name: string): Result<DemoState> {
   if (actor.kind !== 'customer' || !actor.id) return fail('Chỉ khách hàng sửa được thông tin của mình.');
@@ -44,7 +42,7 @@ export function opsCreateAccount(state: DemoState, actor: Actor, input: NewAccou
   if (actor.kind !== 'admin' || actor.adminGroup !== 'operations') return fail('Chỉ Admin – Vận hành được cấp tài khoản.');
   const phone = normalizePhone(input.phone);
   if (!input.name.trim()) return fail('Vui lòng nhập tên tài khoản.');
-  if (!PHONE_RE.test(phone)) return fail('Số điện thoại phải gồm 10 chữ số, bắt đầu bằng 0.');
+  if (!isValidPhone(phone)) return fail(`Số điện thoại không hợp lệ. ${PHONE_RULE}`);
   if (state.users.some((u) => u.phone === phone)) return fail('Số điện thoại đã có tài khoản.');
   if (input.role === 'coop' && !state.coops.some((c) => c.id === input.coopId)) return fail('Vui lòng chọn HTX.');
   if (input.role === 'admin' && !input.adminGroup) return fail('Vui lòng chọn nhóm quyền.');
