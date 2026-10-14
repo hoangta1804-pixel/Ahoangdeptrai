@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Pencil, Plus, Star, Trash2 } from 'lucide-react';
 import { useUi } from '../../app/UiContext';
 import { BottomSheet } from '../../components/BottomSheet';
@@ -10,6 +11,7 @@ import { useStore } from '../../store/AppDataContext';
 export function AddressBookSheet({ onClose }: { onClose: () => void }) {
   const { state, run } = useStore();
   const { customerActor, openModal, showToast } = useUi();
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const mine = state.addresses.filter((a) => a.customerId === customerActor.id);
   const full = mine.length >= MAX_ADDRESSES;
 
@@ -68,16 +70,32 @@ export function AddressBookSheet({ onClose }: { onClose: () => void }) {
                   <Pencil size={14} /> Sửa
                 </button>
                 <button
-                  onClick={() => {
-                    if (!window.confirm(`Xoá địa chỉ "${a.label}"?`)) return;
-                    const r = run((s) => deleteAddress(s, customerActor.id!, a.id));
-                    showToast(r.ok ? 'Đã xoá địa chỉ.' : r.error);
-                  }}
+                  onClick={() => setConfirmDeleteId(a.id)}
+                  aria-expanded={confirmDeleteId === a.id}
                   className="flex min-h-11 items-center gap-1 rounded-lg px-2 text-sm font-semibold text-rose-700 hover:bg-rose-50"
                 >
                   <Trash2 size={14} /> Xoá
                 </button>
               </div>
+              {/* Xác nhận ngay trong trang: hộp confirm() của trình duyệt bị chặn khi app chạy trong khung nhúng. */}
+              {confirmDeleteId === a.id && (
+                <div role="alert" className="flex flex-wrap items-center gap-2 rounded-xl bg-rose-50 p-2 text-sm text-rose-900">
+                  <span className="min-w-0 flex-1">Xoá địa chỉ "{a.label}"?</span>
+                  <button onClick={() => setConfirmDeleteId(null)} className="min-h-11 rounded-lg px-3 font-semibold text-stone-700 hover:bg-white">
+                    Huỷ
+                  </button>
+                  <button
+                    onClick={() => {
+                      const r = run((s) => deleteAddress(s, customerActor.id!, a.id));
+                      showToast(r.ok ? 'Đã xoá địa chỉ.' : r.error);
+                      setConfirmDeleteId(null);
+                    }}
+                    className="min-h-11 rounded-lg bg-rose-700 px-3 font-semibold text-white hover:bg-rose-800"
+                  >
+                    Xoá địa chỉ
+                  </button>
+                </div>
+              )}
             </li>
           ))}
         </ul>

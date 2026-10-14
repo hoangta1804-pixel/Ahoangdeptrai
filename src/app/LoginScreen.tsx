@@ -34,7 +34,7 @@ export function LoginScreen() {
     setStep('otp');
   };
 
-  const confirm = () => {
+  const confirmOtp = () => {
     const r = verifyLogin(state, phone, otp);
     if (!r.ok) return setError(r.error);
     login(r.value.id);
@@ -101,12 +101,12 @@ export function LoginScreen() {
               Mã OTP mô phỏng cho số <strong>{formatPhone(phone)}</strong>.
             </p>
             <Field label="Mã OTP (6 số)">
-              <Input inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))} onKeyDown={(e) => e.key === 'Enter' && confirm()} />
+              <Input inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))} onKeyDown={(e) => e.key === 'Enter' && confirmOtp()} />
             </Field>
             <div className="flex gap-2">
               <SecondaryButton onClick={() => setStep('phone')}>Đổi số</SecondaryButton>
               <SecondaryButton onClick={() => setOtp(DEMO_OTP)}>Điền OTP mô phỏng</SecondaryButton>
-              <PrimaryButton className="flex-1" onClick={confirm}>
+              <PrimaryButton className="flex-1" onClick={confirmOtp}>
                 Đăng nhập
               </PrimaryButton>
             </div>
