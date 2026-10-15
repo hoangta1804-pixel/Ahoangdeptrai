@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Minus, Plus, ShoppingBasket, Trash2 } from 'lucide-react';
+import { ShoppingBasket, Trash2 } from 'lucide-react';
 import { useUi } from '../../app/UiContext';
 import { BottomSheet } from '../../components/BottomSheet';
 import { ProductImage } from '../../components/ProductImage';
+import { QuantityStepper } from '../../components/QuantityStepper';
 import { isOrderableIn } from '../../domain/cart';
 import { formatMoney } from '../../domain/pricing';
 import { findProduct, formatDateKey, remainingFor } from '../../domain/state';
@@ -79,15 +80,7 @@ export function CartSheet({ onClose }: { onClose: () => void }) {
         </div>
         <div className="flex items-center justify-between gap-2 pl-[3.25rem]">
           <span className="text-sm tabular-nums text-stone-700">{formatMoney(product.price * line.quantity)}</span>
-          <div className="flex items-center rounded-xl border border-stone-200 bg-white">
-            <button onClick={() => update(line.productId, { quantity: line.quantity - 1 })} disabled={line.quantity <= 1} aria-label={`Giảm số lượng ${product.name}`} className="flex h-11 w-11 items-center justify-center disabled:opacity-40">
-              <Minus size={14} />
-            </button>
-            <span className="w-6 text-center text-sm font-bold tabular-nums">{line.quantity}</span>
-            <button onClick={() => update(line.productId, { quantity: line.quantity + 1 })} disabled={line.quantity >= remaining} aria-label={`Tăng số lượng ${product.name}`} className="flex h-11 w-11 items-center justify-center disabled:opacity-40">
-              <Plus size={14} />
-            </button>
-          </div>
+          <QuantityStepper value={line.quantity} max={remaining} onChange={(quantity) => update(line.productId, { quantity })} itemName={product.name} />
         </div>
       </div>
     );

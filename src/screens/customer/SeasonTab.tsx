@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { Wheat } from 'lucide-react';
 import { useUi } from '../../app/UiContext';
 import { EmptyState } from '../../components/EmptyState';
 import { LandscapeArt } from '../../components/LandscapeArt';
 import { PreorderProgress } from '../../components/PreorderProgress';
 import { ProductImage } from '../../components/ProductImage';
+import { QuantityStepper } from '../../components/QuantityStepper';
 import { deliveryWindow, isOrderableIn } from '../../domain/cart';
 import { computeDeposit, formatMoney } from '../../domain/pricing';
 import { isSamplePrice, remainingFor } from '../../domain/state';
@@ -13,6 +15,8 @@ import { useStore } from '../../store/AppDataContext';
 export function SeasonTab() {
   const { state, now } = useStore();
   const { openModal } = useUi();
+  // Số suất muốn đặt của từng sản phẩm (mặc định 1).
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
   const params = state.params;
   const preorders = state.products.filter((p) => p.kind === 'preorder' && p.status === 'active');
 
@@ -40,6 +44,7 @@ export function SeasonTab() {
             const remaining = remainingFor(state, p);
             const win = deliveryWindow(p, now(), params);
             const blocked = !isOrderableIn(state, p) ? 'Chưa mở đặt trước' : remaining <= 0 ? 'Hết suất' : !win ? 'Đã hết thời gian nhận đặt trước' : null;
+            const quantity = Math.min(quantities[p.id] ?? 1, Math.max(1, remaining));
             return (
               <article key={p.id} className="overflow-hidden rounded-3xl bg-white shadow-[0_1px_2px_rgb(0,0,0,0.04),0_10px_28px_rgb(31,77,58,0.07)] ring-1 ring-stone-200/60">
                 <button
@@ -66,6 +71,17 @@ export function SeasonTab() {
                     </p>
                   </div>
                   <PreorderProgress product={p} />
+                  {!blocked && (
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-sm">
+                        <span className="block font-semibold text-stone-700">Số lượng ({p.unit})</span>
+                        <span className="block text-xs text-muted">
+                          Còn {remaining} suất · <span className="font-semibold tabular-nums text-ink">{formatMoney(p.price * quantity)}</span>
+                        </span>
+                      </span>
+                      <QuantityStepper value={quantity} max={remaining} onChange={(q) => setQuantities((m) => ({ ...m, [p.id]: q }))} itemName={p.name} />
+                    </div>
+                  )}
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       onClick={() => openModal({ type: 'trace_lot', productId: p.id })}
@@ -77,7 +93,7 @@ export function SeasonTab() {
                       disabled={!!blocked}
                       onClick={() =>
                         win &&
-                        openModal({ type: 'checkout', source: { type: 'buy_now', line: { productId: p.id, quantity: 1, deliveryDate: win.min, seenPrice: p.price } } })
+                        openModal({ type: 'checkout', source: { type: 'buy_now', line: { productId: p.id, quantity, deliveryDate: win.min, seenPrice: p.price } } })
                       }
                       className="min-h-11 rounded-2xl bg-forest-800 text-sm font-bold text-white hover:bg-forest-700 disabled:bg-stone-300 disabled:text-stone-600"
                     >

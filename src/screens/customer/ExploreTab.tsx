@@ -5,6 +5,7 @@ import { EmptyState } from '../../components/EmptyState';
 import { LandscapeArt } from '../../components/LandscapeArt';
 import { PreorderProgress } from '../../components/PreorderProgress';
 import { ProductImage } from '../../components/ProductImage';
+import { QuantityStepper } from '../../components/QuantityStepper';
 import { isOrderableIn } from '../../domain/cart';
 import { formatMoney } from '../../domain/pricing';
 import { isSamplePrice, regionsOf, remainingFor } from '../../domain/state';
@@ -18,7 +19,7 @@ const ALL = 'all';
 export function ExploreTab() {
   const { state } = useStore();
   const { openModal } = useUi();
-  const { add } = useCartActions();
+  const { add, cart, update, remove } = useCartActions();
   const [query, setQuery] = useState('');
   const [region, setRegion] = useState<string>(ALL);
   const [category, setCategory] = useState<Category | typeof ALL>(ALL);
@@ -116,6 +117,8 @@ export function ExploreTab() {
             const remaining = remainingFor(state, p);
             const soldOut = remaining <= 0 || !isOrderableIn(state, p);
             const coop = state.coops.find((c) => c.id === p.coopId);
+            // Đã có trong giỏ: thẻ hiện ô số lượng để tăng, giảm hoặc gõ số ngay tại chỗ.
+            const inCart = soldOut ? undefined : cart.find((l) => l.productId === p.id);
             return (
               <article key={p.id} className="flex flex-col overflow-hidden rounded-3xl bg-white shadow-[0_1px_2px_rgb(0,0,0,0.04),0_10px_28px_rgb(31,77,58,0.07)] ring-1 ring-stone-200/60">
                 <button
@@ -142,22 +145,36 @@ export function ExploreTab() {
                     )}
                   </div>
                 </button>
-                <div className="flex items-center justify-between gap-2 border-t border-stone-100 px-3 py-2">
-                  <div className="min-w-0">
-                    <span className="block text-base font-bold tabular-nums text-ink">{formatMoney(p.price)}</span>
-                    <span className="block truncate text-xs text-muted">
-                      /{p.unit}
-                      {isSamplePrice(p) && <span className="font-semibold text-champagne-800"> · giá mẫu</span>}
-                    </span>
+                <div className={`space-y-2 border-t border-stone-100 py-2 ${inCart ? 'px-2' : 'px-3'}`}>
+                  <div className="flex min-h-11 items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <span className="block text-base font-bold tabular-nums text-ink">{formatMoney(p.price)}</span>
+                      <span className="block truncate text-xs text-muted">
+                        /{p.unit}
+                        {isSamplePrice(p) && <span className="font-semibold text-champagne-800"> · giá mẫu</span>}
+                      </span>
+                    </div>
+                    {!inCart && (
+                      <button
+                        disabled={soldOut}
+                        onClick={() => add(p.id, 1)}
+                        aria-label={`Thêm ${p.name} vào giỏ`}
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-forest-800 text-white hover:bg-forest-700 disabled:bg-stone-300"
+                      >
+                        <Plus size={18} />
+                      </button>
+                    )}
                   </div>
-                  <button
-                    disabled={soldOut}
-                    onClick={() => add(p.id, 1)}
-                    aria-label={`Thêm ${p.name} vào giỏ`}
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-forest-800 text-white hover:bg-forest-700 disabled:bg-stone-300"
-                  >
-                    <Plus size={18} />
-                  </button>
+                  {inCart && (
+                    <QuantityStepper
+                      value={inCart.quantity}
+                      max={remaining}
+                      onChange={(quantity) => update(p.id, { quantity })}
+                      onRemove={() => remove(p.id)}
+                      itemName={p.name}
+                      compact
+                    />
+                  )}
                 </div>
               </article>
             );

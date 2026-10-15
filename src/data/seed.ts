@@ -197,7 +197,7 @@ function baseState(now: Date): DemoState {
     clockOffsetMs: 0,
     users: DEMO_USERS.map((u) => ({ ...u, createdAt: now.toISOString() })),
     customers: [
-      { id: 'cust-1', name: 'Khách hàng mẫu 1', phone: '0900000001', refundAccount: { bankName: 'Ngân hàng mẫu', accountNumber: '000000000001', holder: 'KHACH HANG MAU 1' } },
+      { id: 'cust-1', name: 'Khách hàng mẫu 1', phone: '0900000001', refundAccount: { bankCode: 'MAU', bankName: 'Ngân hàng mẫu', accountNumber: '000000000001', holder: 'KHACH HANG MAU 1', linkedAt: now.toISOString() } },
       { id: 'cust-2', name: 'Khách hàng mẫu 2', phone: '0900000002' },
     ],
     coops: [

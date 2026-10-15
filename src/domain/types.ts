@@ -210,6 +210,10 @@ export interface BankAccount {
   bankName: string;
   accountNumber: string;
   holder: string;
+  /** Mã ngân hàng trong danh sách chọn (src/domain/banks.ts). */
+  bankCode?: string;
+  /** Thời điểm khách xác thực liên kết bằng OTP mô phỏng của ngân hàng. */
+  linkedAt?: string;
 }
 
 export interface Customer {
