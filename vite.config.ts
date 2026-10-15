@@ -3,9 +3,9 @@ import react from '@vitejs/plugin-react';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import path from 'path';
 import {defineConfig, loadEnv, type Connect, type Plugin} from 'vite';
-import { handleGoogleAuthRequest } from './api/auth/google';
-import { handleGeocodeRequest } from './api/geocode';
-import { createMemoryStore, handleStateRequest } from './api/state';
+import { handleGoogleAuthRequest } from './api/auth/google.ts';
+import { handleGeocodeRequest } from './api/geocode.ts';
+import { createMemoryStore, handleStateRequest } from './api/state.ts';
 
 /**
  * API khi chạy `npm run dev` hoặc `npm run preview`, cùng logic với các hàm trên Vercel (thư mục api/):

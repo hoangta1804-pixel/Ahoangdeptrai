@@ -5,6 +5,7 @@ import { SectionHeading } from '../../components/Brand';
 import { EmptyState, ErrorState } from '../../components/EmptyState';
 import { OrderStatusBadge, PaymentStatusBadge } from '../../components/StatusBadge';
 import { listOrdersFor } from '../../domain/access';
+import { unreadCount } from '../../domain/orderContact';
 import { formatMoney } from '../../domain/pricing';
 import { ORDER_KIND_LABEL, ORDER_STATUS_LABEL, ORDER_STATUSES, type OrderStatus } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
@@ -50,6 +51,7 @@ export function OrdersTab() {
         <ul className="space-y-3">
           {shown.map((o) => {
             const tx = state.transactions.find((t) => t.status === 'pending' && t.orderIds.includes(o.id));
+            const unread = unreadCount(state, o, 'customer');
             return (
               <li key={o.id}>
                 <button
@@ -76,6 +78,11 @@ export function OrdersTab() {
                   </div>
                   {tx && <p className="rounded-lg bg-champagne-100 px-2 py-1 text-sm font-semibold text-champagne-900">Chờ thanh toán {formatMoney(tx.amounts[o.id] ?? 0)} – bấm để tiếp tục</p>}
                   {o.cancelRequest?.status === 'pending' && <p className="text-sm text-champagne-800">Đã gửi yêu cầu huỷ, chờ HTX duyệt.</p>}
+                  {unread > 0 && (
+                    <p className="inline-flex rounded-full bg-forest-900 px-3 py-1 text-xs font-bold text-champagne-100">
+                      {unread} tin mới từ {o.coopName}
+                    </p>
+                  )}
                 </button>
               </li>
             );

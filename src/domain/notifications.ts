@@ -3,12 +3,14 @@
  *
  * Thông báo được sinh bằng cách so dữ liệu trước và sau mỗi thao tác (deriveNotifications), nên mọi đường thay đổi
  * (người dùng bấm, tác vụ theo giờ, cổng thanh toán mô phỏng) đều sinh thông báo giống nhau.
- * Các sự kiện: đổi trạng thái đơn, kết quả duyệt, ticket, tồn thấp (tối đa 1 lần/ngày/sản phẩm), mời đánh giá.
+ * Các sự kiện: đổi trạng thái đơn, kết quả duyệt, ticket, tồn thấp (tối đa 1 lần/ngày/sản phẩm), mời đánh giá,
+ * tin nhắn / cuộc gọi trong đơn giữa khách và HTX.
  */
 import { generateId } from './ids';
 import { formatMoney } from './pricing';
 import { iso, remainingFor, toDateKey } from './state';
 import {
+  CALL_OUTCOME_LABEL,
   ORDER_STATUS_LABEL,
   PRODUCT_CHANGE_LABEL,
   TICKET_STATUS_LABEL,
@@ -93,6 +95,27 @@ export function deriveNotifications(prev: DemoState, next: DemoState, at: Date):
       const before = prev.orders.find((x) => x.id === o.id);
       if (before === o) continue;
       drafts.push(...orderDrafts(prev, next, o));
+    }
+  }
+
+  // Tin nhắn / cuộc gọi trong đơn → bên còn lại.
+  const prevMessages = prev.orderMessages ?? [];
+  const nextMessages = next.orderMessages ?? [];
+  if (prevMessages !== nextMessages) {
+    const known = new Set(prevMessages.map((m) => m.id));
+    for (const m of nextMessages) {
+      if (known.has(m.id)) continue;
+      const order = next.orders.find((o) => o.id === m.orderId);
+      if (!order) continue;
+      const link: NotificationLink = { type: 'order', id: order.id };
+      if (m.sender === 'customer') {
+        drafts.push({ userIds: usersOfCoop(next, order.coopId), title: `Tin nhắn mới từ khách · đơn ${order.id}`, body: m.text.slice(0, 100), link });
+      } else if (m.kind === 'call') {
+        const outcome = CALL_OUTCOME_LABEL[m.callOutcome ?? 'scheduled'];
+        drafts.push({ userIds: usersOfCustomer(next, order.customerId), title: `${order.coopName} đã gọi cho bạn`, body: `${outcome}${m.text ? ` – ${m.text}` : ''} · đơn ${order.id}`.slice(0, 160), link });
+      } else {
+        drafts.push({ userIds: usersOfCustomer(next, order.customerId), title: `Tin nhắn mới từ ${order.coopName}`, body: `${m.text.slice(0, 100)} · đơn ${order.id}`, link });
+      }
     }
   }
 

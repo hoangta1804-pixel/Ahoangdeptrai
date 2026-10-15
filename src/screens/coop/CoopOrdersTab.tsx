@@ -3,6 +3,7 @@ import { useUi } from '../../app/UiContext';
 import { EmptyState, ErrorState } from '../../components/EmptyState';
 import { OrderStatusBadge, PaymentStatusBadge } from '../../components/StatusBadge';
 import { listOrdersFor } from '../../domain/access';
+import { needsReadyContact, unreadCount } from '../../domain/orderContact';
 import { formatMoney } from '../../domain/pricing';
 import { formatDateKey } from '../../domain/state';
 import { ORDER_KIND_LABEL, ORDER_STATUS_LABEL, ORDER_STATUSES, type OrderStatus } from '../../domain/types';
@@ -51,6 +52,12 @@ export function CoopOrdersTab() {
                 <p className="text-sm text-stone-600">Tiền hàng {formatMoney(o.pricing.itemsTotal)}</p>
                 {o.status === 'awaiting_confirmation' && o.confirmDeadline && <p className="text-sm font-semibold text-champagne-800">Hạn xác nhận: {new Date(o.confirmDeadline).toLocaleString('vi-VN')}</p>}
                 {o.cancelRequest?.status === 'pending' && <p className="text-sm font-semibold text-rose-700">Khách yêu cầu huỷ – cần duyệt</p>}
+                {(needsReadyContact(state, o) || unreadCount(state, o, 'coop') > 0) && (
+                  <p className="flex flex-wrap gap-1.5">
+                    {needsReadyContact(state, o) && <span className="rounded-full bg-champagne-200 px-2.5 py-0.5 text-xs font-bold text-champagne-950">Hàng vào mùa – cần liên hệ khách</span>}
+                    {unreadCount(state, o, 'coop') > 0 && <span className="rounded-full bg-forest-900 px-2.5 py-0.5 text-xs font-bold text-champagne-100">{unreadCount(state, o, 'coop')} tin mới từ khách</span>}
+                  </p>
+                )}
               </button>
             </li>
           ))}

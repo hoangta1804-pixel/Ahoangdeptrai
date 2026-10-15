@@ -33,6 +33,88 @@ npm test         # unit test vitest: src/domain, dữ liệu mẫu, quy ước g
 
 ---
 
+## Sau Giai đoạn 6 – Quá trình giao hàng, HTX gọi điện / nhắn tin với khách
+
+**Yêu cầu của chủ repo:** thêm quá trình giao hàng. Khi hàng đặt trước vào mùa, HTX xác nhận đơn, rồi gọi điện hoặc chat với khách.
+
+### Luồng đơn đặt trước
+
+Trạng thái đơn và quy tắc trong SRS giữ nguyên, chỉ thêm phần liên hệ và phần hiển thị:
+
+1. Khách đặt trước và trả cọc.
+2. HTX xác nhận đơn → đơn Chờ thu hoạch. Màn HTX hướng dẫn: "Khi hàng vào mùa và đủ hàng giao, bấm Báo sẵn sàng giao, rồi gọi điện hoặc nhắn tin cho khách để hẹn lịch giao".
+3. **Vào mùa:** HTX bấm "Báo sẵn sàng giao".
+   - Thẻ "Liên hệ khách" đổi màu và nhắc "Hàng đã vào mùa. Hãy gọi điện hoặc nhắn tin cho khách để hẹn lịch giao".
+   - Danh sách đơn của HTX gắn nhãn "Hàng vào mùa – cần liên hệ khách".
+   - Có nút "Dùng tin nhắn mẫu hẹn lịch giao", điền sẵn câu hẹn giao có tên khách, tên hàng, mã đơn, ngày giao dự kiến; HTX sửa rồi gửi.
+4. **HTX liên hệ khách:**
+   - **Gọi điện:** mở ứng dụng gọi trên máy của HTX (`tel:`), với số người nhận đã có trên phiếu đóng gói. Đơn quà gửi người khác thì gọi người đặt, để giữ bất ngờ cho người nhận.
+   - **Ghi kết quả cuộc gọi:** gọi xong, HTX chọn Đã hẹn lịch giao / Khách hẹn gọi lại / Không liên lạc được, kèm ghi chú (vd. "giao sáng thứ Bảy").
+   - **Nhắn tin:** nhắn trong đơn.
+   - Khách nhận thông báo, có cả khi HTX gọi.
+5. Khách trả phần còn lại (hoặc trả khi nhận nếu là COD) → HTX đóng gói, bàn giao vận chuyển → đang giao → đã nhận hàng.
+
+### Hành trình đơn hàng (khách và HTX cùng thấy)
+
+- **Các bước của đơn:**
+  - Đặt trước và trả cọc;
+  - HTX xác nhận đơn;
+  - Vào mùa – HTX báo hàng sẵn sàng;
+  - HTX gọi điện / nhắn tin hẹn lịch giao;
+  - Trả phần còn lại;
+  - Đóng gói, bàn giao vận chuyển;
+  - Đang giao;
+  - Đã nhận hàng.
+
+  Đơn mua sẵn không có các bước vào mùa, liên hệ, trả phần còn lại.
+- **Mỗi bước có trạng thái** đã xong / đang chờ / sắp tới, kèm thời điểm và chi tiết, vd. "Gọi điện: Đã hẹn lịch giao – giao sáng thứ Bảy", "Trả 175.000đ trước …", "Đơn vị vận chuyển đã lấy hàng".
+- **Bước liên hệ không chặn các bước khác:** khách vẫn trả phần còn lại được trước khi HTX gọi. Chưa liên hệ mà đã bàn giao vận chuyển thì bước này ghi "Không ghi nhận liên hệ".
+- **Đơn huỷ hoặc trả hàng:** chỉ giữ các bước đã xong, thêm dòng kết thúc kèm lý do.
+- Lịch sử trạng thái chi tiết vẫn còn, gom vào mục thu gọn "Lịch sử trạng thái chi tiết".
+
+### Trao đổi theo đơn
+
+- **Mỗi đơn có phần "Trao đổi với HTX…"** (khách) / "Trao đổi với khách" (HTX).
+  - Tin nhắn lưu trong dữ liệu dùng chung, nên máy khách và máy HTX cùng thấy; app hỏi dữ liệu mới mỗi 10 giây và khi quay lại app.
+  - Cuộc gọi HTX ghi lại hiện thành một dòng riêng, có biểu tượng điện thoại.
+- **Đếm tin chưa đọc:** danh sách đơn ghi "2 tin mới từ HTX…" / "1 tin mới từ khách"; mở đơn là đã đọc. Có thông báo ở chuông.
+- **Giới hạn:**
+  - Chỉ khách đặt đơn và HTX của đơn nhắn được.
+  - Đơn chưa thanh toán xong hoặc đã huỷ thì không nhắn; đơn huỷ thì hướng dẫn gửi khiếu nại cho CSKH.
+  - Tin tối đa 1.000 ký tự, ghi chú cuộc gọi tối đa 300.
+- **Dữ liệu:** thêm `orderMessages` (không bắt buộc) và `Order.chatReadAt`. Dữ liệu đã lưu từ bản trước, kể cả trên máy chủ dùng chung, vẫn đọc được, không phải xoá dữ liệu.
+
+### Mã nguồn
+
+- **Nghiệp vụ:** `src/domain/orderContact.ts` (gửi tin, ghi cuộc gọi, đếm / đánh dấu đã đọc, số cần gọi, tin nhắn mẫu, hành trình đơn).
+- **Thông báo:** trong `notifications.ts`.
+- **Giao diện:**
+  - `src/components/OrderJourney.tsx`, `src/components/OrderChat.tsx` (dùng chung cho khách và HTX);
+  - `src/screens/coop/CoopContactCard.tsx` (thẻ Liên hệ khách của HTX).
+- **Tải chậm:** các sheet đặt hàng, chi tiết đơn, khiếu nại, đánh giá và các sheet của HTX tải khi mở lần đầu. Phần tải ban đầu của app giảm từ 514 kB xuống 356 kB (gzip 108 kB) và hết cảnh báo dung lượng.
+- **Sửa thêm:** `vite.config.ts` import file API kèm đuôi `.ts`, hết cảnh báo cấu hình của Vite 8 (có từ lần thêm API).
+
+### Kiểm thử
+
+- **Lint, test, build:** lint không lỗi; 20 file, 162 test đạt; build thành công, không cảnh báo.
+- **Test nghiệp vụ mới:**
+  - cả luồng đặt trước → xác nhận → vào mùa → gọi điện → trả phần còn lại → bàn giao → giao xong, kiểm từng bước của hành trình;
+  - bước liên hệ "bỏ qua"; đơn huỷ;
+  - nhắn qua lại, đếm và đánh dấu đã đọc, thông báo đúng người;
+  - chặn người ngoài đơn, tin rỗng / quá dài, đơn chưa thanh toán / đã huỷ;
+  - dữ liệu cũ chưa có phần trao đổi;
+  - số cần gọi với đơn quà; tin nhắn mẫu.
+- **Playwright trên hai máy (khách và HTX), dùng chung dữ liệu qua API, ở 320px và 390px:**
+  1. Khách đặt trước mận và trả cọc.
+  2. HTX xác nhận → báo sẵn sàng → thấy lời nhắc, nhãn "cần liên hệ khách", nút gọi `tel:0900000002` → gửi tin nhắn mẫu → ghi cuộc gọi "Đã hẹn lịch giao".
+  3. Máy khách tự thấy "2 tin mới từ HTX mẫu Bắc Hà", mở đơn thấy tin nhắn, cuộc gọi và hành trình → trả lời → trả phần còn lại.
+  4. Máy HTX thấy "1 tin mới từ khách" → bàn giao vận chuyển; hành trình đúng tới "Đang giao".
+
+  Kết quả: 0 lỗi axe, 0 vùng bấm dưới 44px, 0 chữ dưới 12px, không lỗi JS.
+- **Chạy lại các kịch bản cũ:** kiểm tra giao diện toàn app, Luồng 1, Luồng 2, chọn số lượng, liên kết ngân hàng, giỏ hàng, địa chỉ, mã ưu đãi, GPS, đăng nhập Google đều đạt.
+
+---
+
 ## Sau Giai đoạn 6 – Địa chỉ theo GPS (Google Maps) và đăng nhập bằng Google
 
 **Yêu cầu của chủ repo:** thêm địa chỉ theo GPS; đăng nhập được bằng Gmail. Chủ repo đã chọn:
@@ -1169,6 +1251,9 @@ Ngoài các ca trên còn có test cho:
 57. **Khung Hà Nội cho GPS là khung toạ độ gần đúng** (vĩ độ 20,53–21,39; kinh độ 105,28–106,03), rộng hơn ranh giới thật một chút. Google trả về tỉnh khác thì vẫn báo ngoài Hà Nội.
 58. **Chỉ khách hàng đăng nhập được bằng Google.** Tài khoản HTX, Admin, QLNN vẫn do Admin cấp và đăng nhập bằng SĐT.
 59. **Tài khoản Google mô phỏng và Google thật là hai tài khoản khác nhau,** kể cả khi cùng email.
+60. **"Vào mùa" là lúc HTX bấm Báo sẵn sàng giao.** App không tự đoán ngày vào mùa; ngày giao dự kiến lấy từ ngày giao của đơn.
+61. **Gọi điện dùng điện thoại của HTX** (mở ứng dụng gọi của máy), không qua tổng đài. App không biết kết quả cuộc gọi nên HTX tự ghi lại.
+62. **Khách nhắn tin cho HTX, không có nút gọi HTX,** vì dữ liệu chưa có số liên hệ của HTX dành cho khách. Cần hỗ trợ ngoài đơn thì dùng Khiếu nại / CSKH như trước.
 
 ## Vấn đề chờ nhóm chốt
 

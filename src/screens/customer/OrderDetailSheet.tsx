@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useUi } from '../../app/UiContext';
 import { BottomSheet } from '../../components/BottomSheet';
+import { OrderChat } from '../../components/OrderChat';
+import { OrderJourney } from '../../components/OrderJourney';
 import { DangerButton, Field, Input, PrimaryButton, SecondaryButton, Select, Textarea } from '../../components/form';
 import { deliveryWindow } from '../../domain/cart';
 import { customerChangeAddress, customerChangeDeliveryDate, customerEditGift } from '../../domain/orderEdits';
@@ -103,6 +105,9 @@ export function OrderDetailSheet({ orderId, onClose }: { orderId: string; onClos
           </p>
         )}
       </section>
+
+      <OrderJourney order={order} />
+      <OrderChat order={order} side="customer" />
 
       <section className="space-y-1 rounded-2xl border border-stone-200 p-3 text-sm">
         {order.items.map((i) => (
@@ -319,8 +324,8 @@ export function OrderDetailSheet({ orderId, onClose }: { orderId: string; onClos
         )}
       </section>
 
-      <section className="space-y-1">
-        <h4 className="text-sm font-bold text-stone-700">Lịch sử trạng thái</h4>
+      <details className="space-y-1">
+        <summary className="flex min-h-11 cursor-pointer items-center text-sm font-bold text-stone-700">Lịch sử trạng thái chi tiết</summary>
         <ol className="space-y-1.5 border-l-2 border-stone-200 pl-3 text-sm">
           {order.statusHistory.map((h, i) => (
             <li key={i}>
@@ -336,7 +341,7 @@ export function OrderDetailSheet({ orderId, onClose }: { orderId: string; onClos
             </li>
           ))}
         </ol>
-      </section>
+      </details>
     </BottomSheet>
   );
 }
