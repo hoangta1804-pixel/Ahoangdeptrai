@@ -1,14 +1,16 @@
-import { FileText, Sparkles, User, Wheat, type LucideIcon } from 'lucide-react';
+import { Sparkles, User, Wheat, type LucideIcon } from 'lucide-react';
 import { useUi, type CustomerTab } from '../../app/UiContext';
 
 const TABS: { key: CustomerTab; label: string; Icon: LucideIcon }[] = [
   { key: 'explore', label: 'Khám phá', Icon: Sparkles },
   { key: 'season', label: 'Vụ mùa', Icon: Wheat },
-  { key: 'orders', label: 'Đơn hàng', Icon: FileText },
   { key: 'account', label: 'Tài khoản', Icon: User },
 ];
 
-/** Thanh tab của khách: nền xanh rừng đậm, tab đang mở có quả trám vàng phía trên. Trên máy tính là thanh nổi bo tròn. */
+/**
+ * Thanh tab của khách: nền xanh rừng đậm, tab đang mở có quả trám vàng phía trên. Trên máy tính là thanh nổi bo tròn.
+ * Đơn mua nằm trong Tài khoản (chủ repo yêu cầu gộp), nên thanh còn 3 mục.
+ */
 export function CustomerBottomNav() {
   const { customerTab, setCustomerTab } = useUi();
   return (

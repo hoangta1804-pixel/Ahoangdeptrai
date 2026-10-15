@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useUi } from '../../app/UiContext';
 import { Field, Input, PrimaryButton, Textarea } from '../../components/form';
-import { CONTACT_PHONE_RULE, coopPhonesOf, coopSetPhones, formatContactPhone } from '../../domain/coopContact';
+import { CONTACT_PHONE_RULE, COOP_PHONE_COUNT, coopPhonesOf, coopSetPhones, formatContactPhone } from '../../domain/coopContact';
 import { coopSubmitProfile } from '../../domain/coopProfile';
 import { useStore } from '../../store/AppDataContext';
 
@@ -18,7 +18,9 @@ export function CoopProfileTab() {
     representative: coop?.pendingProfile?.representative ?? coop?.representative ?? '',
     description: coop?.pendingProfile?.description ?? coop?.description ?? '',
   });
-  const [phones, setPhones] = useState<string[]>(() => (coop ? coopPhonesOf(coop).map(formatContactPhone) : ['', '']));
+  // Luôn đủ 2 ô, kể cả HTX chưa có số nào.
+  const phoneInputs = (saved: string[]) => Array.from({ length: COOP_PHONE_COUNT }, (_, i) => (saved[i] ? formatContactPhone(saved[i]) : ''));
+  const [phones, setPhones] = useState<string[]>(() => phoneInputs(coop ? coopPhonesOf(coop) : []));
   const [phoneError, setPhoneError] = useState<string | null>(null);
   if (!coop) return null;
   const set = (patch: Partial<typeof form>) => setForm((f) => ({ ...f, ...patch }));
@@ -32,7 +34,7 @@ export function CoopProfileTab() {
       setPhoneError(r.error);
       return;
     }
-    setPhones(coopPhonesOf(r.value.coops.find((c) => c.id === coop.id)!).map(formatContactPhone));
+    setPhones(phoneInputs(coopPhonesOf(r.value.coops.find((c) => c.id === coop.id)!)));
     showToast('Đã lưu số điện thoại. Admin thấy số mới trong Danh bạ HTX.');
   };
 

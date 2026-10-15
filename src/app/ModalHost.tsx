@@ -28,7 +28,16 @@ export function ModalHost() {
   if (!modal) return null;
   // Sheet gặp lỗi thì hiện sheet báo lỗi thay vì làm trắng cả app (mục 10.5).
   return (
-    <ListBoundary key={modal.type} label="cửa sổ này" resetKey={state} wrap={(node) => <BottomSheet title="Có lỗi" onClose={closeModal}>{node}</BottomSheet>}>
+    <ListBoundary
+      key={modal.type}
+      label="cửa sổ này"
+      resetKey={state}
+      wrap={(node) => (
+        <BottomSheet title="Có lỗi" onClose={closeModal}>
+          {node}
+        </BottomSheet>
+      )}
+    >
       <Suspense fallback={null}>
         <ModalContent />
       </Suspense>
@@ -37,7 +46,7 @@ export function ModalHost() {
 }
 
 function ModalContent() {
-  const { modal, closeModal } = useUi();
+  const { modal, closeModal, openModal } = useUi();
   if (!modal) return null;
   switch (modal.type) {
     case 'product_detail':
@@ -61,7 +70,7 @@ function ModalContent() {
     case 'coop_order':
       return <CoopOrderSheet key={modal.orderId} orderId={modal.orderId} onClose={closeModal} />;
     case 'coop_harvest':
-      return <CoopHarvestSheet key={modal.productId} productId={modal.productId} onClose={closeModal} />;
+      return <CoopHarvestSheet key={modal.productId} productId={modal.productId} onClose={() => (modal.returnTo ? openModal(modal.returnTo) : closeModal())} />;
     case 'demo_panel':
       return <DemoPanel onClose={closeModal} />;
     case 'review':

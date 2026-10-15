@@ -1,54 +1,32 @@
 import { useId } from 'react';
-import { MessageSquareWarning } from 'lucide-react';
 import { useUi } from '../../app/UiContext';
-import { PAGE_X } from '../../app/layout';
-import { SectionHeading } from '../../components/Brand';
-import { EmptyState, ErrorState } from '../../components/EmptyState';
+import { EmptyState } from '../../components/EmptyState';
 import { OrderStatusBadge, PaymentStatusBadge } from '../../components/StatusBadge';
 import { SwipeTabs } from '../../components/SwipeTabs';
-import { listOrdersFor } from '../../domain/access';
 import { unreadCount } from '../../domain/orderContact';
-import { itemsAwaitingReview, ORDER_TABS, ordersInTab, refundSummary, reorderToCart, suggestedProducts, tabCounts, tabOf, type OrderTabKey } from '../../domain/orderTabs';
+import { itemsAwaitingReview, ORDER_TABS, ordersInTab, refundSummary, reorderToCart, suggestedProducts, tabOf, type OrderTabKey } from '../../domain/orderTabs';
 import { formatMoney } from '../../domain/pricing';
 import { ORDER_KIND_LABEL, type Order } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
 import { ProductCard } from './ExploreTab';
 
 /**
- * Đơn mua của tôi (FR-DH-01), kiểu "Đơn đã mua" theo video mẫu của chủ repo: hàng tab theo trạng thái,
- * vuốt ngang để sang tab bên cạnh. Đơn mới hiện ngay sau khi đặt (L4). Tab trống có gợi ý "Có thể bạn cũng thích".
+ * Danh sách đơn mua của khách (FR-DH-01), nằm trong Tài khoản (chủ repo yêu cầu gộp, không còn tab Đơn hàng riêng).
+ * Kiểu "Đơn đã mua" theo video mẫu: hàng tab theo trạng thái, vuốt ngang để sang tab bên cạnh, hàng tab dính dưới
+ * thanh trên cùng khi cuộn. Đơn mới hiện ngay sau khi đặt (L4). Tab trống có gợi ý "Có thể bạn cũng thích".
+ * Số cột theo bề rộng phần chứa (container query), vì danh sách nằm trong cột của trang Tài khoản.
+ * Đơn và số đếm do Tài khoản tính một lần rồi truyền vào (dùng chung với các biểu tượng trạng thái).
  */
-export function OrdersTab() {
-  const { state } = useStore();
-  const { customerActor, openModal, orderTab, setOrderTab } = useUi();
-  const listed = listOrdersFor(state, customerActor);
-  if (!listed.ok) return <ErrorState>{listed.error}</ErrorState>;
-  const mine = listed.value;
-  const counts = tabCounts(mine);
-
+export function OrdersSection({ orders: mine, counts }: { orders: Order[]; counts: Record<OrderTabKey, number> }) {
+  const { orderTab, setOrderTab } = useUi();
   return (
-    <div className="w-full pb-8">
-      <div className={`pt-5 pb-3 md:pt-8 ${PAGE_X}`}>
-        <SectionHeading
-          eyebrow="Đơn hàng"
-          title="Đơn mua của tôi"
-          action={
-            <button
-              onClick={() => openModal({ type: 'complaint' })}
-              className="flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border border-champagne-300 bg-white px-4 text-sm font-semibold text-forest-900 hover:bg-champagne-50"
-            >
-              <MessageSquareWarning size={16} aria-hidden="true" />
-              Khiếu nại
-            </button>
-          }
-        />
-      </div>
+    <div className="@container">
       <SwipeTabs
         label="Đơn theo trạng thái"
         tabs={ORDER_TABS.map((t) => ({ key: t.key, label: t.label, count: t.key === 'all' ? 0 : counts[t.key] }))}
         active={orderTab}
         onChange={setOrderTab}
-        barClassName={`sticky top-[calc(var(--app-header-h,0px)+var(--customer-bar-h,0px))] z-20 ${PAGE_X}`}
+        barClassName="sticky top-[calc(var(--app-header-h,0px)+var(--customer-bar-h,0px))] z-20"
         renderPanel={(key) => <OrdersPanel tab={key} orders={ordersInTab(mine, key)} />}
       />
     </div>
@@ -58,14 +36,14 @@ export function OrdersTab() {
 function OrdersPanel({ tab, orders }: { tab: OrderTabKey; orders: Order[] }) {
   if (orders.length === 0) {
     return (
-      <div className={`space-y-8 pt-5 ${PAGE_X}`}>
+      <div className="space-y-8 pt-5">
         <EmptyState>{tab === 'all' ? 'Bạn chưa có đơn hàng nào.' : `Chưa có đơn nào ở mục "${tabOf(tab).label}".`}</EmptyState>
         <Suggestions />
       </div>
     );
   }
   return (
-    <ul className={`grid gap-3 pt-4 lg:grid-cols-2 2xl:grid-cols-3 ${PAGE_X}`}>
+    <ul className="grid gap-3 pt-4 @3xl:grid-cols-2 @6xl:grid-cols-3">
       {orders.map((o) => (
         <OrderCard key={o.id} order={o} />
       ))}
@@ -87,7 +65,7 @@ function Suggestions() {
         Có thể bạn cũng thích
         <span aria-hidden="true" className="h-px flex-1 bg-champagne-300" />
       </h3>
-      <div className="grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-3 md:gap-x-5 md:gap-y-6 lg:grid-cols-4 xl:grid-cols-5 min-[1800px]:grid-cols-6">
+      <div className="grid grid-cols-2 gap-x-3 gap-y-4 @xl:grid-cols-3 @xl:gap-x-5 @xl:gap-y-6 @3xl:grid-cols-4 @5xl:grid-cols-5">
         {products.map((p) => (
           <ProductCard key={p.id} product={p} />
         ))}

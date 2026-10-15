@@ -102,9 +102,12 @@ export function CoopOrderSheet({ orderId, onClose }: { orderId: string; onClose:
                 {pending === 'reject_cancel' ? (
                   <>
                     <ReasonPrompt label="Lý do từ chối yêu cầu huỷ" value={reason} onChange={setReason} />
-                    <DangerButton className="w-full" onClick={() => act((s, t) => coopDecideCancelRequest(s, order.id, coopActor, false, reason, t), 'Đã từ chối yêu cầu huỷ.')}>
-                      Xác nhận từ chối
-                    </DangerButton>
+                    <div className="flex gap-2">
+                      <SecondaryButton onClick={() => setPending(null)}>Thôi</SecondaryButton>
+                      <DangerButton className="flex-1" onClick={() => act((s, t) => coopDecideCancelRequest(s, order.id, coopActor, false, reason, t), 'Đã từ chối yêu cầu huỷ.')}>
+                        Xác nhận từ chối
+                      </DangerButton>
+                    </div>
                   </>
                 ) : (
                   <div className="grid grid-cols-2 gap-2">
@@ -171,7 +174,7 @@ export function CoopOrderSheet({ orderId, onClose }: { orderId: string; onClose:
                     )}
                   </div>
                   {harvestTarget && sameProductWaiting > 1 && (
-                    <SecondaryButton className="w-full" onClick={() => openModal({ type: 'coop_harvest', productId: harvestTarget.productId })}>
+                    <SecondaryButton className="w-full" onClick={() => openModal({ type: 'coop_harvest', productId: harvestTarget.productId, returnTo: { type: 'coop_order', orderId: order.id } })}>
                       Xác nhận cả lô {harvestTarget.name} ({sameProductWaiting} đơn đang chờ)
                     </SecondaryButton>
                   )}
@@ -183,9 +186,12 @@ export function CoopOrderSheet({ orderId, onClose }: { orderId: string; onClose:
               {pending === 'cannot_supply' && (
                 <>
                   <ReasonPrompt label="Lý do không cung cấp được (bắt buộc)" value={reason} onChange={setReason} />
-                  <DangerButton className="w-full" onClick={() => act((s, t) => coopCannotSupply(s, order.id, coopActor, reason, t), 'Đã huỷ đơn. Khách được hoàn 100%.')}>
-                    Xác nhận
-                  </DangerButton>
+                  <div className="flex gap-2">
+                    <SecondaryButton onClick={() => setPending(null)}>Thôi</SecondaryButton>
+                    <DangerButton className="flex-1" onClick={() => act((s, t) => coopCannotSupply(s, order.id, coopActor, reason, t), 'Đã huỷ đơn. Khách được hoàn 100%.')}>
+                      Xác nhận
+                    </DangerButton>
+                  </div>
                 </>
               )}
               {order.status === 'preparing' && (

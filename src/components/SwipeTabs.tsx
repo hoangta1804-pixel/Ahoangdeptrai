@@ -20,10 +20,25 @@ function usePrefersReducedMotion(): boolean {
   return reduce;
 }
 
+/** Trang đang được phóng to bằng hai ngón (visualViewport.scale > 1). */
+function usePinchZoomed(): boolean {
+  const [zoomed, setZoomed] = useState(false);
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const on = () => setZoomed(vv.scale > 1.01);
+    on();
+    vv.addEventListener('resize', on);
+    return () => vv.removeEventListener('resize', on);
+  }, []);
+  return zoomed;
+}
+
 /**
  * Hàng tab có gạch chân và phần nội dung vuốt ngang được để sang tab bên cạnh (kiểu "Đơn đã mua" của ứng dụng mua sắm).
  * - Điện thoại: vuốt trái / phải trên nội dung; hàng tab tự cuộn để tab đang chọn luôn nằm trong tầm nhìn.
- *   Vuốt dọc vẫn cuộn trang như thường (touch-action: pan-y).
+ *   Vuốt dọc vẫn cuộn trang, hai ngón vẫn phóng to được (touch-action: pan-y pinch-zoom). Đang phóng to thì tắt vuốt
+ *   đổi tab để kéo ngang xem phần bị khuất; ngón thứ hai chạm vào giữa lúc vuốt thì huỷ vuốt.
  * - Máy tính: bấm tab, hoặc phím mũi tên / Home / End trên hàng tab (mẫu tablist của WAI-ARIA).
  * - Chỉ dựng nội dung tab đang chọn; 2 tab hai bên chỉ dựng trong lúc vuốt / đang trượt (để thấy trước),
  *   nên một đơn không xuất hiện 2 lần trên trang.
@@ -51,6 +66,7 @@ export function SwipeTabs<K extends string>({
     tabs.findIndex((t) => t.key === active),
   );
   const reduceMotion = usePrefersReducedMotion();
+  const zoomed = usePinchZoomed();
   const rootRef = useRef<HTMLDivElement>(null);
   const stickyRef = useRef<HTMLDivElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
@@ -75,18 +91,28 @@ export function SwipeTabs<K extends string>({
   };
   useEffect(() => () => clearTimeout(settleTimer.current), []);
 
-  // Gạch chân theo tab đang chọn; cuộn hàng tab cho tab đó nằm giữa.
+  // Gạch chân theo tab đang chọn (đo lại khi đổi tab, khi số đếm làm tab rộng ra, khi hàng tab đổi cỡ).
+  const tabsSignature = tabs.map((t) => `${t.key}:${t.count ?? 0}`).join('|');
   useLayoutEffect(() => {
     const el = tabRefs.current[index];
     const bar = barRef.current;
     if (!el || !bar) return;
     const update = () => setIndicator({ left: el.offsetLeft, width: el.offsetWidth });
     update();
-    bar.scrollTo?.({ left: el.offsetLeft - (bar.clientWidth - el.offsetWidth) / 2, behavior: reduceMotion ? 'auto' : 'smooth' });
     const ro = new ResizeObserver(update);
     ro.observe(bar);
     return () => ro.disconnect();
-  }, [index, tabs, reduceMotion]);
+  }, [index, tabsSignature]);
+
+  // Chỉ khi đổi tab (và lần đầu): cuộn hàng tab cho tab đang chọn nằm giữa. Không cuộn lại mỗi lần vẽ lại,
+  // để không kéo mất chỗ người dùng vừa cuộn ngang hàng tab.
+  useEffect(() => {
+    const el = tabRefs.current[index];
+    const bar = barRef.current;
+    if (!el || !bar) return;
+    bar.scrollTo?.({ left: el.offsetLeft - (bar.clientWidth - el.offsetWidth) / 2, behavior: reduceMotion ? 'auto' : 'smooth' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [index]);
 
   // Khung nội dung cao bằng tab đang chọn (các tab bên cạnh bị cắt), để trang không thừa khoảng trống.
   useLayoutEffect(() => {
@@ -125,15 +151,31 @@ export function SwipeTabs<K extends string>({
 
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     const to = e.key === 'ArrowRight' ? index + 1 : e.key === 'ArrowLeft' ? index - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : null;
-    if (to === null || to < 0 || to >= tabs.length) return;
+    if (to === null) return;
     e.preventDefault();
+    // Đã ở tab đầu / cuối: không đổi gì (không để lại cờ chuyển focus).
+    if (to < 0 || to >= tabs.length || to === index) return;
     focusAfterChange.current = true;
     onChange(tabs[to].key);
   };
 
+  const cancelDrag = () => {
+    const wasDragging = gesture.current?.axis === 'x';
+    gesture.current = null;
+    if (!wasDragging) return;
+    setDragging(false);
+    setDrag(0);
+    settle();
+    suppressClickUntil.current = performance.now() + 400;
+  };
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
-    // Chuột trên máy tính: bấm tab (kéo chuột sẽ cản việc chọn chữ và bấm thẻ).
-    if (e.pointerType === 'mouse' || tabs.length < 2) return;
+    // Ngón thứ hai chạm vào (vd. chụm để phóng to): huỷ thao tác vuốt đang dở, trượt về chỗ cũ.
+    if (gesture.current) {
+      cancelDrag();
+      return;
+    }
+    // Chuột trên máy tính: bấm tab (kéo chuột sẽ cản việc chọn chữ và bấm thẻ). Đang phóng to: để trình duyệt kéo ngang.
+    if (e.pointerType === 'mouse' || tabs.length < 2 || zoomed) return;
     gesture.current = { id: e.pointerId, x: e.clientX, y: e.clientY, t: e.timeStamp, axis: null };
   };
   const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {
@@ -160,8 +202,9 @@ export function SwipeTabs<K extends string>({
   };
   const onPointerEnd = (e: PointerEvent<HTMLDivElement>, cancelled: boolean) => {
     const g = gesture.current;
+    if (!g || g.id !== e.pointerId) return;
     gesture.current = null;
-    if (!g || g.id !== e.pointerId || g.axis !== 'x') return;
+    if (g.axis !== 'x') return;
     const dx = e.clientX - g.x;
     const width = viewportRef.current?.clientWidth || 1;
     const speed = Math.abs(dx) / Math.max(1, e.timeStamp - g.t);
@@ -214,7 +257,7 @@ export function SwipeTabs<K extends string>({
       <div
         ref={viewportRef}
         className="overflow-hidden"
-        style={{ height, touchAction: 'pan-y' }}
+        style={{ height, touchAction: zoomed ? 'auto' : 'pan-y pinch-zoom' }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={(e) => onPointerEnd(e, false)}

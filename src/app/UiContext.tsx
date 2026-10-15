@@ -9,7 +9,8 @@ import type { Actor, AdminSubGroup, CartLine, UserAccount } from '../domain/type
 import { useStore } from '../store/AppDataContext';
 import { loadSession, saveSession } from '../store/persistence';
 
-export type CustomerTab = 'explore' | 'season' | 'orders' | 'account';
+/** Thanh dưới của khách. Đơn mua nằm trong Tài khoản (chủ repo yêu cầu gộp, không còn tab Đơn hàng riêng). */
+export type CustomerTab = 'explore' | 'season' | 'account';
 
 /** Đặt từ giỏ: `productIds` là các sản phẩm khách đã chọn trong giỏ (không có thì lấy cả giỏ). */
 export type CheckoutSource = { type: 'cart'; productIds?: string[] } | { type: 'buy_now'; line: CartLine };
@@ -27,8 +28,8 @@ export type ModalState =
   | { type: 'address_form'; addressId?: string; returnTo?: ModalState }
   | { type: 'complaint'; orderId?: string }
   | { type: 'coop_order'; orderId: string }
-  /** HTX xác nhận thu hoạch cả lô cho một sản phẩm đặt trước. */
-  | { type: 'coop_harvest'; productId: string }
+  /** HTX xác nhận thu hoạch cả lô cho một sản phẩm đặt trước. `returnTo`: mở lại khi đóng (vd. đơn đang xem). */
+  | { type: 'coop_harvest'; productId: string; returnTo?: ModalState }
   | { type: 'notifications' }
   | { type: 'review'; orderId: string; productId: string }
   | { type: 'coop_product_form'; productId?: string }
@@ -54,8 +55,11 @@ interface UiContextValue {
   /** Tab đang chọn trong "Đơn mua" của khách. */
   orderTab: OrderTabKey;
   setOrderTab: (tab: OrderTabKey) => void;
-  /** Mở "Đơn mua" ở đúng tab (từ các biểu tượng trạng thái trong Tài khoản). */
+  /** Mở danh sách Đơn mua (trong Tài khoản) ở đúng tab và cuộn tới danh sách. */
   openOrders: (tab: OrderTabKey) => void;
+  /** Tăng mỗi lần openOrders; kèm takeOrdersFocus() để Tài khoản biết cần cuộn tới danh sách đơn. */
+  ordersFocus: number;
+  takeOrdersFocus: () => boolean;
   modal: ModalState | null;
   openModal: (modal: ModalState) => void;
   closeModal: () => void;
@@ -70,6 +74,8 @@ export function UiProvider({ children }: { children: ReactNode }) {
   const [userId, setUserId] = useState<string | null>(() => loadSession());
   const [customerTab, setCustomerTab] = useState<CustomerTab>('explore');
   const [orderTab, setOrderTab] = useState<OrderTabKey>('all');
+  const [ordersFocus, setOrdersFocus] = useState(0);
+  const pendingOrdersFocus = useRef(false);
   const [modal, setModal] = useState<ModalState | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -92,7 +98,14 @@ export function UiProvider({ children }: { children: ReactNode }) {
   }, []);
   const openOrders = useCallback((tab: OrderTabKey) => {
     setOrderTab(tab);
-    setCustomerTab('orders');
+    setCustomerTab('account');
+    pendingOrdersFocus.current = true;
+    setOrdersFocus((n) => n + 1);
+  }, []);
+  const takeOrdersFocus = useCallback(() => {
+    const pending = pendingOrdersFocus.current;
+    pendingOrdersFocus.current = false;
+    return pending;
   }, []);
   const logout = useCallback(() => {
     saveSession(null);
@@ -118,13 +131,15 @@ export function UiProvider({ children }: { children: ReactNode }) {
       orderTab,
       setOrderTab,
       openOrders,
+      ordersFocus,
+      takeOrdersFocus,
       modal,
       openModal: setModal,
       closeModal,
       toast,
       showToast,
     };
-  }, [user, login, logout, customerTab, orderTab, openOrders, modal, closeModal, toast, showToast]);
+  }, [user, login, logout, customerTab, orderTab, openOrders, ordersFocus, takeOrdersFocus, modal, closeModal, toast, showToast]);
   return <UiContext.Provider value={value}>{children}</UiContext.Provider>;
 }
 

@@ -6,7 +6,6 @@ import { AccountTab } from './AccountTab';
 import { CustomerBottomNav } from './CustomerBottomNav';
 import { CustomerTopBar } from './CustomerTopBar';
 import { ExploreTab } from './ExploreTab';
-import { OrdersTab } from './OrdersTab';
 import { SeasonTab } from './SeasonTab';
 
 export function CustomerScreen() {
@@ -20,7 +19,6 @@ export function CustomerScreen() {
       <ListBoundary key={customerTab} label="mục này" resetKey={state}>
         {customerTab === 'explore' && <ExploreTab />}
         {customerTab === 'season' && <SeasonTab />}
-        {customerTab === 'orders' && <OrdersTab />}
         {customerTab === 'account' && <AccountTab />}
       </ListBoundary>
       <CustomerBottomNav />
