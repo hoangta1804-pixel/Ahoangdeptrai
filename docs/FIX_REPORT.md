@@ -33,7 +33,46 @@ npm test         # unit test vitest: src/domain, dữ liệu mẫu, quy ước g
 
 ---
 
+## Sau Giai đoạn 6 – Gộp Đơn hàng vào Tài khoản
+
+**Yêu cầu của chủ repo:** gộp phần đơn hàng vào luôn Tài khoản, không cần chuyển tab như cũ.
+
+- **Thanh dưới của khách còn 3 mục:** Khám phá · Vụ mùa · Tài khoản. Không còn tab Đơn hàng riêng.
+- **Trong Tài khoản, mục "Đơn mua" gồm 2 phần liền nhau:**
+  - các biểu tượng trạng thái (như trước);
+  - ngay bên dưới là danh sách đơn với 9 tab vuốt ngang (như trước).
+- **Bấm biểu tượng** (hoặc "Xem tất cả đơn", hoặc dòng nhắc đơn chờ thanh toán) là đổi tab của danh sách ngay tại chỗ, không chuyển màn. Danh sách đang khuất bên dưới thì trang cuộn tới.
+- **Đặt hàng xong, thanh toán xong, gửi khiếu nại xong** (trước đây chuyển sang tab Đơn hàng): nay mở Tài khoản ở tab "Tất cả" của danh sách đơn và cuộn tới danh sách.
+- **Thứ tự trên điện thoại:** thông tin cá nhân → Đơn mua (biểu tượng + danh sách) → Tiện ích của tôi → tài khoản ngân hàng nhận hoàn → Đăng xuất.
+- **Máy tính:** Đơn mua ở cột rộng bên trái; Tiện ích, ngân hàng, Đăng xuất ở cột phải. Danh sách đơn và gợi ý sản phẩm đổi số cột theo bề rộng phần chứa (container query của Tailwind), không theo bề rộng màn hình.
+- Nút "Khiếu nại" ở đầu danh sách đơn cũ bỏ đi, vì đã có trong Tiện ích của tôi.
+- **Mã nguồn:**
+  - `OrdersTab.tsx` đổi thành `OrdersSection.tsx` (chỉ phần danh sách), đặt trong `AccountTab.tsx`;
+  - `openOrders(tab)` trong `UiContext` mở Tài khoản và báo cần cuộn tới danh sách;
+  - các nơi trước đây chuyển sang tab Đơn hàng (`CheckoutSheet`, `PaymentSheet`, `ComplaintSheet`) nay gọi `openOrders('all')`.
+
+### Kiểm thử
+
+- **Lint, test, build:** lint không lỗi; 24 file, 183 test đạt; build thành công, không cảnh báo.
+- **Playwright ở 320, 390 và 1.280px, vuốt bằng sự kiện chạm thật:**
+  1. Thanh dưới chỉ còn Khám phá, Vụ mùa, Tài khoản.
+  2. Bấm biểu tượng "Chờ xác nhận": vẫn ở Tài khoản, danh sách đổi sang tab đó và nằm trong tầm nhìn.
+  3. Vuốt trái / phải, vuốt dọc, phím mũi tên như trước. Mỗi đơn chỉ 1 thẻ trên trang.
+  4. Huỷ đơn → tab Đã huỷ có tiền hoàn; Mua lại → giỏ.
+  5. Khách 2: biểu tượng Đánh giá → tab Đã giao → mở đúng cửa sổ đánh giá.
+  6. Từ Khám phá: Mua ngay → đặt hàng → thanh toán thành công → về Tài khoản, tab Tất cả, hàng tab nằm ngay dưới thanh trên cùng, đơn mới ở đầu.
+
+  Kết quả: 0 lỗi axe, 0 vùng bấm dưới 44px, 0 chữ dưới 12px, không tràn ngang, không lỗi JS.
+- **Chạy lại các kịch bản cũ, đều đạt:** kiểm tra giao diện toàn app, xác nhận thu hoạch, giao hàng trên hai máy, Luồng 6, dữ liệu chung trên hai máy, giỏ hàng, mã ưu đãi, chọn số lượng, liên kết ngân hàng, địa chỉ, tràn ngang, SĐT HTX, biểu đồ bán chạy, toàn màn hình 1.920px.
+  - Các kịch bản đã sửa chỗ bấm tab "Đơn hàng" thành "Tài khoản".
+  - Sau khi thanh toán, app nay ở trang Tài khoản, có thêm nút "Thông báo", "Giỏ hàng" (Tiện ích) và các nút biểu tượng đơn. Vì vậy 5 kịch bản lần đầu bắt trùng nút; đã sửa bộ chọn, chạy lại thì đạt.
+  - Kịch bản địa chỉ lần đầu dừng vì giỏ của khách còn hàng từ kịch bản chạy trước (các kịch bản dùng chung dữ liệu trên máy chủ xem thử). Khôi phục dữ liệu mẫu rồi chạy lại thì đạt.
+
+---
+
 ## Sau Giai đoạn 6 – "Đơn mua" trong Tài khoản và tab đơn vuốt ngang
+
+> Sau đó chủ repo yêu cầu gộp Đơn hàng vào Tài khoản; xem mục "Gộp Đơn hàng vào Tài khoản" ở trên. Phần danh sách đơn và tab vuốt ngang dưới đây vẫn dùng, chỉ đổi chỗ đặt.
 
 **Yêu cầu của chủ repo:** gửi video quay màn "Tôi" của một ứng dụng mua sắm. Muốn tài khoản khách có các chức năng như vậy, và vuốt qua lại giữa các tab đơn được như trong video.
 
@@ -1573,6 +1612,7 @@ Ngoài các ca trên còn có test cho:
 72. **"Mua lại" chỉ đưa sản phẩm vào giỏ, không đặt hàng ngay.** Giá theo giá hiện tại; hàng đặt trước lấy ngày giao sớm nhất còn chọn được, khách đổi ngày trong giỏ.
 73. **"Có thể bạn cũng thích" không cá nhân hoá theo hành vi:** chỉ bỏ sản phẩm khách đã mua và xếp theo điểm đánh giá. Khách đã mua hết thì gợi ý lại mọi sản phẩm đang bán.
 74. **Biểu tượng "Đánh giá" mở tab Đã giao,** nơi đơn chờ đánh giá có nút Đánh giá. Đơn nhiều sản phẩm thì nút mở sản phẩm đầu tiên chưa đánh giá; các sản phẩm còn lại đánh giá trong chi tiết đơn.
+75. **Đơn mua nằm trong Tài khoản, không có tab riêng ở thanh dưới.** Bấm biểu tượng trạng thái chỉ đổi tab của danh sách ngay bên dưới; trang chỉ cuộn khi danh sách đang khuất.
 
 ## Vấn đề chờ nhóm chốt
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Bell, ChevronRight, ClipboardCheck, LogOut, MapPin, MessageSquareWarning, Package, ShoppingBag, Sprout, Star, Truck, UserRound, type LucideIcon } from 'lucide-react';
 import { useUi } from '../../app/UiContext';
 import { PAGE_X } from '../../app/layout';
@@ -10,10 +10,11 @@ import { loginIdentityLabel } from '../../domain/auth';
 import { ordersAwaitingReview, tabCounts, type OrderTabKey } from '../../domain/orderTabs';
 import { useStore } from '../../store/AppDataContext';
 import { BankLinkSection } from './BankLinkSection';
+import { OrdersSection } from './OrdersSection';
 
 /**
- * Tài khoản của khách: thông tin cá nhân (FR-TK-03); "Đơn mua" với các biểu tượng trạng thái và "Tiện ích của tôi"
- * (theo video mẫu của chủ repo); liên kết ngân hàng nhận hoàn (mô phỏng); sổ địa chỉ (FR-TK-04); đăng xuất.
+ * Tài khoản của khách: thông tin cá nhân (FR-TK-03); "Đơn mua" gồm biểu tượng trạng thái và danh sách đơn (FR-DH-01),
+ * "Tiện ích của tôi" (theo video mẫu của chủ repo); liên kết ngân hàng nhận hoàn (mô phỏng); sổ địa chỉ (FR-TK-04); đăng xuất.
  */
 export function AccountTab() {
   const { state, run } = useStore();
@@ -82,14 +83,13 @@ export function AccountTab() {
         </section>
       )}
 
-      {/* Điện thoại: Đơn mua, Tiện ích, tài khoản ngân hàng, đăng xuất. Máy tính: hai cột. */}
-      <div className="space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5 lg:space-y-0">
-        <div className="space-y-4">
-          <OrderShortcuts />
-          <Utilities addressCount={addressCount} />
-        </div>
+      {/* Điện thoại: Đơn mua (biểu tượng + danh sách đơn), Tiện ích, tài khoản ngân hàng, đăng xuất.
+          Máy tính: Đơn mua ở cột rộng bên trái, các mục còn lại ở cột phải. */}
+      <div className="space-y-4 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(20rem,26rem)] lg:items-start lg:gap-6 lg:space-y-0">
+        <OrdersBlock />
 
         <div className="space-y-4">
+          <Utilities addressCount={addressCount} />
           <BankLinkSection />
           <button onClick={logout} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-rose-200 bg-white/70 text-sm font-bold text-rose-800 hover:bg-rose-50">
             <LogOut size={16} />
@@ -101,7 +101,7 @@ export function AccountTab() {
   );
 }
 
-/** Biểu tượng trạng thái đơn kiểu "Đơn mua" (theo video mẫu của chủ repo): bấm để mở Đơn hàng ở đúng tab. */
+/** Biểu tượng trạng thái đơn kiểu "Đơn mua" (theo video mẫu của chủ repo): bấm để lọc danh sách đơn ngay bên dưới. */
 const SHORTCUTS: { tab: OrderTabKey; label: string; icon: LucideIcon; review?: boolean }[] = [
   { tab: 'confirm', label: 'Chờ xác nhận', icon: ClipboardCheck },
   { tab: 'harvest', label: 'Chờ thu hoạch', icon: Sprout },
@@ -119,50 +119,83 @@ function CountBadge({ n }: { n: number }) {
   );
 }
 
-function OrderShortcuts() {
+/** Chiều cao phần dính trên cùng (header + thanh "Nhận hàng tại"), để cuộn danh sách đơn tới ngay bên dưới. */
+function stickyTop(): number {
+  const css = getComputedStyle(document.documentElement);
+  return (parseFloat(css.getPropertyValue('--app-header-h')) || 0) + (parseFloat(css.getPropertyValue('--customer-bar-h')) || 0);
+}
+
+/**
+ * Đơn mua trong Tài khoản (chủ repo yêu cầu gộp, không còn tab Đơn hàng riêng): biểu tượng trạng thái ở trên,
+ * danh sách đơn có tab vuốt ngang ngay bên dưới. Bấm biểu tượng là đổi tab của danh sách; danh sách đang khuất
+ * thì cuộn tới. Mở từ nơi khác (đặt hàng xong, thanh toán, gửi khiếu nại) thì luôn cuộn tới danh sách.
+ */
+function OrdersBlock() {
   const { state } = useStore();
-  const { customerActor, openOrders } = useUi();
+  const { customerActor, openOrders, ordersFocus, takeOrdersFocus } = useUi();
+  const listRef = useRef<HTMLDivElement>(null);
+  const mounted = useRef(false);
   const listed = listOrdersFor(state, customerActor);
   const mine = listed.ok ? listed.value : [];
   const counts = tabCounts(mine);
   const toReview = ordersAwaitingReview(state, mine).length;
+
+  useEffect(() => {
+    const justOpened = !mounted.current;
+    mounted.current = true;
+    if (!takeOrdersFocus()) return;
+    // Chạy sau effect cuộn về đầu trang khi đổi tab của màn khách.
+    setTimeout(() => {
+      const el = listRef.current;
+      if (!el) return;
+      const offset = stickyTop();
+      const top = el.getBoundingClientRect().top;
+      if (justOpened || top > window.innerHeight * 0.55 || top < offset) window.scrollTo({ top: window.scrollY + top - offset - 8, behavior: justOpened ? 'auto' : 'smooth' });
+    }, 0);
+  }, [ordersFocus, takeOrdersFocus]);
+
   return (
-    <section aria-labelledby="don-mua" className="space-y-2 rounded-3xl border border-champagne-200 bg-white p-4 shadow-xs">
-      <div className="flex items-center justify-between gap-2">
-        <h3 id="don-mua" className="font-display text-lg font-semibold text-ink">
-          Đơn mua
-        </h3>
-        <button onClick={() => openOrders('all')} className="-mr-2 flex min-h-11 items-center gap-0.5 rounded-full px-2 text-sm font-semibold text-forest-800 hover:bg-champagne-50">
-          Xem lịch sử mua hàng <ChevronRight size={16} aria-hidden="true" />
-        </button>
+    <section aria-labelledby="don-mua" className="min-w-0 space-y-3">
+      <div className="space-y-2 rounded-3xl border border-champagne-200 bg-white p-4 shadow-xs">
+        <div className="flex items-center justify-between gap-2">
+          <h3 id="don-mua" className="font-display text-lg font-semibold text-ink">
+            Đơn mua
+          </h3>
+          <button onClick={() => openOrders('all')} className="-mr-2 flex min-h-11 items-center gap-0.5 rounded-full px-2 text-sm font-semibold text-forest-800 hover:bg-champagne-50">
+            Xem tất cả đơn <ChevronRight size={16} aria-hidden="true" />
+          </button>
+        </div>
+        <ul className="grid grid-cols-5 gap-1">
+          {SHORTCUTS.map((s) => {
+            const n = s.review ? toReview : counts[s.tab];
+            const Icon = s.icon;
+            return (
+              <li key={s.label}>
+                <button
+                  onClick={() => openOrders(s.tab)}
+                  aria-label={`${s.label}${n > 0 ? `: ${n} đơn` : ''}`}
+                  className="flex min-h-16 w-full flex-col items-center gap-1.5 rounded-2xl px-0.5 pt-2 pb-1.5 text-center hover:bg-champagne-50"
+                >
+                  <span className="relative text-forest-800">
+                    <Icon size={24} strokeWidth={1.6} aria-hidden="true" />
+                    <CountBadge n={n} />
+                  </span>
+                  <span className="text-xs leading-tight text-stone-700">{s.label}</span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+        {counts.payment > 0 && (
+          <button onClick={() => openOrders('payment')} className="flex min-h-11 w-full items-center justify-between gap-2 rounded-2xl bg-champagne-100 px-3 text-left text-sm font-semibold text-champagne-900 hover:bg-champagne-200">
+            Bạn có {counts.payment} đơn chờ thanh toán
+            <ChevronRight size={16} aria-hidden="true" />
+          </button>
+        )}
       </div>
-      <ul className="grid grid-cols-5 gap-1">
-        {SHORTCUTS.map((s) => {
-          const n = s.review ? toReview : counts[s.tab];
-          const Icon = s.icon;
-          return (
-            <li key={s.label}>
-              <button
-                onClick={() => openOrders(s.tab)}
-                aria-label={`${s.label}${n > 0 ? `: ${n} đơn` : ''}`}
-                className="flex min-h-16 w-full flex-col items-center gap-1.5 rounded-2xl px-0.5 pt-2 pb-1.5 text-center hover:bg-champagne-50"
-              >
-                <span className="relative text-forest-800">
-                  <Icon size={24} strokeWidth={1.6} aria-hidden="true" />
-                  <CountBadge n={n} />
-                </span>
-                <span className="text-xs leading-tight text-stone-700">{s.label}</span>
-              </button>
-            </li>
-          );
-        })}
-      </ul>
-      {counts.payment > 0 && (
-        <button onClick={() => openOrders('payment')} className="flex min-h-11 w-full items-center justify-between gap-2 rounded-2xl bg-champagne-100 px-3 text-left text-sm font-semibold text-champagne-900 hover:bg-champagne-200">
-          Bạn có {counts.payment} đơn chờ thanh toán
-          <ChevronRight size={16} aria-hidden="true" />
-        </button>
-      )}
+      <div ref={listRef}>
+        <OrdersSection />
+      </div>
     </section>
   );
 }
@@ -184,7 +217,7 @@ function Utilities({ addressCount }: { addressCount: number }) {
       <h3 id="tien-ich" className="font-display text-lg font-semibold text-ink">
         Tiện ích của tôi
       </h3>
-      <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-2 2xl:grid-cols-4">
+      <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-2">
         {items.map((it) => {
           const Icon = it.icon;
           return (

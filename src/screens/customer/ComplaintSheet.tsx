@@ -13,7 +13,7 @@ import { useStore } from '../../store/AppDataContext';
  */
 export function ComplaintSheet({ orderId, onClose }: { orderId?: string; onClose: () => void }) {
   const { state, run, now } = useStore();
-  const { customerActor, showToast, setCustomerTab } = useUi();
+  const { customerActor, showToast, openOrders } = useUi();
   const at = now();
   const eligible = state.orders.filter((o) => {
     const d = returnDeadline(o);
@@ -40,7 +40,7 @@ export function ComplaintSheet({ orderId, onClose }: { orderId?: string; onClose
     if (!r.ok) return showToast(r.error);
     showToast(`Đã gửi khiếu nại ${ticketId}. CSKH phản hồi tiếp nhận trong ${state.params.ticketAckHours} giờ làm việc.`);
     onClose();
-    setCustomerTab('orders');
+    openOrders('all');
   };
 
   return (

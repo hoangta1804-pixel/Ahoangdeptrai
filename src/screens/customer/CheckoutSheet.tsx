@@ -38,7 +38,7 @@ function noticeText(n: RevalidationNotice): string {
 
 export function CheckoutSheet({ source, preferredAddressId, onClose }: { source: CheckoutSource; preferredAddressId?: string; onClose: () => void }) {
   const { state, now, run } = useStore();
-  const { customerActor, openModal, showToast, setCustomerTab } = useUi();
+  const { customerActor, openModal, showToast, openOrders } = useUi();
   const customerId = customerActor.id!;
 
   // Đặt từ giỏ: chỉ các sản phẩm khách đã chọn; sản phẩm không chọn vẫn ở lại giỏ.
@@ -154,7 +154,7 @@ export function CheckoutSheet({ source, preferredAddressId, onClose }: { source:
       openModal({ type: 'payment', txId: outcome.transaction.id });
     } else {
       onClose();
-      setCustomerTab('orders');
+      openOrders('all');
       showToast(outcome.reused ? 'Lần đặt này đã được tạo trước đó.' : `Đã tạo ${outcome.checkout.orderIds.length} đơn. Đơn thanh toán khi nhận hàng đang chờ HTX xác nhận.`);
     }
   };
