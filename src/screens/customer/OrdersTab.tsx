@@ -1,95 +1,193 @@
-import { useState } from 'react';
+import { useId } from 'react';
 import { MessageSquareWarning } from 'lucide-react';
 import { useUi } from '../../app/UiContext';
 import { PAGE_X } from '../../app/layout';
 import { SectionHeading } from '../../components/Brand';
 import { EmptyState, ErrorState } from '../../components/EmptyState';
 import { OrderStatusBadge, PaymentStatusBadge } from '../../components/StatusBadge';
+import { SwipeTabs } from '../../components/SwipeTabs';
 import { listOrdersFor } from '../../domain/access';
 import { unreadCount } from '../../domain/orderContact';
+import { itemsAwaitingReview, ORDER_TABS, ordersInTab, refundSummary, reorderToCart, suggestedProducts, tabCounts, tabOf, type OrderTabKey } from '../../domain/orderTabs';
 import { formatMoney } from '../../domain/pricing';
-import { ORDER_KIND_LABEL, ORDER_STATUS_LABEL, ORDER_STATUSES, type OrderStatus } from '../../domain/types';
+import { ORDER_KIND_LABEL, type Order } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
+import { ProductCard } from './ExploreTab';
 
-/** Đơn mua của tôi theo tab trạng thái (FR-DH-01). Đơn mới hiện ngay sau khi đặt (L4). */
+/**
+ * Đơn mua của tôi (FR-DH-01), kiểu "Đơn đã mua" theo video mẫu của chủ repo: hàng tab theo trạng thái,
+ * vuốt ngang để sang tab bên cạnh. Đơn mới hiện ngay sau khi đặt (L4). Tab trống có gợi ý "Có thể bạn cũng thích".
+ */
 export function OrdersTab() {
   const { state } = useStore();
-  const { customerActor, openModal } = useUi();
-  const [filter, setFilter] = useState<OrderStatus | 'all'>('all');
+  const { customerActor, openModal, orderTab, setOrderTab } = useUi();
   const listed = listOrdersFor(state, customerActor);
   if (!listed.ok) return <ErrorState>{listed.error}</ErrorState>;
   const mine = listed.value;
-  const counts = Object.fromEntries(ORDER_STATUSES.map((s) => [s, mine.filter((o) => o.status === s).length])) as Record<OrderStatus, number>;
-  const shown = filter === 'all' ? mine : mine.filter((o) => o.status === filter);
+  const counts = tabCounts(mine);
 
   return (
-    <div className={`w-full space-y-4 pt-5 pb-8 md:pt-8 ${PAGE_X}`}>
-      <SectionHeading
-        eyebrow="Đơn hàng"
-        title="Đơn mua của tôi"
-        action={
-          <button onClick={() => openModal({ type: 'complaint' })} className="flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border border-champagne-300 bg-white px-4 text-sm font-semibold text-forest-900 hover:bg-champagne-50">
-            <MessageSquareWarning size={16} aria-hidden="true" />
-            Khiếu nại
-          </button>
-        }
+    <div className="w-full pb-8">
+      <div className={`pt-5 pb-3 md:pt-8 ${PAGE_X}`}>
+        <SectionHeading
+          eyebrow="Đơn hàng"
+          title="Đơn mua của tôi"
+          action={
+            <button
+              onClick={() => openModal({ type: 'complaint' })}
+              className="flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border border-champagne-300 bg-white px-4 text-sm font-semibold text-forest-900 hover:bg-champagne-50"
+            >
+              <MessageSquareWarning size={16} aria-hidden="true" />
+              Khiếu nại
+            </button>
+          }
+        />
+      </div>
+      <SwipeTabs
+        label="Đơn theo trạng thái"
+        tabs={ORDER_TABS.map((t) => ({ key: t.key, label: t.label, count: t.key === 'all' ? 0 : counts[t.key] }))}
+        active={orderTab}
+        onChange={setOrderTab}
+        barClassName={`sticky top-[calc(var(--app-header-h,0px)+var(--customer-bar-h,0px))] z-20 ${PAGE_X}`}
+        renderPanel={(key) => <OrdersPanel tab={key} orders={ordersInTab(mine, key)} />}
       />
+    </div>
+  );
+}
 
-      <div className="no-scrollbar flex gap-2 overflow-x-auto" role="tablist" aria-label="Lọc đơn theo trạng thái">
-        <button role="tab" aria-selected={filter === 'all'} onClick={() => setFilter('all')} className={`min-h-11 whitespace-nowrap rounded-full px-4 text-sm font-medium ${filter === 'all' ? 'bg-forest-900 text-champagne-100 ring-1 ring-champagne-400/60' : 'border border-champagne-300/80 bg-white/80 text-stone-700'}`}>
-          Tất cả ({mine.length})
-        </button>
-        {ORDER_STATUSES.filter((s) => counts[s] > 0).map((s) => (
-          <button key={s} role="tab" aria-selected={filter === s} onClick={() => setFilter(s)} className={`min-h-11 whitespace-nowrap rounded-full px-4 text-sm font-medium ${filter === s ? 'bg-forest-900 text-champagne-100 ring-1 ring-champagne-400/60' : 'border border-champagne-300/80 bg-white/80 text-stone-700'}`}>
-            {ORDER_STATUS_LABEL[s]} ({counts[s]})
-          </button>
+function OrdersPanel({ tab, orders }: { tab: OrderTabKey; orders: Order[] }) {
+  if (orders.length === 0) {
+    return (
+      <div className={`space-y-8 pt-5 ${PAGE_X}`}>
+        <EmptyState>{tab === 'all' ? 'Bạn chưa có đơn hàng nào.' : `Chưa có đơn nào ở mục "${tabOf(tab).label}".`}</EmptyState>
+        <Suggestions />
+      </div>
+    );
+  }
+  return (
+    <ul className={`grid gap-3 pt-4 lg:grid-cols-2 2xl:grid-cols-3 ${PAGE_X}`}>
+      {orders.map((o) => (
+        <OrderCard key={o.id} order={o} />
+      ))}
+    </ul>
+  );
+}
+
+/** "Có thể bạn cũng thích": sản phẩm đang bán khách chưa mua. */
+function Suggestions() {
+  const { state } = useStore();
+  const { customerActor } = useUi();
+  const titleId = useId();
+  const products = suggestedProducts(state, customerActor.id!, 6);
+  if (products.length === 0) return null;
+  return (
+    <section aria-labelledby={titleId} className="space-y-4">
+      <h3 id={titleId} className="flex items-center gap-3 text-sm font-semibold text-stone-700">
+        <span aria-hidden="true" className="h-px flex-1 bg-champagne-300" />
+        Có thể bạn cũng thích
+        <span aria-hidden="true" className="h-px flex-1 bg-champagne-300" />
+      </h3>
+      <div className="grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-3 md:gap-x-5 md:gap-y-6 lg:grid-cols-4 xl:grid-cols-5 min-[1800px]:grid-cols-6">
+        {products.map((p) => (
+          <ProductCard key={p.id} product={p} />
         ))}
       </div>
+    </section>
+  );
+}
 
-      {shown.length === 0 ? (
-        <EmptyState>{mine.length === 0 ? 'Bạn chưa có đơn nào.' : 'Không có đơn ở trạng thái này.'}</EmptyState>
-      ) : (
-        <ul className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
-          {shown.map((o) => {
-            const tx = state.transactions.find((t) => t.status === 'pending' && t.orderIds.includes(o.id));
-            const unread = unreadCount(state, o, 'customer');
-            return (
-              <li key={o.id}>
-                <button
-                  onClick={() => openModal({ type: 'order_detail', orderId: o.id })}
-                  className="relative h-full w-full space-y-2.5 overflow-hidden rounded-3xl border border-champagne-200 bg-white p-4 pl-5 text-left shadow-[0_10px_28px_rgb(31,77,58,0.06)] hover:border-champagne-400"
-                >
-                  <span aria-hidden="true" className="absolute inset-y-0 left-0 w-1.5 bg-linear-to-b from-champagne-300 to-champagne-600" />
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div>
-                      <span className="block font-mono text-sm font-bold text-ink">{o.id}</span>
-                      <span className="text-xs text-muted">
-                        {new Date(o.createdAt).toLocaleString('vi-VN')} · {o.coopName} · {ORDER_KIND_LABEL[o.kind]}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap gap-1">
-                      <OrderStatusBadge status={o.status} />
-                      <PaymentStatusBadge status={o.paymentStatus} />
-                    </div>
-                  </div>
-                  <p className="font-display text-base font-semibold text-ink">{o.items.map((i) => `${i.name} × ${i.quantity}`).join(', ')}</p>
-                  <div className="flex items-baseline justify-between border-t border-dashed border-champagne-300 pt-2 text-sm">
-                    <span className="text-stone-600">Tổng đơn</span>
-                    <span className="font-display text-lg font-semibold tabular-nums text-forest-900">{formatMoney(o.pricing.total)}</span>
-                  </div>
-                  {tx && <p className="rounded-lg bg-champagne-100 px-2 py-1 text-sm font-semibold text-champagne-900">Chờ thanh toán {formatMoney(tx.amounts[o.id] ?? 0)} – bấm để tiếp tục</p>}
-                  {o.cancelRequest?.status === 'pending' && <p className="text-sm text-champagne-800">Đã gửi yêu cầu huỷ, chờ HTX duyệt.</p>}
-                  {unread > 0 && (
-                    <p className="inline-flex rounded-full bg-forest-900 px-3 py-1 text-xs font-bold text-champagne-100">
-                      {unread} tin mới từ {o.coopName}
-                    </p>
-                  )}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+const REBUY_STATUSES: Order['status'][] = ['delivered', 'cancelled', 'return_refund', 'returning', 'returned'];
+
+const actionClass = {
+  primary: 'min-h-11 rounded-full bg-forest-900 px-4 text-sm font-bold text-champagne-100 hover:bg-forest-800',
+  secondary: 'min-h-11 rounded-full border border-champagne-300 bg-white px-4 text-sm font-semibold text-forest-900 hover:bg-champagne-50',
+};
+
+function OrderCard({ order: o }: { order: Order }) {
+  const { state, run } = useStore();
+  const { customerActor, openModal, showToast } = useUi();
+  const tx = state.transactions.find((t) => t.status === 'pending' && t.orderIds.includes(o.id));
+  const unread = unreadCount(state, o, 'customer');
+  const refund = refundSummary(state, o.id);
+  const toReview = itemsAwaitingReview(state, o);
+  const canRebuy = REBUY_STATUSES.includes(o.status);
+
+  const rebuy = () => {
+    const r = run(
+      (s, at) => reorderToCart(s, customerActor, o.id, at),
+      (v) => v.state,
+    );
+    if (!r.ok) {
+      showToast(r.error);
+      return;
+    }
+    const skipped = r.value.skipped.map((x) => `${x.name} ${x.reason}`).join('; ');
+    showToast(`Đã thêm ${r.value.added.length} sản phẩm vào giỏ.${skipped ? ` Bỏ qua: ${skipped}.` : ''}`);
+    openModal({ type: 'cart' });
+  };
+
+  return (
+    <li className="relative flex flex-col overflow-hidden rounded-3xl border border-champagne-200 bg-white shadow-[0_10px_28px_rgb(31,77,58,0.06)] hover:border-champagne-400">
+      <span aria-hidden="true" className="absolute inset-y-0 left-0 w-1.5 bg-linear-to-b from-champagne-300 to-champagne-600" />
+      <button onClick={() => openModal({ type: 'order_detail', orderId: o.id })} className="w-full flex-1 space-y-2.5 p-4 pl-5 text-left">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <span className="block font-mono text-sm font-bold text-ink">{o.id}</span>
+            <span className="text-xs text-muted">
+              {new Date(o.createdAt).toLocaleString('vi-VN')} · {o.coopName} · {ORDER_KIND_LABEL[o.kind]}
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-1">
+            <OrderStatusBadge status={o.status} />
+            <PaymentStatusBadge status={o.paymentStatus} />
+          </div>
+        </div>
+        <p className="font-display text-base font-semibold text-ink">{o.items.map((i) => `${i.name} × ${i.quantity}`).join(', ')}</p>
+        <div className="flex items-baseline justify-between border-t border-dashed border-champagne-300 pt-2 text-sm">
+          <span className="text-stone-600">Tổng đơn</span>
+          <span className="font-display text-lg font-semibold tabular-nums text-forest-900">{formatMoney(o.pricing.total)}</span>
+        </div>
+        {refund && (
+          <p className="flex items-baseline justify-between gap-2 text-sm">
+            <span className="text-stone-600">Số tiền hoàn</span>
+            <span>
+              <span className="font-semibold tabular-nums text-ink">{formatMoney(refund.amount)}</span> · <span className="font-semibold text-forest-800">{refund.label}</span>
+            </span>
+          </p>
+        )}
+        {tx && <p className="rounded-lg bg-champagne-100 px-2 py-1 text-sm font-semibold text-champagne-900">Chờ thanh toán {formatMoney(tx.amounts[o.id] ?? 0)}</p>}
+        {o.cancelRequest?.status === 'pending' && <p className="text-sm text-champagne-800">Đã gửi yêu cầu huỷ, chờ HTX duyệt.</p>}
+        {toReview.length > 0 && <p className="text-sm font-semibold text-champagne-800">Chờ bạn đánh giá {toReview.length} sản phẩm</p>}
+        {unread > 0 && (
+          <p className="inline-flex rounded-full bg-forest-900 px-3 py-1 text-xs font-bold text-champagne-100">
+            {unread} tin mới từ {o.coopName}
+          </p>
+        )}
+      </button>
+      {(tx || toReview.length > 0 || refund || canRebuy) && (
+        <div className="flex flex-wrap justify-end gap-2 border-t border-champagne-100 px-4 py-3 pl-5">
+          {refund && (
+            <button type="button" onClick={() => openModal({ type: 'order_detail', orderId: o.id })} className={actionClass.secondary}>
+              Xem hoàn tiền
+            </button>
+          )}
+          {canRebuy && (
+            <button type="button" onClick={rebuy} className={toReview.length > 0 ? actionClass.secondary : actionClass.primary}>
+              Mua lại
+            </button>
+          )}
+          {toReview.length > 0 && (
+            <button type="button" onClick={() => openModal({ type: 'review', orderId: o.id, productId: toReview[0].productId })} className={actionClass.primary}>
+              Đánh giá
+            </button>
+          )}
+          {tx && (
+            <button type="button" onClick={() => openModal({ type: 'payment', txId: tx.id })} className={actionClass.primary}>
+              Thanh toán
+            </button>
+          )}
+        </div>
       )}
-    </div>
+    </li>
   );
 }
