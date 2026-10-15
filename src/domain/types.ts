@@ -413,6 +413,30 @@ export interface Order {
   deliveredAt?: string;
   cancelRequest?: { reason: string; at: string; status: ChangeRequestStatus; rejectReason?: string };
   cancelReason?: string;
+  /** Lần cuối khách / HTX mở phần trao đổi của đơn (để đếm tin chưa đọc). */
+  chatReadAt?: { customer?: string; coop?: string };
+}
+
+/** Kết quả cuộc gọi HTX ghi lại sau khi gọi khách. */
+export type CallOutcome = 'scheduled' | 'callback' | 'no_answer';
+
+export const CALL_OUTCOME_LABEL: Record<CallOutcome, string> = {
+  scheduled: 'Đã hẹn lịch giao',
+  callback: 'Khách hẹn gọi lại',
+  no_answer: 'Không liên lạc được',
+};
+
+/** Tin nhắn trao đổi giữa khách và HTX trong một đơn; cuộc gọi HTX ghi lại cũng hiện ở đây. */
+export interface OrderMessage {
+  id: string;
+  orderId: string;
+  sender: 'customer' | 'coop';
+  senderName: string;
+  kind: 'text' | 'call';
+  text: string;
+  /** Chỉ có với cuộc gọi. */
+  callOutcome?: CallOutcome;
+  at: string;
 }
 
 export interface Checkout {
@@ -703,4 +727,6 @@ export interface DemoState {
   reviews: Review[];
   /** Ngày (yyyy-mm-dd) đã gửi cảnh báo tồn thấp cho từng sản phẩm, để tối đa 1 lần/ngày. */
   lowStockAlerts: Record<string, string>;
+  /** Trao đổi theo đơn giữa khách và HTX. Không bắt buộc để dữ liệu đã lưu từ bản trước vẫn đọc được. */
+  orderMessages?: OrderMessage[];
 }

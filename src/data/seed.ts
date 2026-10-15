@@ -247,6 +247,7 @@ function baseState(now: Date): DemoState {
     ledgerEntries: [],
     reviews: [],
     lowStockAlerts: {},
+    orderMessages: [],
   };
 }
 

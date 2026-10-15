@@ -1,23 +1,32 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useUi } from '../../app/UiContext';
 import { BottomSheet } from '../../components/BottomSheet';
+import { OrderChat } from '../../components/OrderChat';
+import { OrderJourney } from '../../components/OrderJourney';
 import { DangerButton, PrimaryButton, ReasonPrompt, SecondaryButton } from '../../components/form';
 import { OrderStatusBadge, PaymentStatusBadge } from '../../components/StatusBadge';
 import { getOrderFor } from '../../domain/access';
+import { readyMessageTemplate } from '../../domain/orderContact';
 import { coopCannotSupply, coopConfirm, coopDecideCancelRequest, coopHandover, coopReceiveReturn, coopReject, coopReportReady } from '../../domain/orders';
 import { formatMoney } from '../../domain/pricing';
 import { formatDateKey } from '../../domain/state';
 import { ORDER_KIND_LABEL, ORDER_STATUS_LABEL } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
+import { CoopContactCard } from './CoopContactCard';
 
 type Pending = null | 'reject' | 'cannot_supply' | 'reject_cancel';
 
-/** Đơn phía HTX: xác nhận / từ chối, báo sẵn sàng, đóng gói & bàn giao, nhận hàng hoàn, duyệt yêu cầu huỷ (FR-DH-08..10, 16, 17). */
+/**
+ * Đơn phía HTX: xác nhận / từ chối, báo sẵn sàng, đóng gói & bàn giao, nhận hàng hoàn, duyệt yêu cầu huỷ (FR-DH-08..10, 16, 17).
+ * Liên hệ khách (gọi điện, nhắn tin), hành trình đơn: chủ repo yêu cầu sau Giai đoạn 6.
+ */
 export function CoopOrderSheet({ orderId, onClose }: { orderId: string; onClose: () => void }) {
   const { state, run } = useStore();
   const { coopActor, showToast } = useUi();
   const [pending, setPending] = useState<Pending>(null);
   const [reason, setReason] = useState('');
+  const [prefill, setPrefill] = useState<{ text: string; nonce: number } | null>(null);
+  const chatInput = useRef<HTMLTextAreaElement>(null);
   const found = getOrderFor(state, coopActor, orderId);
   if (!found.ok) return null;
   const order = found.value;
@@ -113,6 +122,9 @@ export function CoopOrderSheet({ orderId, onClose }: { orderId: string; onClose:
           </>
         )}
         {order.status === 'awaiting_harvest' && !order.readyReportedAt && pending !== 'cannot_supply' && (
+          <p className="text-sm text-stone-700">Khi hàng vào mùa và đủ hàng giao, bấm "Báo sẵn sàng giao", rồi gọi điện hoặc nhắn tin cho khách để hẹn lịch giao.</p>
+        )}
+        {order.status === 'awaiting_harvest' && !order.readyReportedAt && pending !== 'cannot_supply' && (
           <div className="grid grid-cols-2 gap-2">
             <DangerButton onClick={() => setPending('cannot_supply')}>Không cung cấp được</DangerButton>
             <PrimaryButton onClick={() => act((s, t) => coopReportReady(s, order.id, coopActor, t), 'Đã báo hàng sẵn sàng.')}>Báo sẵn sàng giao</PrimaryButton>
@@ -141,8 +153,19 @@ export function CoopOrderSheet({ orderId, onClose }: { orderId: string; onClose:
         )}
       </section>
 
-      <section className="space-y-1">
-        <h4 className="text-sm font-bold text-stone-700">Lịch sử trạng thái</h4>
+      <CoopContactCard
+        order={order}
+        onMessage={() => {
+          chatInput.current?.focus();
+          chatInput.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        }}
+        onTemplate={() => setPrefill({ text: readyMessageTemplate(state, order), nonce: Date.now() })}
+      />
+      <OrderChat order={order} side="coop" prefill={prefill} inputRef={chatInput} />
+      <OrderJourney order={order} />
+
+      <details className="group space-y-1">
+        <summary className="flex min-h-11 cursor-pointer items-center text-sm font-bold text-stone-700">Lịch sử trạng thái chi tiết</summary>
         <ol className="space-y-1 border-l-2 border-stone-200 pl-3 text-sm">
           {order.statusHistory.map((h, i) => (
             <li key={i}>
@@ -151,7 +174,7 @@ export function CoopOrderSheet({ orderId, onClose }: { orderId: string; onClose:
             </li>
           ))}
         </ol>
-      </section>
+      </details>
     </BottomSheet>
   );
 }

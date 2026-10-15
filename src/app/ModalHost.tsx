@@ -1,21 +1,24 @@
+import { lazy, Suspense } from 'react';
 import { BottomSheet } from '../components/BottomSheet';
 import { DemoPanel } from '../components/DemoPanel';
 import { ListBoundary } from '../components/ListBoundary';
 import { NotificationsSheet } from '../components/NotificationsSheet';
-import { CoopOrderSheet } from '../screens/coop/CoopOrderSheet';
 import { AddressBookSheet } from '../screens/customer/AddressBookSheet';
 import { AddressFormSheet } from '../screens/customer/AddressFormSheet';
 import { CartSheet } from '../screens/customer/CartSheet';
-import { CheckoutSheet } from '../screens/customer/CheckoutSheet';
-import { ComplaintSheet } from '../screens/customer/ComplaintSheet';
-import { OrderDetailSheet } from '../screens/customer/OrderDetailSheet';
 import { PaymentSheet } from '../screens/customer/PaymentSheet';
-import { ReviewSheet } from '../screens/customer/ReviewSheet';
-import { CoopProductFormSheet } from '../screens/coop/CoopProductFormSheet';
 import { ProductDetailSheet } from '../screens/customer/ProductDetailSheet';
 import { TraceLotSheet } from '../screens/customer/TraceLotSheet';
 import { useStore } from '../store/AppDataContext';
 import { useUi } from './UiContext';
+
+// Sheet ít mở hoặc chỉ dùng ở màn HTX: tải khi mở lần đầu, để phần tải ban đầu của app nhẹ hơn.
+const CheckoutSheet = lazy(() => import('../screens/customer/CheckoutSheet').then((m) => ({ default: m.CheckoutSheet })));
+const OrderDetailSheet = lazy(() => import('../screens/customer/OrderDetailSheet').then((m) => ({ default: m.OrderDetailSheet })));
+const ComplaintSheet = lazy(() => import('../screens/customer/ComplaintSheet').then((m) => ({ default: m.ComplaintSheet })));
+const ReviewSheet = lazy(() => import('../screens/customer/ReviewSheet').then((m) => ({ default: m.ReviewSheet })));
+const CoopOrderSheet = lazy(() => import('../screens/coop/CoopOrderSheet').then((m) => ({ default: m.CoopOrderSheet })));
+const CoopProductFormSheet = lazy(() => import('../screens/coop/CoopProductFormSheet').then((m) => ({ default: m.CoopProductFormSheet })));
 
 /** Hiển thị đúng một sheet đang mở. Sheet nhận mã bản ghi và đọc dữ liệu mới nhất từ store. */
 export function ModalHost() {
@@ -25,7 +28,9 @@ export function ModalHost() {
   // Sheet gặp lỗi thì hiện sheet báo lỗi thay vì làm trắng cả app (mục 10.5).
   return (
     <ListBoundary key={modal.type} label="cửa sổ này" resetKey={state} wrap={(node) => <BottomSheet title="Có lỗi" onClose={closeModal}>{node}</BottomSheet>}>
-      <ModalContent />
+      <Suspense fallback={null}>
+        <ModalContent />
+      </Suspense>
     </ListBoundary>
   );
 }

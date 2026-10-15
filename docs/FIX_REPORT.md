@@ -33,6 +33,148 @@ npm test         # unit test vitest: src/domain, dữ liệu mẫu, quy ước g
 
 ---
 
+## Sau Giai đoạn 6 – Biểu đồ sản phẩm bán chạy cho HTX
+
+**Yêu cầu của chủ repo:** thêm biểu đồ xem sản phẩm bán chạy cho bên HTX.
+
+### Trên màn hình
+
+- **Màn HTX có thêm tab "Bán chạy".** Tab đặt sau "Sản phẩm"; thanh tab chia 4 cột (3 cột ở màn dưới 360px). Số đơn chờ xác nhận chuyển thành chấm ở góc tab "Đơn hàng" để chữ không xuống dòng.
+- **Bộ lọc:** một hàng phía trên, áp cho mọi số liệu bên dưới.
+  - Khoảng thời gian: 7 ngày / 30 ngày / Tất cả.
+  - Xếp theo: Số lượng / Tiền hàng.
+- **Ba ô số liệu:**
+  - Tiền hàng;
+  - Số đơn;
+  - Sản phẩm có đơn (vd. 2/3 sản phẩm đang bán).
+
+  Màn hẹp dưới 360px xếp thành 3 dòng để số không bị tràn.
+- **Biểu đồ thanh ngang xếp hạng:**
+  - Tên sản phẩm phía trên thanh, giá trị ở đầu thanh (vd. "4 gói 500 g" hoặc "405.000đ").
+  - Rê chuột hoặc chạm vào một dòng thì hiện đủ số liệu: số lượng, số đơn, tiền hàng.
+  - Có nút "Xem dạng bảng" với hạng, sản phẩm, số lượng, số đơn, tiền hàng.
+- **Ghi chú dưới biểu đồ:** cách tính, số sản phẩm đang bán chưa có đơn. Khi xếp theo số lượng mà các sản phẩm có đơn vị tính khác nhau (gói, hộp, kg), ghi chú gợi ý xếp theo tiền hàng để so sánh sát hơn.
+- **Chưa có đơn trong khoảng thời gian:** báo "Số liệu sẽ hiện khi khách đặt hàng", có nút "Xem tất cả".
+
+### Cách tính (`src/domain/salesStats.ts`)
+
+- **Số liệu tính từ đơn thật trong dữ liệu.** Không thêm đơn mẫu hay số lượng mẫu nào cho biểu đồ (mục 9.1 cấm số lượt bán bịa). Vì vậy với dữ liệu mẫu ban đầu, mỗi HTX chỉ có 0–1 đơn; biểu đồ đầy dần khi khách đặt hàng trong demo.
+- **Đơn được tính:** khách đã đặt xong (đã thanh toán hoặc trả khi nhận), gồm Chờ xác nhận, Đã xác nhận, Chờ thu hoạch, Đang chuẩn bị, Đang giao, Đã giao. Không tính đơn chờ thanh toán, đã huỷ, trả hàng.
+- **Thời gian** tính theo lúc tạo đơn và đồng hồ demo (tua thời gian thì số liệu đổi theo).
+- **Tiền hàng** = giá bán × số lượng. Phí giao không tính; mã ưu đãi do sàn chịu.
+
+### Thiết kế biểu đồ
+
+Làm theo hướng dẫn biểu đồ (dataviz):
+- **Dạng biểu đồ:** sản phẩm là các nhóm không có thứ tự, nên dùng thanh ngang (tên dài đọc được). Một chuỗi số liệu nên mọi thanh cùng một màu, không tô màu theo độ lớn, không có hộp chú giải (tiêu đề đã nói đang xếp theo gì).
+- **Màu:** các bậc xanh rừng của app quá nhạt màu để làm thanh; công cụ kiểm màu `validate_palette.js` báo "nhìn như xám" (độ bão hoà 0,07–0,08, dưới ngưỡng 0,10). App dùng `--color-chart-1: #1F7A55`, cùng tông xanh rừng nhưng đậm màu hơn, đạt mọi kiểm tra: trong dải sáng, đủ bão hoà, tương phản ≥ 3:1 trên nền trắng.
+- **Thanh:** dày 16px, đầu thanh bo 4px, gốc thẳng. Thanh dài nhất chừa chỗ cho chữ giá trị, nên chữ không bị cắt.
+- **Chữ:** dùng màu chữ thường, không dùng màu của thanh. Số liệu ở các ô dùng chữ không chân, chữ số không dàn đều; bảng dùng chữ số dàn đều để thẳng cột.
+- **Không chỉ xem được bằng rê chuột:** giá trị ghi sẵn ở đầu thanh và có trong bảng. Dòng nào cũng chọn được bằng bàn phím, kèm nhãn đọc màn hình đủ số liệu.
+- **Không làm chế độ tối:** app chưa có chế độ tối nên biểu đồ chỉ kiểm trên nền sáng.
+
+### Kiểm thử
+
+- **Lint, test, build:** lint không lỗi; 21 file, 164 test đạt (thêm test cách tính); build thành công, không cảnh báo.
+  - Test cách tính:
+    - chỉ đơn của đúng HTX;
+    - bỏ đơn chưa trả cọc, đơn đã huỷ, đơn của HTX khác;
+    - lọc theo 7 / 30 ngày / tất cả;
+    - xếp theo số lượng và theo tiền hàng;
+    - HTX chưa có đơn.
+- **Playwright ở 320px và 390px:**
+  1. Khách đặt thêm 2 hộp mứt và 4 gói phở hồng của HTX Bắc Hà.
+  2. Tab "Bán chạy" của HTX Bắc Hà hiện Phở hồng 4 gói, Mứt 3 hộp (1 hộp từ đơn mẫu); tiền hàng 665.000đ; 2 đơn; 2/3 sản phẩm có đơn.
+  3. Xếp theo tiền hàng thì Mứt (405.000đ) lên trước; khung số liệu khi chạm vào dòng và bảng hiện đúng.
+  4. HTX Sa Pa (chưa có đơn) hiện thông báo trống.
+
+  Kết quả: 0 lỗi axe, 0 vùng bấm dưới 44px, 0 chữ dưới 12px, không chữ nào bị tràn, không lỗi JS.
+- **Chạy lại các kịch bản cũ:** kiểm tra giao diện toàn app, Luồng 1, Luồng 2, luồng giao hàng hai máy đều đạt.
+
+---
+
+## Sau Giai đoạn 6 – Quá trình giao hàng, HTX gọi điện / nhắn tin với khách
+
+**Yêu cầu của chủ repo:** thêm quá trình giao hàng. Khi hàng đặt trước vào mùa, HTX xác nhận đơn, rồi gọi điện hoặc chat với khách.
+
+### Luồng đơn đặt trước
+
+Trạng thái đơn và quy tắc trong SRS giữ nguyên, chỉ thêm phần liên hệ và phần hiển thị:
+
+1. Khách đặt trước và trả cọc.
+2. HTX xác nhận đơn → đơn Chờ thu hoạch. Màn HTX hướng dẫn: "Khi hàng vào mùa và đủ hàng giao, bấm Báo sẵn sàng giao, rồi gọi điện hoặc nhắn tin cho khách để hẹn lịch giao".
+3. **Vào mùa:** HTX bấm "Báo sẵn sàng giao".
+   - Thẻ "Liên hệ khách" đổi màu và nhắc "Hàng đã vào mùa. Hãy gọi điện hoặc nhắn tin cho khách để hẹn lịch giao".
+   - Danh sách đơn của HTX gắn nhãn "Hàng vào mùa – cần liên hệ khách".
+   - Có nút "Dùng tin nhắn mẫu hẹn lịch giao", điền sẵn câu hẹn giao có tên khách, tên hàng, mã đơn, ngày giao dự kiến; HTX sửa rồi gửi.
+4. **HTX liên hệ khách:**
+   - **Gọi điện:** mở ứng dụng gọi trên máy của HTX (`tel:`), với số người nhận đã có trên phiếu đóng gói. Đơn quà gửi người khác thì gọi người đặt, để giữ bất ngờ cho người nhận.
+   - **Ghi kết quả cuộc gọi:** gọi xong, HTX chọn Đã hẹn lịch giao / Khách hẹn gọi lại / Không liên lạc được, kèm ghi chú (vd. "giao sáng thứ Bảy").
+   - **Nhắn tin:** nhắn trong đơn.
+   - Khách nhận thông báo, có cả khi HTX gọi.
+5. Khách trả phần còn lại (hoặc trả khi nhận nếu là COD) → HTX đóng gói, bàn giao vận chuyển → đang giao → đã nhận hàng.
+
+### Hành trình đơn hàng (khách và HTX cùng thấy)
+
+- **Các bước của đơn:**
+  - Đặt trước và trả cọc;
+  - HTX xác nhận đơn;
+  - Vào mùa – HTX báo hàng sẵn sàng;
+  - HTX gọi điện / nhắn tin hẹn lịch giao;
+  - Trả phần còn lại;
+  - Đóng gói, bàn giao vận chuyển;
+  - Đang giao;
+  - Đã nhận hàng.
+
+  Đơn mua sẵn không có các bước vào mùa, liên hệ, trả phần còn lại.
+- **Mỗi bước có trạng thái** đã xong / đang chờ / sắp tới, kèm thời điểm và chi tiết, vd. "Gọi điện: Đã hẹn lịch giao – giao sáng thứ Bảy", "Trả 175.000đ trước …", "Đơn vị vận chuyển đã lấy hàng".
+- **Bước liên hệ không chặn các bước khác:** khách vẫn trả phần còn lại được trước khi HTX gọi. Chưa liên hệ mà đã bàn giao vận chuyển thì bước này ghi "Không ghi nhận liên hệ".
+- **Đơn huỷ hoặc trả hàng:** chỉ giữ các bước đã xong, thêm dòng kết thúc kèm lý do.
+- Lịch sử trạng thái chi tiết vẫn còn, gom vào mục thu gọn "Lịch sử trạng thái chi tiết".
+
+### Trao đổi theo đơn
+
+- **Mỗi đơn có phần "Trao đổi với HTX…"** (khách) / "Trao đổi với khách" (HTX).
+  - Tin nhắn lưu trong dữ liệu dùng chung, nên máy khách và máy HTX cùng thấy; app hỏi dữ liệu mới mỗi 10 giây và khi quay lại app.
+  - Cuộc gọi HTX ghi lại hiện thành một dòng riêng, có biểu tượng điện thoại.
+- **Đếm tin chưa đọc:** danh sách đơn ghi "2 tin mới từ HTX…" / "1 tin mới từ khách"; mở đơn là đã đọc. Có thông báo ở chuông.
+- **Giới hạn:**
+  - Chỉ khách đặt đơn và HTX của đơn nhắn được.
+  - Đơn chưa thanh toán xong hoặc đã huỷ thì không nhắn; đơn huỷ thì hướng dẫn gửi khiếu nại cho CSKH.
+  - Tin tối đa 1.000 ký tự, ghi chú cuộc gọi tối đa 300.
+- **Dữ liệu:** thêm `orderMessages` (không bắt buộc) và `Order.chatReadAt`. Dữ liệu đã lưu từ bản trước, kể cả trên máy chủ dùng chung, vẫn đọc được, không phải xoá dữ liệu.
+
+### Mã nguồn
+
+- **Nghiệp vụ:** `src/domain/orderContact.ts` (gửi tin, ghi cuộc gọi, đếm / đánh dấu đã đọc, số cần gọi, tin nhắn mẫu, hành trình đơn).
+- **Thông báo:** trong `notifications.ts`.
+- **Giao diện:**
+  - `src/components/OrderJourney.tsx`, `src/components/OrderChat.tsx` (dùng chung cho khách và HTX);
+  - `src/screens/coop/CoopContactCard.tsx` (thẻ Liên hệ khách của HTX).
+- **Tải chậm:** các sheet đặt hàng, chi tiết đơn, khiếu nại, đánh giá và các sheet của HTX tải khi mở lần đầu. Phần tải ban đầu của app giảm từ 514 kB xuống 356 kB (gzip 108 kB) và hết cảnh báo dung lượng.
+- **Sửa thêm:** `vite.config.ts` import file API kèm đuôi `.ts`, hết cảnh báo cấu hình của Vite 8 (có từ lần thêm API).
+
+### Kiểm thử
+
+- **Lint, test, build:** lint không lỗi; 20 file, 162 test đạt; build thành công, không cảnh báo.
+- **Test nghiệp vụ mới:**
+  - cả luồng đặt trước → xác nhận → vào mùa → gọi điện → trả phần còn lại → bàn giao → giao xong, kiểm từng bước của hành trình;
+  - bước liên hệ "bỏ qua"; đơn huỷ;
+  - nhắn qua lại, đếm và đánh dấu đã đọc, thông báo đúng người;
+  - chặn người ngoài đơn, tin rỗng / quá dài, đơn chưa thanh toán / đã huỷ;
+  - dữ liệu cũ chưa có phần trao đổi;
+  - số cần gọi với đơn quà; tin nhắn mẫu.
+- **Playwright trên hai máy (khách và HTX), dùng chung dữ liệu qua API, ở 320px và 390px:**
+  1. Khách đặt trước mận và trả cọc.
+  2. HTX xác nhận → báo sẵn sàng → thấy lời nhắc, nhãn "cần liên hệ khách", nút gọi `tel:0900000002` → gửi tin nhắn mẫu → ghi cuộc gọi "Đã hẹn lịch giao".
+  3. Máy khách tự thấy "2 tin mới từ HTX mẫu Bắc Hà", mở đơn thấy tin nhắn, cuộc gọi và hành trình → trả lời → trả phần còn lại.
+  4. Máy HTX thấy "1 tin mới từ khách" → bàn giao vận chuyển; hành trình đúng tới "Đang giao".
+
+  Kết quả: 0 lỗi axe, 0 vùng bấm dưới 44px, 0 chữ dưới 12px, không lỗi JS.
+- **Chạy lại các kịch bản cũ:** kiểm tra giao diện toàn app, Luồng 1, Luồng 2, chọn số lượng, liên kết ngân hàng, giỏ hàng, địa chỉ, mã ưu đãi, GPS, đăng nhập Google đều đạt.
+
+---
+
 ## Sau Giai đoạn 6 – Địa chỉ theo GPS (Google Maps) và đăng nhập bằng Google
 
 **Yêu cầu của chủ repo:** thêm địa chỉ theo GPS; đăng nhập được bằng Gmail. Chủ repo đã chọn:
@@ -1169,6 +1311,9 @@ Ngoài các ca trên còn có test cho:
 57. **Khung Hà Nội cho GPS là khung toạ độ gần đúng** (vĩ độ 20,53–21,39; kinh độ 105,28–106,03), rộng hơn ranh giới thật một chút. Google trả về tỉnh khác thì vẫn báo ngoài Hà Nội.
 58. **Chỉ khách hàng đăng nhập được bằng Google.** Tài khoản HTX, Admin, QLNN vẫn do Admin cấp và đăng nhập bằng SĐT.
 59. **Tài khoản Google mô phỏng và Google thật là hai tài khoản khác nhau,** kể cả khi cùng email.
+60. **"Vào mùa" là lúc HTX bấm Báo sẵn sàng giao.** App không tự đoán ngày vào mùa; ngày giao dự kiến lấy từ ngày giao của đơn.
+61. **Gọi điện dùng điện thoại của HTX** (mở ứng dụng gọi của máy), không qua tổng đài. App không biết kết quả cuộc gọi nên HTX tự ghi lại.
+62. **Khách nhắn tin cho HTX, không có nút gọi HTX,** vì dữ liệu chưa có số liên hệ của HTX dành cho khách. Cần hỗ trợ ngoài đơn thì dùng Khiếu nại / CSKH như trước.
 
 ## Vấn đề chờ nhóm chốt
 
