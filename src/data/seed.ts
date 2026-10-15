@@ -248,6 +248,7 @@ function baseState(now: Date): DemoState {
     reviews: [],
     lowStockAlerts: {},
     orderMessages: [],
+    harvests: [],
   };
 }
 

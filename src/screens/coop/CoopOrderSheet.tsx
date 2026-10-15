@@ -6,6 +6,7 @@ import { OrderJourney } from '../../components/OrderJourney';
 import { DangerButton, PrimaryButton, ReasonPrompt, SecondaryButton } from '../../components/form';
 import { OrderStatusBadge, PaymentStatusBadge } from '../../components/StatusBadge';
 import { getOrderFor } from '../../domain/access';
+import { harvestsForOrder, ordersAwaitingHarvest } from '../../domain/harvest';
 import { readyMessageTemplate } from '../../domain/orderContact';
 import { coopCannotSupply, coopConfirm, coopDecideCancelRequest, coopHandover, coopReceiveReturn, coopReject, coopReportReady } from '../../domain/orders';
 import { formatMoney } from '../../domain/pricing';
@@ -13,16 +14,17 @@ import { formatDateKey } from '../../domain/state';
 import { ORDER_KIND_LABEL, ORDER_STATUS_LABEL } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
 import { CoopContactCard } from './CoopContactCard';
+import { HarvestForm } from './HarvestForm';
 
-type Pending = null | 'reject' | 'cannot_supply' | 'reject_cancel';
+type Pending = null | 'reject' | 'cannot_supply' | 'reject_cancel' | 'harvest';
 
 /**
  * Đơn phía HTX: xác nhận / từ chối, báo sẵn sàng, đóng gói & bàn giao, nhận hàng hoàn, duyệt yêu cầu huỷ (FR-DH-08..10, 16, 17).
- * Liên hệ khách (gọi điện, nhắn tin), hành trình đơn: chủ repo yêu cầu sau Giai đoạn 6.
+ * Liên hệ khách (gọi điện, nhắn tin), hành trình đơn, xác nhận thu hoạch xong: chủ repo yêu cầu sau Giai đoạn 6.
  */
 export function CoopOrderSheet({ orderId, onClose }: { orderId: string; onClose: () => void }) {
   const { state, run } = useStore();
-  const { coopActor, showToast } = useUi();
+  const { coopActor, showToast, openModal } = useUi();
   const [pending, setPending] = useState<Pending>(null);
   const [reason, setReason] = useState('');
   const [prefill, setPrefill] = useState<{ text: string; nonce: number } | null>(null);
@@ -40,6 +42,12 @@ export function CoopOrderSheet({ orderId, onClose }: { orderId: string; onClose:
     }
   };
   const hidePrice = !!order.gift?.sendToOther;
+  // Đơn đặt trước chờ thu hoạch: sản phẩm nào chưa xác nhận thu hoạch thì xác nhận trước, xong hết mới báo sẵn sàng.
+  const awaitingHarvest = order.status === 'awaiting_harvest' && !order.readyReportedAt;
+  const harvestTarget = order.items.find((i) => !order.harvest?.[i.productId]);
+  const harvests = harvestsForOrder(state, order);
+  const multiProduct = order.items.length > 1;
+  const sameProductWaiting = awaitingHarvest && harvestTarget ? ordersAwaitingHarvest(state, harvestTarget.productId).length : 0;
 
   return (
     <BottomSheet
@@ -121,14 +129,49 @@ export function CoopOrderSheet({ orderId, onClose }: { orderId: string; onClose:
             </div>
           </>
         )}
-        {order.status === 'awaiting_harvest' && !order.readyReportedAt && pending !== 'cannot_supply' && (
-          <p className="text-sm text-stone-700">Khi hàng vào mùa và đủ hàng giao, bấm "Báo sẵn sàng giao", rồi gọi điện hoặc nhắn tin cho khách để hẹn lịch giao.</p>
+        {awaitingHarvest && (multiProduct || harvests.length > 0) && pending !== 'harvest' && (
+          <ul className="space-y-1 rounded-2xl border border-champagne-200 bg-champagne-50/60 p-3 text-sm" aria-label="Tình trạng thu hoạch">
+            {order.items.map((i) => {
+              const h = harvests.find((x) => x.id === order.harvest?.[i.productId]);
+              return (
+                <li key={i.productId} className="flex flex-wrap justify-between gap-x-2">
+                  <span className="font-semibold text-ink">{i.name}</span>
+                  <span className={h ? 'text-forest-800' : 'text-muted'}>{h ? `Thu hoạch ngày ${formatDateKey(h.harvestedOn)}` : 'Chờ thu hoạch'}</span>
+                </li>
+              );
+            })}
+          </ul>
         )}
-        {order.status === 'awaiting_harvest' && !order.readyReportedAt && pending !== 'cannot_supply' && (
-          <div className="grid grid-cols-2 gap-2">
-            <DangerButton onClick={() => setPending('cannot_supply')}>Không cung cấp được</DangerButton>
-            <PrimaryButton onClick={() => act((s, t) => coopReportReady(s, order.id, coopActor, t), 'Đã báo hàng sẵn sàng.')}>Báo sẵn sàng giao</PrimaryButton>
-          </div>
+        {awaitingHarvest && pending === 'harvest' && harvestTarget && (
+          <section className="space-y-3 rounded-3xl border border-champagne-300 bg-white p-4" aria-label="Xác nhận thu hoạch">
+            <h4 className="font-display text-lg font-semibold text-ink">Xác nhận thu hoạch{multiProduct ? `: ${harvestTarget.name}` : ''}</h4>
+            <p className="text-sm text-stone-700">
+              Đơn này cần {harvestTarget.quantity} {harvestTarget.unit} {harvestTarget.name}.
+            </p>
+            <HarvestForm key={harvestTarget.productId} productId={harvestTarget.productId} orderId={order.id} onDone={() => setPending(null)} onCancel={() => setPending(null)} />
+          </section>
+        )}
+        {awaitingHarvest && pending !== 'cannot_supply' && pending !== 'harvest' && (
+          <>
+            <p className="text-sm text-stone-700">
+              {harvestTarget
+                ? 'Thu hoạch xong thì bấm "Xác nhận đã thu hoạch xong" để khai ngày thu hoạch (kèm ảnh lô hàng nếu có), rồi gọi điện hoặc nhắn tin cho khách để hẹn lịch giao.'
+                : 'Đã thu hoạch xong. Khi hàng sẵn sàng, bấm "Báo sẵn sàng giao", rồi gọi điện hoặc nhắn tin cho khách để hẹn lịch giao.'}
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <DangerButton onClick={() => setPending('cannot_supply')}>Không cung cấp được</DangerButton>
+              {harvestTarget ? (
+                <PrimaryButton onClick={() => setPending('harvest')}>Xác nhận đã thu hoạch xong</PrimaryButton>
+              ) : (
+                <PrimaryButton onClick={() => act((s, t) => coopReportReady(s, order.id, coopActor, t), 'Đã báo hàng sẵn sàng.')}>Báo sẵn sàng giao</PrimaryButton>
+              )}
+            </div>
+            {harvestTarget && sameProductWaiting > 1 && (
+              <SecondaryButton className="w-full" onClick={() => openModal({ type: 'coop_harvest', productId: harvestTarget.productId })}>
+                Xác nhận cả lô {harvestTarget.name} ({sameProductWaiting} đơn đang chờ)
+              </SecondaryButton>
+            )}
+          </>
         )}
         {order.status === 'awaiting_harvest' && order.readyReportedAt && (
           <p className="text-sm text-stone-700">Đã báo sẵn sàng. Đang chờ khách trả phần còn lại (hạn {order.remainingDueAt ? new Date(order.remainingDueAt).toLocaleString('vi-VN') : '—'}).</p>

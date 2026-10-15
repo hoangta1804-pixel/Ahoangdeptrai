@@ -4,11 +4,11 @@
  * Thông báo được sinh bằng cách so dữ liệu trước và sau mỗi thao tác (deriveNotifications), nên mọi đường thay đổi
  * (người dùng bấm, tác vụ theo giờ, cổng thanh toán mô phỏng) đều sinh thông báo giống nhau.
  * Các sự kiện: đổi trạng thái đơn, kết quả duyệt, ticket, tồn thấp (tối đa 1 lần/ngày/sản phẩm), mời đánh giá,
- * tin nhắn / cuộc gọi trong đơn giữa khách và HTX.
+ * tin nhắn / cuộc gọi trong đơn giữa khách và HTX, HTX xác nhận thu hoạch.
  */
 import { generateId } from './ids';
 import { formatMoney } from './pricing';
-import { iso, remainingFor, toDateKey } from './state';
+import { formatDateKey, iso, remainingFor, toDateKey } from './state';
 import {
   CALL_OUTCOME_LABEL,
   ORDER_STATUS_LABEL,
@@ -64,6 +64,13 @@ function orderDrafts(prev: DemoState, next: DemoState, o: Order): Draft[] {
     }
   }
 
+  // Thu hoạch xong mà chưa báo sẵn sàng trong cùng thao tác: báo khách (báo sẵn sàng luôn thì thông báo sẵn sàng đã đủ).
+  const harvested = Object.keys(o.harvest ?? {}).filter((pid) => !before.harvest?.[pid]);
+  if (harvested.length > 0 && !before.readyReportedAt === !o.readyReportedAt) {
+    const records = harvested.map((pid) => (next.harvests ?? []).find((h) => h.id === o.harvest![pid])).filter((h) => !!h);
+    const what = records.map((h) => `${h.productName} (thu hoạch ngày ${formatDateKey(h.harvestedOn)})`).join(', ');
+    out.push({ userIds: customer, title: `${o.coopName} đã thu hoạch hàng đơn ${o.id}`, body: `${what}. HTX sẽ báo sẵn sàng giao và liên hệ hẹn lịch.`.slice(0, 200), link });
+  }
   if (!before.readyReportedAt && o.readyReportedAt && o.remainingDueAt) {
     out.push({
       userIds: customer,

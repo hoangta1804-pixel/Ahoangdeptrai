@@ -5,6 +5,7 @@
  * - Gọi điện: HTX gọi bằng điện thoại của mình (số người nhận đã có trên phiếu đóng gói), rồi ghi lại kết quả cuộc gọi.
  *   Kết quả hiện trong phần trao đổi để khách cũng thấy.
  */
+import { fullyHarvested, harvestsForOrder } from './harvest';
 import { generateId } from './ids';
 import { formatMoney } from './pricing';
 import { findOrder, formatDateKey, iso, replaceOrder } from './state';
@@ -141,6 +142,8 @@ export interface JourneyStep {
   state: StepState;
   at?: string;
   detail?: string;
+  /** Ảnh HTX đính kèm (bước thu hoạch). */
+  photos?: string[];
 }
 
 export interface Journey {
@@ -168,6 +171,14 @@ export function orderJourney(state: DemoState, order: Order): Journey {
   const steps: (Omit<JourneyStep, 'state'> & { done: boolean; ready: boolean; optional?: boolean; skip?: boolean })[] = [];
 
   if (order.kind === 'preorder') {
+    const harvests = harvestsForOrder(state, order);
+    // Đơn báo sẵn sàng từ trước khi có bước xác nhận thu hoạch: coi như đã thu hoạch.
+    const harvested = fullyHarvested(order) || !!order.readyReportedAt;
+    const multi = new Set(order.items.map((i) => i.productId)).size > 1;
+    const harvestDetail = harvests
+      .map((h) => `${multi ? `${h.productName}: ` : ''}Thu hoạch ngày ${formatDateKey(h.harvestedOn)}${h.note ? ` – ${h.note}` : ''}`)
+      .join('. ');
+    const pendingCount = order.items.filter((i) => !order.harvest?.[i.productId]).length;
     const contact = order.readyReportedAt ? firstCoopContactAfter(state, order, order.readyReportedAt) : undefined;
     // Có cuộc gọi thì hiện kết quả cuộc gọi gần nhất (thông tin hẹn giao), không thì ghi đã nhắn tin.
     const lastCall = order.readyReportedAt
@@ -193,12 +204,22 @@ export function orderJourney(state: DemoState, order: Order): Journey {
         detail: !confirmedAt && order.confirmDeadline ? `HTX xác nhận trước ${new Date(order.confirmDeadline).toLocaleString('vi-VN')}` : undefined,
       },
       {
-        key: 'ready',
-        title: 'Vào mùa – HTX báo hàng sẵn sàng',
-        done: !!order.readyReportedAt,
+        key: 'harvest',
+        title: 'Vào mùa – HTX thu hoạch xong',
+        done: harvested,
         ready: !!confirmedAt,
+        at: harvests.reduce<string | undefined>((a, h) => (!a || h.confirmedAt > a ? h.confirmedAt : a), undefined),
+        detail: harvested
+          ? harvestDetail || undefined
+          : `${harvests.length > 0 ? `${harvestDetail}. Còn ${pendingCount} sản phẩm chờ thu hoạch` : 'Chờ thu hoạch'}${order.deliveryDate ? `, giao dự kiến ngày ${formatDateKey(order.deliveryDate)}` : ''}`,
+        photos: harvests.flatMap((h) => h.photos),
+      },
+      {
+        key: 'ready',
+        title: 'HTX báo sẵn sàng giao',
+        done: !!order.readyReportedAt,
+        ready: harvested,
         at: order.readyReportedAt,
-        detail: !order.readyReportedAt ? `Chờ thu hoạch${order.deliveryDate ? `, giao dự kiến ngày ${formatDateKey(order.deliveryDate)}` : ''}` : undefined,
       },
       {
         key: 'contact',
@@ -261,7 +282,7 @@ export function orderJourney(state: DemoState, order: Order): Journey {
     const st: StepState = s.done ? 'done' : s.optional && s.skip ? 'skipped' : s.ready && !ended ? 'current' : 'upcoming';
     // Đơn đã kết thúc giữa chừng: không liệt kê các bước không còn diễn ra.
     if (ended && st !== 'done' && st !== 'skipped') continue;
-    out.push({ key: s.key, title: s.title, state: st, at: s.at, detail: st === 'skipped' ? 'Không ghi nhận liên hệ' : s.detail });
+    out.push({ key: s.key, title: s.title, state: st, at: s.at, detail: st === 'skipped' ? 'Không ghi nhận liên hệ' : s.detail, ...(s.photos?.length ? { photos: s.photos } : {}) });
   }
 
   if (!ended) return { steps: out };

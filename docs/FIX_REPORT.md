@@ -33,6 +33,105 @@ npm test         # unit test vitest: src/domain, dữ liệu mẫu, quy ước g
 
 ---
 
+## Sau Giai đoạn 6 – HTX xác nhận thu hoạch xong
+
+**Yêu cầu của chủ repo:** thêm bước xác nhận sau khi thu hoạch sản phẩm xong cho HTX.
+
+Phần "Thông tin nguồn gốc" vốn ghi rằng ngày thu hoạch do HTX khai. Bước này là nơi HTX khai thông tin đó, và là mốc "vào mùa" của đơn đặt trước. Trước đây HTX bấm thẳng "Báo sẵn sàng giao"; nay phải xác nhận thu hoạch xong trước.
+
+### Luồng mới của đơn đặt trước
+
+1. Khách đặt trước, trả cọc → HTX xác nhận đơn → đơn Chờ thu hoạch (như trước).
+2. **HTX xác nhận đã thu hoạch xong**, theo một trong hai cách:
+   - **Theo từng đơn:** trong đơn, nút "Báo sẵn sàng giao" đổi thành "Xác nhận đã thu hoạch xong".
+   - **Theo cả lô:** tab Đơn hàng có khung "Chờ thu hoạch". Mỗi sản phẩm đặt trước còn đơn chờ có một thẻ: số đơn, tổng số lượng cần, ngày giao sớm nhất, nút "Xác nhận thu hoạch …". Trong đơn cũng có nút "Xác nhận cả lô … (N đơn đang chờ)" khi sản phẩm đó còn đơn khác chờ.
+3. **HTX khai:**
+   - ngày thu hoạch (mặc định hôm nay, không được sau hôm nay theo đồng hồ demo);
+   - sản lượng thu được (chỉ khi xác nhận cả lô);
+   - ghi chú, tối đa 300 ký tự;
+   - tối đa 2 ảnh lô hàng.
+
+   Ghi chú và ảnh không bắt buộc.
+4. **"Báo sẵn sàng giao luôn"** được chọn sẵn: đơn đã thu hoạch đủ mọi sản phẩm thì báo sẵn sàng ngay, đi tiếp như trước (khách trả phần còn lại, hoặc sang Đang chuẩn bị nếu trả khi nhận).
+   - Bỏ chọn nếu còn cần phân loại, đóng gói. Khi đó đơn ghi "Đã thu hoạch – chờ báo sẵn sàng giao", và trong đơn có nút "Báo sẵn sàng giao".
+5. Sau đó HTX gọi điện / nhắn tin hẹn lịch giao như phần "Quá trình giao hàng" bên dưới.
+
+### Chia hàng khi xác nhận cả lô
+
+- **Chia theo thứ tự đặt:** đơn đặt sớm nhận trước. Đơn nào đủ hàng thì được xác nhận thu hoạch.
+- **Dừng ở đơn đầu tiên không đủ hàng.** Đơn đặt sau không được chia trước đơn đặt sớm hơn, kể cả khi phần dư đủ cho đơn nhỏ hơn đặt sau.
+  - Ví dụ: 3 đơn cần 2, 3 và 1 thùng; thu 4 thùng → chỉ đơn đầu đủ hàng. Hai đơn sau chờ lần thu hoạch sau.
+- **Xem trước trước khi bấm:** nhập sản lượng là thấy ngay "Đủ hàng cho X/Y đơn". Danh sách đơn theo thứ tự đặt ghi đơn nào "đủ hàng", đơn nào "chờ lần sau"; có số dư nếu thừa, hoặc số lượng đơn sớm nhất cần nếu chưa đủ.
+- **Đơn chưa đủ hàng** giữ nguyên Chờ thu hoạch.
+- **Muốn giao cho một đơn cụ thể** (vd. khách cần gấp) thì xác nhận theo từng đơn; cách này không theo thứ tự.
+
+### Khách thấy gì
+
+- **Hành trình đơn hàng** có bước mới "Vào mùa – HTX thu hoạch xong", nằm trước "HTX báo sẵn sàng giao". Bước này có ngày thu hoạch, ghi chú và ảnh lô hàng.
+  - Đơn có nhiều sản phẩm đặt trước thì ghi từng sản phẩm, và "Còn N sản phẩm chờ thu hoạch".
+- **Thông báo** "HTX … đã thu hoạch hàng đơn …" khi HTX xác nhận mà chưa báo sẵn sàng. Nếu báo sẵn sàng luôn thì chỉ có thông báo sẵn sàng như trước, để khách không nhận hai thông báo cùng lúc.
+- **Thông tin nguồn gốc** của sản phẩm có dòng "Thu hoạch gần nhất". Kèm câu: ngày này do HTX tự khai, sàn không kiểm chứng.
+
+### Quy tắc
+
+- **Chỉ HTX của sản phẩm** xác nhận được, và chỉ với hàng đặt trước.
+- **Mỗi sản phẩm của một đơn chỉ xác nhận thu hoạch một lần.**
+- **Đơn phải đang Chờ thu hoạch:** đã xác nhận đơn, chưa huỷ, chưa báo sẵn sàng.
+- **Đơn nhiều sản phẩm đặt trước:** chỉ báo sẵn sàng khi đã thu hoạch đủ mọi sản phẩm của đơn.
+- **Nhật ký thao tác** ghi "Xác nhận thu hoạch", kèm số đơn, ngày và sản lượng.
+- **`coopReportReady` giữ nguyên.** Màn HTX chỉ hiện nút "Báo sẵn sàng giao" khi đơn đã thu hoạch đủ.
+  - Đơn đã báo sẵn sàng từ bản trước (chưa có bước thu hoạch) thì bước thu hoạch hiện là đã xong, không có ngày.
+
+### Dữ liệu và mã nguồn
+
+- **Dữ liệu:**
+  - thêm `DemoState.harvests` (không bắt buộc), mỗi lần xác nhận là một `HarvestRecord`: sản phẩm, ngày thu hoạch, sản lượng, ghi chú, ảnh, các đơn được chia, ai xác nhận, lúc nào;
+  - thêm `Order.harvest` (mã sản phẩm → mã lần thu hoạch).
+  - `STORAGE_VERSION` giữ nguyên. Dữ liệu đã lưu, kể cả trên máy chủ dùng chung, vẫn đọc được.
+- **Nghiệp vụ:** `src/domain/harvest.ts` (`coopConfirmHarvest`, `allocateHarvest`, `ordersAwaitingHarvest`…). Bước thu hoạch của hành trình nằm trong `orderContact.ts`; thông báo trong `notifications.ts`.
+- **Giao diện:**
+  - `src/screens/coop/HarvestForm.tsx`: biểu mẫu dùng chung cho từng đơn và cả lô;
+  - `CoopHarvestSheet.tsx`: sheet cả lô, tải khi mở lần đầu;
+  - khung "Chờ thu hoạch" trong `CoopOrdersTab.tsx`;
+  - phần thu hoạch trong `CoopOrderSheet.tsx`.
+- **Sửa thêm:** dòng chú thích dưới ô chọn ảnh ghi "Ảnh chỉ lưu trên trình duyệt này". Từ khi có API dữ liệu chung, câu này không còn đúng. Nay ghi "Ảnh được thu nhỏ và lưu cùng dữ liệu demo (mô phỏng tải ảnh)".
+
+### Kiểm thử
+
+- **Lint, test, build:** lint không lỗi; 22 file, 172 test đạt; build thành công, không cảnh báo. Phần tải ban đầu 361 kB (gzip 109 kB).
+- **Test nghiệp vụ mới (`harvest.test.ts`):**
+  - chia theo thứ tự đặt, dừng ở đơn không đủ hàng, hai lô liên tiếp;
+  - báo sẵn sàng luôn với đơn trả phần còn lại online và đơn trả khi nhận;
+  - xác nhận theo từng đơn, không xác nhận lại được;
+  - đơn hai sản phẩm chỉ báo sẵn sàng khi đủ cả hai;
+  - chặn sai HTX, không phải HTX, hàng mua sẵn, ngày sau hôm nay, ngày không có thật, sản lượng sai hoặc chưa đủ, ghi chú quá dài, quá 2 ảnh;
+  - thông báo đúng trường hợp;
+  - dữ liệu cũ chưa có phần thu hoạch.
+- **Test hành trình cũ** sửa theo bước mới.
+- **Playwright trên hai máy (khách và HTX), dùng chung dữ liệu qua API, ở 320px, 390px và 1280px:**
+  1. Khách đặt trước 3 đơn mận (2, 3, 1 thùng).
+  2. HTX xác nhận đơn → khung "Chờ thu hoạch: 3 đơn · cần 6 thùng".
+  3. Xác nhận thu hoạch đơn đầu:
+     - chọn ngày mai thì báo lỗi; sửa ngày thì lỗi ẩn;
+     - thêm ghi chú và ảnh, bỏ "báo sẵn sàng luôn";
+     - đơn ghi "Đã thu hoạch – chờ báo sẵn sàng giao".
+  4. Máy khách có thông báo; hành trình hiện ngày, ghi chú và ảnh.
+  5. HTX báo sẵn sàng.
+  6. Xác nhận cả lô:
+     - bấm khi chưa nhập sản lượng thì báo lỗi;
+     - nhập 3 → "Đủ hàng cho 1/2 đơn";
+     - nhập 1 → báo chưa đủ cho đơn sớm nhất;
+     - xác nhận 3 → 1 đơn, 1 đơn chờ lần sau;
+     - lô sau 5 → "dư 4 thùng", khung "Chờ thu hoạch" biến mất.
+  7. Thông tin nguồn gốc của khách có "Thu hoạch gần nhất".
+
+  Kết quả: 0 lỗi axe, 0 vùng bấm dưới 44px, 0 chữ dưới 12px, không tràn ngang, không lỗi JS.
+- **Chạy lại các kịch bản cũ** (đã sửa chỗ bấm "Báo sẵn sàng giao" thành xác nhận thu hoạch):
+  - đạt: luồng giao hàng trên hai máy, Luồng 6, kiểm tra giao diện toàn app, biểu đồ bán chạy;
+  - hai kịch bản Luồng 1 và 5 cũ dừng ở bước đầu vì tên sản phẩm mẫu đã đổi từ trước. Hai kịch bản này đã được Luồng 6 thay thế.
+
+---
+
 ## Sau Giai đoạn 6 – Biểu đồ sản phẩm bán chạy cho HTX
 
 **Yêu cầu của chủ repo:** thêm biểu đồ xem sản phẩm bán chạy cho bên HTX.
@@ -1311,9 +1410,13 @@ Ngoài các ca trên còn có test cho:
 57. **Khung Hà Nội cho GPS là khung toạ độ gần đúng** (vĩ độ 20,53–21,39; kinh độ 105,28–106,03), rộng hơn ranh giới thật một chút. Google trả về tỉnh khác thì vẫn báo ngoài Hà Nội.
 58. **Chỉ khách hàng đăng nhập được bằng Google.** Tài khoản HTX, Admin, QLNN vẫn do Admin cấp và đăng nhập bằng SĐT.
 59. **Tài khoản Google mô phỏng và Google thật là hai tài khoản khác nhau,** kể cả khi cùng email.
-60. **"Vào mùa" là lúc HTX bấm Báo sẵn sàng giao.** App không tự đoán ngày vào mùa; ngày giao dự kiến lấy từ ngày giao của đơn.
+60. **"Vào mùa" là lúc HTX xác nhận thu hoạch xong** (trước đây là lúc bấm Báo sẵn sàng giao). App không tự đoán ngày vào mùa; ngày giao dự kiến lấy từ ngày giao của đơn.
 61. **Gọi điện dùng điện thoại của HTX** (mở ứng dụng gọi của máy), không qua tổng đài. App không biết kết quả cuộc gọi nên HTX tự ghi lại.
 62. **Khách nhắn tin cho HTX, không có nút gọi HTX,** vì dữ liệu chưa có số liên hệ của HTX dành cho khách. Cần hỗ trợ ngoài đơn thì dùng Khiếu nại / CSKH như trước.
+63. **Xác nhận cả lô chia hàng theo thứ tự đặt và dừng ở đơn đầu tiên không đủ hàng,** để đơn đặt sau không được ưu tiên hơn đơn đặt sớm. Muốn giao cho một đơn cụ thể thì xác nhận theo từng đơn.
+64. **Sản lượng HTX nhập khi xác nhận cả lô chỉ dùng để chia đơn và ghi lại.** App không trừ tồn kho hay suất đặt trước theo số này; phần dư không lưu thành tồn kho.
+65. **Ngày thu hoạch, ghi chú và ảnh là thông tin HTX tự khai,** sàn không kiểm chứng. Ngày thu hoạch không được sau hôm nay theo đồng hồ demo; ngày trong quá khứ thì không giới hạn.
+66. **Mỗi lần xác nhận lưu tối đa 2 ảnh đã thu nhỏ,** để dữ liệu dùng chung không quá nặng.
 
 ## Vấn đề chờ nhóm chốt
 

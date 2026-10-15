@@ -26,7 +26,7 @@ function downscale(file: File): Promise<string> {
   });
 }
 
-/** Chọn ảnh từ thiết bị. Ảnh chỉ lưu trên trình duyệt này (mô phỏng tải ảnh). */
+/** Chọn ảnh từ thiết bị. Ảnh được thu nhỏ rồi lưu cùng dữ liệu demo (máy này, hoặc dữ liệu dùng chung khi có API), mô phỏng tải ảnh. */
 export function PhotoPicker({ photos, onChange, max = MAX_PHOTOS }: { photos: string[]; onChange: (photos: string[]) => void; max?: number }) {
   const input = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -76,7 +76,7 @@ export function PhotoPicker({ photos, onChange, max = MAX_PHOTOS }: { photos: st
         )}
       </div>
       <input ref={input} type="file" accept="image/*" multiple className="hidden" onChange={(e) => onFiles(e.target.files)} />
-      <p className="text-sm text-stone-600">Ảnh chỉ lưu trên trình duyệt này (mô phỏng tải ảnh), tối đa {max} ảnh.</p>
+      <p className="text-sm text-stone-600">Ảnh được thu nhỏ và lưu cùng dữ liệu demo (mô phỏng tải ảnh), tối đa {max} ảnh.</p>
       {error && <p className="text-sm font-semibold text-rose-700">{error}</p>}
     </div>
   );

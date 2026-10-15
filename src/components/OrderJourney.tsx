@@ -15,7 +15,8 @@ const STATE_TEXT: Record<StepState, string> = { done: 'đã xong', current: 'đa
 
 /**
  * Hành trình đơn hàng (chủ repo yêu cầu): các bước từ đặt hàng tới nhận hàng, bước nào xong, bước nào đang chờ.
- * Đơn đặt trước có thêm: vào mùa – HTX báo hàng sẵn sàng, HTX gọi điện / nhắn tin hẹn lịch giao, trả phần còn lại.
+ * Đơn đặt trước có thêm: vào mùa – HTX thu hoạch xong (ngày, ghi chú, ảnh lô hàng HTX khai), HTX báo sẵn sàng giao,
+ * HTX gọi điện / nhắn tin hẹn lịch giao, trả phần còn lại.
  */
 export function OrderJourney({ order }: { order: Order }) {
   const { state } = useStore();
@@ -50,6 +51,15 @@ export function OrderJourney({ order }: { order: Order }) {
                     {s.at && s.detail && s.state !== 'upcoming' ? ' · ' : ''}
                     {s.state !== 'upcoming' && s.detail}
                   </p>
+                )}
+                {s.photos && (
+                  <ul className="mt-1.5 flex gap-2" aria-label="Ảnh lô hàng HTX chụp">
+                    {s.photos.map((src, j) => (
+                      <li key={j}>
+                        <img src={src} alt={`Ảnh lô hàng ${j + 1}`} className="h-16 w-16 rounded-xl border border-champagne-200 object-cover" />
+                      </li>
+                    ))}
+                  </ul>
                 )}
               </div>
             </li>
