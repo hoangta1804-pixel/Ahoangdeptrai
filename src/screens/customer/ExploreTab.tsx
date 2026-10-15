@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { ArrowRight, PackageCheck, Plus, Search, Sprout, Truck } from 'lucide-react';
 import { useUi } from '../../app/UiContext';
+import { PAGE_X } from '../../app/layout';
 import { BrandEmblem, BrandWordmark, BrocadeBand, Ornament, SectionHeading } from '../../components/Brand';
 import { EmptyState } from '../../components/EmptyState';
 import { LandscapeArt } from '../../components/LandscapeArt';
@@ -64,7 +65,7 @@ export function ExploreTab() {
   const scrollToProducts = () => document.getElementById('san-pham')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   return (
-    <div className="space-y-9 px-4 pt-4 pb-8 md:px-6 md:pt-6">
+    <div className={`space-y-9 pt-4 pb-8 md:pt-6 ${PAGE_X}`}>
       {/* Đầu trang */}
       <section className="relative overflow-hidden rounded-[32px] bg-forest-950 text-white shadow-[0_24px_60px_rgb(14,37,27,0.28)]">
         <div aria-hidden="true" className="lattice absolute inset-0" />
@@ -192,7 +193,7 @@ export function ExploreTab() {
             Không có sản phẩm phù hợp.
           </EmptyState>
         ) : (
-          <div className="grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-3 md:gap-x-5 md:gap-y-6 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-3 md:gap-x-5 md:gap-y-6 lg:grid-cols-4 xl:grid-cols-5 min-[1800px]:grid-cols-6">
             {visible.map((p) => (
               <ProductCard key={p.id} product={p} />
             ))}

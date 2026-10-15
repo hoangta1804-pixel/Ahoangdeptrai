@@ -16,7 +16,7 @@ export function CoopTicketsTab() {
   const mine = listed.value;
   if (mine.length === 0) return <EmptyState>Chưa có khiếu nại nào.</EmptyState>;
   return (
-    <ul className="space-y-3">
+    <ul className="grid items-start gap-3 xl:grid-cols-2 2xl:grid-cols-3">
       {mine.map((t) => (
         <TicketCard key={t.id} ticket={t} />
       ))}

@@ -101,6 +101,12 @@ describe('HTX, tài khoản và đơn mẫu', () => {
   it('SĐT rõ ràng là giả, tài khoản nhận tiền đã che (mục 9.5)', () => {
     for (const u of seed.users) expect(u.phone).toMatch(/^0900000\d{3}$/);
     for (const c of seed.coops) expect(c.payoutAccountMasked).toMatch(/^\*\*\*\* \d{4}$/);
+    // Mỗi HTX mẫu có 2 SĐT liên hệ khác nhau, cũng rõ ràng là giả.
+    for (const c of seed.coops) {
+      expect(c.phones, c.id).toHaveLength(2);
+      expect(new Set(c.phones).size, c.id).toBe(2);
+      for (const p of c.phones!) expect(p).toMatch(/^0900000\d{3}$/);
+    }
   });
 
   it('2 đơn mẫu: 1 đã giao, 1 đã thanh toán mô phỏng đang chờ HTX xác nhận', () => {

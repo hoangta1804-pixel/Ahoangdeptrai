@@ -33,6 +33,85 @@ npm test         # unit test vitest: src/domain, dữ liệu mẫu, quy ước g
 
 ---
 
+## Sau Giai đoạn 6 – Toàn màn hình trên máy tính, 2 SĐT cho mỗi HTX
+
+**Yêu cầu của chủ repo:**
+- cho app hiện toàn màn hình trên cả web;
+- thêm SĐT của HTX, mỗi cửa hàng 2 số;
+- SĐT này để Admin gọi cho HTX, không được công khai trong đơn.
+
+### Toàn màn hình trên máy tính
+
+**Trước đây:** trên máy tính, nội dung nằm trong một cột giữa màn hình, hai bên để trống:
+- khách: rộng tối đa 1.152px; trang Đơn hàng và Tài khoản còn hẹp hơn (768px);
+- HTX: cột 640px như điện thoại;
+- Admin, QLNN: rộng tối đa 1.280px;
+- các cửa sổ chi tiết: 640px.
+
+**Nay mọi vai trò dùng toàn bộ bề rộng màn hình.** Lề hai bên tăng dần theo cỡ màn hình (16px trên điện thoại, 56px trên màn hình rất rộng). Điện thoại giữ nguyên như cũ.
+
+- **Khách:**
+  - **Khám phá:** lưới sản phẩm thêm cột trên màn hình rộng (5 cột từ 1.280px, 6 cột từ 1.800px).
+  - **Vụ mùa:** 4 cột từ 1.536px.
+  - **Đơn hàng:** 2–3 cột.
+  - **Tài khoản:** 2 cột (tài khoản ngân hàng | sổ địa chỉ, đăng xuất).
+- **Đăng nhập:** khung giới thiệu cao bằng màn hình, đứng yên khi cuộn. Danh sách tài khoản demo 3 cột trên màn hình rộng.
+- **HTX:** bố cục máy tính mới từ 1.024px.
+  - Cột trái: thẻ HTX và danh sách mục, đứng yên khi cuộn. Nội dung chiếm phần còn lại.
+  - **Đơn hàng, Sản phẩm, Khiếu nại, Đánh giá:** 2–3 cột.
+  - **Đối soát, Hồ sơ:** 2 cột.
+- **Admin, QLNN:** bảng giãn hết bề rộng; cột chức năng của Admin đứng yên khi cuộn; ô số liệu tổng hợp 6 cột trên màn hình rộng.
+- **Cửa sổ chi tiết sản phẩm, chi tiết đơn (khách), đơn của HTX:** rộng tới 1.152px trên máy tính, chia 2 cột.
+  - Chi tiết sản phẩm: ảnh và giá bên trái, mô tả và thông tin bên phải.
+  - Chi tiết đơn: thông tin và hành trình bên trái, liên hệ, trao đổi, thanh toán và thao tác bên phải.
+  - Cột trái là phần đầu, cột phải là phần sau của nội dung. Vì vậy trên điện thoại thứ tự vẫn như cũ, và thứ tự đọc của trình đọc màn hình không đổi.
+  - Các cửa sổ khác (giỏ hàng, đặt hàng, biểu mẫu) giữ 640px cho dễ đọc.
+- **Mã nguồn:**
+  - lề dùng chung `PAGE_X` trong `src/app/layout.ts`;
+  - `BottomSheet` thêm tuỳ chọn `wide` và thành phần `SheetColumns`.
+
+### 2 SĐT cho mỗi HTX
+
+- **HTX:** mục Hồ sơ có phần "Số điện thoại liên hệ (2 số)".
+  - Nhận số di động 10 số hoặc số cố định 11 số (vd. 0214 382 1234), nhập kèm +84 cũng được.
+  - Báo lỗi nếu thiếu số, sai số hoặc hai số trùng nhau.
+  - **Lưu ngay, không chờ Admin duyệt** như các thông tin hồ sơ khác; nhật ký thao tác ghi "Cập nhật SĐT liên hệ".
+  - Thẻ HTX ở đầu màn hình hiện "SĐT cửa hàng".
+- **Admin (mọi nhóm quyền: Vận hành, Chất lượng, CSKH, Tài chính, Quản trị gốc):** mục mới "Danh bạ HTX".
+  - Mỗi HTX một thẻ, có 2 nút gọi (mở ứng dụng gọi của máy). Số mẫu thì ghi "Bản demo: số điện thoại mẫu".
+  - Dùng thẻ thay cho bảng, để trên điện thoại nút gọi hiện ngay, không phải cuộn ngang.
+  - Bảng "Hồ sơ HTX & quyền bán" của Admin – Chất lượng cũng hiện SĐT.
+- **Không công khai:** khách không thấy SĐT HTX ở bất kỳ đâu (trang sản phẩm, đơn hàng, chi tiết đơn); Cơ quan QLNN cũng không.
+  - Kiểm quyền ngay trong hàm `listCoopContacts`: chỉ Admin, hoặc HTX xem số của chính mình.
+  - Test giao diện chặn màn của khách, QLNN và màn đăng nhập dùng tới SĐT HTX.
+  - Khách vẫn liên hệ HTX bằng nhắn tin trong đơn như trước.
+- **Dữ liệu:**
+  - thêm `Coop.phones` (không bắt buộc);
+  - 7 HTX mẫu có 2 số mẫu mỗi HTX, dạng `0900000xxx` như mọi SĐT mẫu khác;
+  - dữ liệu đã lưu từ bản trước (kể cả trên máy chủ dùng chung) chưa có SĐT HTX thì app dùng số mẫu cho HTX mẫu, không phải khôi phục dữ liệu mẫu.
+- **Mã nguồn:** `src/domain/coopContact.ts`, `src/components/CoopPhones.tsx`, `src/screens/admin/AdminCoopContactsTab.tsx`.
+
+### Kiểm thử
+
+- **Lint, test, build:**
+  - lint không lỗi;
+  - 23 file, 178 test đạt.
+  - Test mới `coopContact.test.ts`: chuẩn hoá, kiểm tra, hiển thị số; HTX lưu số; các trường hợp bị chặn; dữ liệu cũ; quyền xem (Admin mọi nhóm xem được; HTX chỉ thấy số của mình; khách, QLNN không xem được).
+  - Test dữ liệu mẫu kiểm tra mỗi HTX có 2 số mẫu khác nhau. Test giao diện kiểm tra màn của khách và QLNN không dùng tới SĐT HTX.
+  - build thành công, không cảnh báo.
+- **Playwright, bố cục:** đăng nhập, mọi màn của khách, HTX (7 mục và cửa sổ đơn), Admin, QLNN ở 768, 1.024, 1.440 và 1.920px. Kết quả: không tràn ngang, 0 lỗi axe, 0 vùng bấm dưới 44px, 0 chữ dưới 12px, không lỗi JS.
+- **Playwright, SĐT** (HTX, khách, Admin, QLNN trên 4 máy, dùng chung dữ liệu qua API, ở 320, 390, 1.280 và 1.920px):
+  1. HTX nhập số sai → báo lỗi; sửa ô thì lỗi ẩn. Nhập trùng số 1 → báo lỗi. Lưu số cố định → được.
+  2. Khách: trang sản phẩm và chi tiết đơn không có số nào của HTX, không có link `tel:`.
+  3. Cả 5 nhóm Admin thấy "Danh bạ HTX" với 14 nút gọi đúng số mới.
+  4. QLNN không có mục này, không có nút gọi.
+
+  Kết quả: 0 lỗi axe, 0 vùng bấm dưới 44px, 0 chữ dưới 12px, không tràn ngang, không lỗi JS.
+- **Chạy lại các kịch bản cũ, đều đạt:** kiểm tra giao diện toàn app trên điện thoại, xác nhận thu hoạch (390 và 1.280px), giao hàng trên hai máy, Luồng 6, biểu đồ bán chạy, chọn số lượng, giỏ hàng, liên kết ngân hàng, địa chỉ, mã ưu đãi, dữ liệu chung trên hai máy, kiểm tra tràn ngang ở 320–1.280px.
+  - Kịch bản xác nhận thu hoạch lần đầu dừng vì bộ chọn của kịch bản bắt trúng khung nội dung mới của màn HTX (thẻ `<section>`). Đã đổi khung đó thành `<div>`, vì nó không có tiêu đề riêng; chạy lại thì đạt.
+
+---
+
 ## Sau Giai đoạn 6 – HTX xác nhận thu hoạch xong
 
 **Yêu cầu của chủ repo:** thêm bước xác nhận sau khi thu hoạch sản phẩm xong cho HTX.
@@ -1412,11 +1491,15 @@ Ngoài các ca trên còn có test cho:
 59. **Tài khoản Google mô phỏng và Google thật là hai tài khoản khác nhau,** kể cả khi cùng email.
 60. **"Vào mùa" là lúc HTX xác nhận thu hoạch xong** (trước đây là lúc bấm Báo sẵn sàng giao). App không tự đoán ngày vào mùa; ngày giao dự kiến lấy từ ngày giao của đơn.
 61. **Gọi điện dùng điện thoại của HTX** (mở ứng dụng gọi của máy), không qua tổng đài. App không biết kết quả cuộc gọi nên HTX tự ghi lại.
-62. **Khách nhắn tin cho HTX, không có nút gọi HTX,** vì dữ liệu chưa có số liên hệ của HTX dành cho khách. Cần hỗ trợ ngoài đơn thì dùng Khiếu nại / CSKH như trước.
+62. **Khách nhắn tin cho HTX, không có nút gọi HTX.** SĐT của HTX chỉ dành cho Admin gọi HTX, không công khai cho khách (chủ repo yêu cầu). Cần hỗ trợ ngoài đơn thì dùng Khiếu nại / CSKH như trước.
 63. **Xác nhận cả lô chia hàng theo thứ tự đặt và dừng ở đơn đầu tiên không đủ hàng,** để đơn đặt sau không được ưu tiên hơn đơn đặt sớm. Muốn giao cho một đơn cụ thể thì xác nhận theo từng đơn.
 64. **Sản lượng HTX nhập khi xác nhận cả lô chỉ dùng để chia đơn và ghi lại.** App không trừ tồn kho hay suất đặt trước theo số này; phần dư không lưu thành tồn kho.
 65. **Ngày thu hoạch, ghi chú và ảnh là thông tin HTX tự khai,** sàn không kiểm chứng. Ngày thu hoạch không được sau hôm nay theo đồng hồ demo; ngày trong quá khứ thì không giới hạn.
 66. **Mỗi lần xác nhận lưu tối đa 2 ảnh đã thu nhỏ,** để dữ liệu dùng chung không quá nặng.
+67. **"Full màn hình trên cả web" hiểu là dùng hết bề rộng cửa sổ trình duyệt,** không phải chế độ toàn màn hình của trình duyệt (phím F11).
+68. **Mỗi HTX có đúng 2 SĐT liên hệ,** cả 2 đều bắt buộc. Nhận số di động 10 số và số cố định 11 số bắt đầu bằng 02; chưa nhận đầu số 1800 / 1900.
+69. **HTX đổi SĐT liên hệ không cần Admin duyệt,** khác các thông tin hồ sơ khác (tên, vùng, người đại diện, giới thiệu), để khách luôn gọi được số đang dùng. Mỗi lần đổi có ghi nhật ký thao tác.
+70. **SĐT liên hệ của HTX chỉ Admin (mọi nhóm quyền) và chính HTX xem được.** Khách và Cơ quan QLNN không xem được.
 
 ## Vấn đề chờ nhóm chốt
 

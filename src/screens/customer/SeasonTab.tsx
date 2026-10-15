@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Wheat } from 'lucide-react';
 import { useUi } from '../../app/UiContext';
+import { PAGE_X } from '../../app/layout';
 import { BrocadeBand, SectionHeading } from '../../components/Brand';
 import { EmptyState } from '../../components/EmptyState';
 import { LandscapeArt } from '../../components/LandscapeArt';
@@ -22,7 +23,7 @@ export function SeasonTab() {
   const preorders = state.products.filter((p) => p.kind === 'preorder' && p.status === 'active');
 
   return (
-    <div className="space-y-8 px-4 pt-4 pb-8 md:px-6 md:pt-6">
+    <div className={`space-y-8 pt-4 pb-8 md:pt-6 ${PAGE_X}`}>
       <section className="relative overflow-hidden rounded-[32px] bg-forest-950 text-white shadow-[0_24px_60px_rgb(14,37,27,0.28)]">
         <div aria-hidden="true" className="lattice absolute inset-0" />
         <LandscapeArt className="absolute inset-0 h-full w-full" />
@@ -43,7 +44,7 @@ export function SeasonTab() {
       {preorders.length === 0 ? (
         <EmptyState>Hiện chưa có sản phẩm nào mở đặt trước.</EmptyState>
       ) : (
-        <div className="space-y-4 md:grid md:grid-cols-2 md:gap-5 md:space-y-0 lg:grid-cols-3">
+        <div className="space-y-4 md:grid md:grid-cols-2 md:gap-5 md:space-y-0 lg:grid-cols-3 2xl:grid-cols-4">
           {preorders.map((p) => {
             const coop = state.coops.find((c) => c.id === p.coopId);
             const remaining = remainingFor(state, p);

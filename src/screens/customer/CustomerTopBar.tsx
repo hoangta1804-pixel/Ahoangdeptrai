@@ -1,5 +1,6 @@
 import { MapPin, ShoppingBag, User } from 'lucide-react';
 import { useUi } from '../../app/UiContext';
+import { PAGE_X } from '../../app/layout';
 import { defaultAddressOf } from '../../domain/address';
 import { snapshotAddress } from '../../domain/state';
 import { useStore } from '../../store/AppDataContext';
@@ -11,7 +12,7 @@ export function CustomerTopBar() {
   const cartCount = (state.carts[customerActor.id!] ?? []).reduce((s, l) => s + l.quantity, 0);
 
   return (
-    <div className="sticky top-[var(--app-header-h,0px)] z-30 flex items-center justify-between gap-2 border-b border-champagne-200/80 bg-ivory/90 px-4 py-1.5 backdrop-blur-md md:px-6">
+    <div className={`sticky top-[var(--app-header-h,0px)] z-30 flex items-center justify-between gap-2 border-b border-champagne-200/80 bg-ivory/90 py-1.5 backdrop-blur-md ${PAGE_X}`}>
       <button onClick={() => openModal({ type: 'address_book' })} className="flex min-h-11 min-w-0 flex-1 items-center gap-1.5 text-left">
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-forest-900 text-champagne-300">
           <MapPin size={15} aria-hidden="true" />

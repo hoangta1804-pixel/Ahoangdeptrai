@@ -8,6 +8,7 @@ import { formatPhone, PHONE_RULE } from '../domain/phone';
 import { ACCOUNT_ROLE_LABEL, ADMIN_GROUP_LABEL, type UserAccount } from '../domain/types';
 import { useStore } from '../store/AppDataContext';
 import { GoogleSignIn } from './GoogleSignIn';
+import { PAGE_X } from './layout';
 import { useUi } from './UiContext';
 
 type Step = 'phone' | 'otp' | 'register';
@@ -103,8 +104,9 @@ export function LoginScreen() {
   ];
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 pt-4 pb-10 md:px-6 md:pt-6 lg:grid lg:grid-cols-[1.05fr_1fr] lg:items-start lg:gap-8">
-      <div className="relative overflow-hidden rounded-[32px] bg-forest-950 text-white shadow-[0_24px_60px_rgb(14,37,27,0.28)] lg:sticky lg:top-[calc(var(--app-header-h,0px)+1.5rem)]">
+    <div className={`w-full pt-4 pb-10 md:pt-6 lg:grid lg:grid-cols-[1.05fr_1fr] lg:items-start lg:gap-8 2xl:gap-12 ${PAGE_X}`}>
+      {/* Máy tính: khung giới thiệu cao bằng màn hình, đứng yên khi cuộn danh sách tài khoản demo. */}
+      <div className="relative overflow-hidden rounded-[32px] bg-forest-950 text-white shadow-[0_24px_60px_rgb(14,37,27,0.28)] lg:sticky lg:top-[calc(var(--app-header-h,0px)+1.5rem)] lg:min-h-[calc(100dvh-var(--app-header-h,0px)-3rem)]">
         <div aria-hidden="true" className="lattice absolute inset-0" />
         <LandscapeArt className="absolute inset-0 h-full w-full" />
         <div className="relative flex flex-col items-center px-6 pt-8 pb-24 text-center sm:pb-32 lg:pt-16 lg:pb-56">
@@ -226,7 +228,7 @@ export function LoginScreen() {
           {groups.map((g) => (
             <div key={g.title} className="space-y-1.5">
               <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-champagne-700">{g.title}</h3>
-              <ul className="grid gap-2 sm:grid-cols-2">
+              <ul className="grid gap-2 sm:grid-cols-2 2xl:grid-cols-3">
                 {g.users.map((u) => (
                   <li key={u.id}>
                     <button

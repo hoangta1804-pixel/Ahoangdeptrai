@@ -22,10 +22,18 @@ export function CoopProductsTab() {
   const mine = state.products.filter((p) => p.coopId === coopId);
   return (
     <div className="space-y-3">
-      <PrimaryButton className="flex w-full items-center justify-center gap-2" onClick={() => openModal({ type: 'coop_product_form' })}>
+      <PrimaryButton className="flex w-full items-center justify-center gap-2 lg:w-auto lg:px-6" onClick={() => openModal({ type: 'coop_product_form' })}>
         <Plus size={16} /> Thêm sản phẩm
       </PrimaryButton>
-      {mine.length === 0 ? <EmptyState>HTX chưa có sản phẩm.</EmptyState> : mine.map((p) => <ProductCard key={p.id} product={p} />)}
+      {mine.length === 0 ? (
+        <EmptyState>HTX chưa có sản phẩm.</EmptyState>
+      ) : (
+        <div className="grid items-start gap-3 xl:grid-cols-2 2xl:grid-cols-3">
+          {mine.map((p) => (
+            <ProductCard key={p.id} product={p} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

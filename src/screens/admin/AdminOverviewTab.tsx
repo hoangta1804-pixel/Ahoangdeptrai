@@ -18,7 +18,7 @@ export function StatsPanel() {
   ];
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-3 2xl:grid-cols-6">
         {tiles.map(([label, value]) => (
           <div key={label} className="rounded-2xl border border-stone-200 bg-white p-3">
             <p className="text-sm text-stone-600">{label}</p>

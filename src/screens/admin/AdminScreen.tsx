@@ -1,10 +1,12 @@
 import { useState, type ReactNode } from 'react';
 import { useUi } from '../../app/UiContext';
+import { PAGE_X } from '../../app/layout';
 import { ListBoundary } from '../../components/ListBoundary';
 import { useStore } from '../../store/AppDataContext';
 import { ADMIN_GROUP_LABEL, type AdminSubGroup } from '../../domain/types';
 import { AdminAccountsTab } from './AdminAccountsTab';
 import { AdminAuditTab } from './AdminAuditTab';
+import { AdminCoopContactsTab } from './AdminCoopContactsTab';
 import { FinanceLedgerTab } from './FinanceLedgerTab';
 import { AdminOrdersTab } from './AdminOrdersTab';
 import { AdminOverviewTab } from './AdminOverviewTab';
@@ -23,6 +25,8 @@ import { QualityChangesTab } from './QualityChangesTab';
 type TabDef = { key: string; label: string; render: () => ReactNode };
 
 const OVERVIEW: TabDef = { key: 'overview', label: 'Tổng quan', render: () => <AdminOverviewTab /> };
+/** SĐT HTX để Admin gọi cho HTX: mọi nhóm quyền đều có. */
+const COOP_CONTACTS: TabDef = { key: 'coop-contacts', label: 'Danh bạ HTX', render: () => <AdminCoopContactsTab /> };
 
 /** Chức năng theo nhóm quyền (mục 8). Nhóm quyền lấy từ tài khoản đăng nhập. */
 const TABS: Record<AdminSubGroup, TabDef[]> = {
@@ -34,27 +38,32 @@ const TABS: Record<AdminSubGroup, TabDef[]> = {
     { key: 'params', label: 'Tham số', render: () => <AdminParamsTab /> },
     { key: 'catalog', label: 'Danh mục dùng chung', render: () => <SharedCatalogTab /> },
     { key: 'vouchers', label: 'Mã ưu đãi', render: () => <VouchersTab /> },
+    COOP_CONTACTS,
   ],
   quality: [
     OVERVIEW,
     { key: 'changes', label: 'Duyệt sản phẩm & giá', render: () => <QualityChangesTab /> },
     { key: 'coops', label: 'Hồ sơ HTX & quyền bán', render: () => <QualityCoopsTab /> },
+    COOP_CONTACTS,
   ],
   cskh: [
     OVERVIEW,
     { key: 'tickets', label: 'Ticket khiếu nại', render: () => <CskhTicketsTab /> },
     { key: 'reviews', label: 'Kiểm duyệt đánh giá', render: () => <CskhReviewsTab /> },
+    COOP_CONTACTS,
   ],
   finance: [
     OVERVIEW,
     { key: 'refunds', label: 'Hoàn tiền', render: () => <FinanceRefundsTab /> },
     { key: 'settlement', label: 'Đối soát HTX', render: () => <FinanceSettlementTab /> },
     { key: 'ledger', label: 'Sổ giao dịch', render: () => <FinanceLedgerTab /> },
+    COOP_CONTACTS,
   ],
   root: [
     OVERVIEW,
     { key: 'accounts', label: 'Phân quyền', render: () => <AdminAccountsTab /> },
     { key: 'audit', label: 'Nhật ký', render: () => <AdminAuditTab /> },
+    COOP_CONTACTS,
   ],
 };
 
@@ -66,8 +75,8 @@ export function AdminScreen() {
   const current = TABS[adminGroup].find((t) => t.key === tab) ?? TABS[adminGroup][0];
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4 lg:flex-row">
-      <aside className="space-y-3 lg:w-56 lg:shrink-0">
+    <div className={`flex flex-1 flex-col gap-4 py-4 lg:flex-row lg:gap-6 ${PAGE_X}`}>
+      <aside className="space-y-3 lg:sticky lg:top-[calc(var(--app-header-h,0px)+1rem)] lg:w-60 lg:shrink-0 lg:self-start">
         <div className="lattice relative overflow-hidden rounded-3xl bg-forest-950 p-4 pb-6 text-white">
           <span className="text-xs font-semibold uppercase tracking-[0.18em] text-champagne-300">Quản trị</span>
           <p className="font-display text-lg font-semibold">Admin – {ADMIN_GROUP_LABEL[adminGroup]}</p>

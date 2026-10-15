@@ -3,6 +3,7 @@ import { useUi } from '../../app/UiContext';
 import { AdminTable, Td } from '../../components/AdminTable';
 import { EmptyState } from '../../components/EmptyState';
 import { DangerButton, Input, PrimaryButton, SecondaryButton } from '../../components/form';
+import { coopPhonesOf, formatContactPhone } from '../../domain/coopContact';
 import { qualityDecideCoopProfile, qualitySetSellingRights } from '../../domain/coopProfile';
 import type { Coop } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
@@ -39,6 +40,7 @@ function CoopRow({ coop: c }: { coop: Coop }) {
           Vùng {c.region}
           {c.representative ? ` · Đại diện: ${c.representative}` : ''}
         </span>
+        <span className="block tabular-nums text-stone-600">SĐT: {coopPhonesOf(c).map(formatContactPhone).join(' · ') || 'chưa cập nhật'}</span>
       </Td>
       <Td className="min-w-48">
         <span className="rounded-md bg-stone-100 px-2 py-0.5 text-xs font-bold">{PROFILE_LABEL[c.profileStatus]}</span>
