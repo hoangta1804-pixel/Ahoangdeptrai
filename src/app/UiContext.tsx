@@ -28,8 +28,8 @@ export type ModalState =
   | { type: 'address_form'; addressId?: string; returnTo?: ModalState }
   | { type: 'complaint'; orderId?: string }
   | { type: 'coop_order'; orderId: string }
-  /** HTX xác nhận thu hoạch cả lô cho một sản phẩm đặt trước. */
-  | { type: 'coop_harvest'; productId: string }
+  /** HTX xác nhận thu hoạch cả lô cho một sản phẩm đặt trước. `returnTo`: mở lại khi đóng (vd. đơn đang xem). */
+  | { type: 'coop_harvest'; productId: string; returnTo?: ModalState }
   | { type: 'notifications' }
   | { type: 'review'; orderId: string; productId: string }
   | { type: 'coop_product_form'; productId?: string }

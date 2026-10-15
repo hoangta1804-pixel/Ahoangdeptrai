@@ -3,6 +3,8 @@ import { Bell, ChevronRight, ClipboardCheck, LogOut, MapPin, MessageSquareWarnin
 import { useUi } from '../../app/UiContext';
 import { PAGE_X } from '../../app/layout';
 import { BrocadeBand } from '../../components/Brand';
+import { ErrorState } from '../../components/EmptyState';
+import { ListBoundary } from '../../components/ListBoundary';
 import { Field, Input, PrimaryButton, SecondaryButton } from '../../components/form';
 import { updateCustomerProfile } from '../../domain/account';
 import { listOrdersFor } from '../../domain/access';
@@ -52,7 +54,10 @@ export function AccountTab() {
           </p>
           {!editingName && (
             <button
-              onClick={() => setEditingName(true)}
+              onClick={() => {
+                setName(customer.name);
+                setEditingName(true);
+              }}
               className="min-h-11 shrink-0 rounded-full border border-champagne-400/60 px-4 text-sm font-semibold text-champagne-100 hover:bg-white/5"
             >
               Sửa
@@ -86,7 +91,10 @@ export function AccountTab() {
       {/* Điện thoại: Đơn mua (biểu tượng + danh sách đơn), Tiện ích, tài khoản ngân hàng, đăng xuất.
           Máy tính: Đơn mua ở cột rộng bên trái, các mục còn lại ở cột phải. */}
       <div className="space-y-4 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(20rem,26rem)] lg:items-start lg:gap-6 lg:space-y-0">
-        <OrdersBlock />
+        {/* Dữ liệu đơn hỏng thì chỉ khung Đơn mua báo lỗi; thông tin cá nhân, Tiện ích, Đăng xuất vẫn dùng được. */}
+        <ListBoundary label="đơn mua" resetKey={state}>
+          <OrdersBlock />
+        </ListBoundary>
 
         <div className="space-y-4">
           <Utilities addressCount={addressCount} />
@@ -193,9 +201,7 @@ function OrdersBlock() {
           </button>
         )}
       </div>
-      <div ref={listRef}>
-        <OrdersSection />
-      </div>
+      <div ref={listRef}>{listed.ok ? <OrdersSection orders={mine} counts={counts} /> : <ErrorState>{listed.error}</ErrorState>}</div>
     </section>
   );
 }

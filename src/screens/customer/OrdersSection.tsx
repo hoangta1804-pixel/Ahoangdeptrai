@@ -1,11 +1,10 @@
 import { useId } from 'react';
 import { useUi } from '../../app/UiContext';
-import { EmptyState, ErrorState } from '../../components/EmptyState';
+import { EmptyState } from '../../components/EmptyState';
 import { OrderStatusBadge, PaymentStatusBadge } from '../../components/StatusBadge';
 import { SwipeTabs } from '../../components/SwipeTabs';
-import { listOrdersFor } from '../../domain/access';
 import { unreadCount } from '../../domain/orderContact';
-import { itemsAwaitingReview, ORDER_TABS, ordersInTab, refundSummary, reorderToCart, suggestedProducts, tabCounts, tabOf, type OrderTabKey } from '../../domain/orderTabs';
+import { itemsAwaitingReview, ORDER_TABS, ordersInTab, refundSummary, reorderToCart, suggestedProducts, tabOf, type OrderTabKey } from '../../domain/orderTabs';
 import { formatMoney } from '../../domain/pricing';
 import { ORDER_KIND_LABEL, type Order } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
@@ -16,15 +15,10 @@ import { ProductCard } from './ExploreTab';
  * Kiểu "Đơn đã mua" theo video mẫu: hàng tab theo trạng thái, vuốt ngang để sang tab bên cạnh, hàng tab dính dưới
  * thanh trên cùng khi cuộn. Đơn mới hiện ngay sau khi đặt (L4). Tab trống có gợi ý "Có thể bạn cũng thích".
  * Số cột theo bề rộng phần chứa (container query), vì danh sách nằm trong cột của trang Tài khoản.
+ * Đơn và số đếm do Tài khoản tính một lần rồi truyền vào (dùng chung với các biểu tượng trạng thái).
  */
-export function OrdersSection() {
-  const { state } = useStore();
-  const { customerActor, orderTab, setOrderTab } = useUi();
-  const listed = listOrdersFor(state, customerActor);
-  if (!listed.ok) return <ErrorState>{listed.error}</ErrorState>;
-  const mine = listed.value;
-  const counts = tabCounts(mine);
-
+export function OrdersSection({ orders: mine, counts }: { orders: Order[]; counts: Record<OrderTabKey, number> }) {
+  const { orderTab, setOrderTab } = useUi();
   return (
     <div className="@container">
       <SwipeTabs

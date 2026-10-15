@@ -48,6 +48,9 @@ describe('Giao diện (mục 10)', () => {
     expect(html).not.toMatch(/maximum-scale/);
     expect(offenders(/\bselect-none\b/)).toEqual([]);
     expect(read('src/index.css')).not.toMatch(/user-select:\s*none/);
+    // Vùng vuốt ngang chỉ nhận cuộn dọc thì vẫn phải cho phóng to bằng hai ngón.
+    expect(offenders(/touchAction:\s*['"]pan-[xy]['"]/)).toEqual([]);
+    expect(read('src/index.css')).not.toMatch(/touch-action:\s*(pan-[xy]|none)\s*;/);
   });
 
   it('không dùng hộp thoại của trình duyệt (bị chặn khi app chạy trong khung nhúng)', () => {

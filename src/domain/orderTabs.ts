@@ -115,9 +115,10 @@ export function reorderToCart(state: DemoState, actor: Actor, orderId: string, a
  */
 export function suggestedProducts(state: DemoState, customerId: string, limit: number): Product[] {
   const bought = new Set(state.orders.filter((o) => o.customerId === customerId).flatMap((o) => o.items.map((i) => i.productId)));
-  const score = (p: Product) => averageRating(state, p.id).average ?? 0;
   const orderable = state.products.filter((p) => isOrderableIn(state, p) && remainingFor(state, p) > 0);
   const fresh = orderable.filter((p) => !bought.has(p.id));
   const pool = fresh.length > 0 ? fresh : orderable;
-  return [...pool].sort((a, b) => score(b) - score(a) || a.name.localeCompare(b.name, 'vi')).slice(0, limit);
+  // Tính điểm mỗi sản phẩm một lần trước khi sắp xếp.
+  const score = new Map(pool.map((p) => [p.id, averageRating(state, p.id).average ?? 0]));
+  return [...pool].sort((a, b) => score.get(b.id)! - score.get(a.id)! || a.name.localeCompare(b.name, 'vi')).slice(0, limit);
 }

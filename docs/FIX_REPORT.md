@@ -33,6 +33,61 @@ npm test         # unit test vitest: src/domain, dữ liệu mẫu, quy ước g
 
 ---
 
+## Sau Giai đoạn 6 – Kiểm tra lại toàn bộ, sửa lỗi tìm được
+
+**Yêu cầu của chủ repo:** chạy lại một lượt xem còn lỗi ở đâu không.
+
+### Đã chạy
+
+- **Lint, test, build:**
+  - lint không lỗi;
+  - 24 file, 183 test đạt (thêm 1 kiểm tra trong test giao diện);
+  - build thành công, không cảnh báo.
+- **Chế độ phát triển của React** (hiện mọi cảnh báo, bản build chính thức ẩn đi): chạy 14 kịch bản, ghi lại mọi cảnh báo / lỗi console. 0 cảnh báo React.
+- **Bản build chính thức:** 31 lượt kịch bản ở 320, 390, 768, 1.024, 1.280, 1.440 và 1.920px, khôi phục dữ liệu mẫu trước mỗi lượt để các kịch bản không lẫn dữ liệu của nhau. Tất cả đạt, 0 lỗi giao diện.
+  - Phạm vi: đủ vai trò (khách, HTX, Admin, QLNN), đăng nhập Google, GPS, hai máy dùng chung dữ liệu.
+  - Ghi lại mọi lỗi console. Chỉ còn lỗi có chủ đích:
+    - 409 khi hai máy ghi cùng lúc (cơ chế đồng bộ tự chạy lại thao tác);
+    - 503 vì chưa có khoá Google Maps;
+    - 401 khi thử đăng nhập Google bằng mã giả;
+    - lỗi của kịch bản cố ý làm hỏng dữ liệu.
+- **Rà mã** các phần làm gần đây (tab vuốt, Đơn mua trong Tài khoản, xác nhận thu hoạch, SĐT HTX): 10 điểm, đều đã sửa (dưới đây).
+- Không chạy thử được bản trên Vercel: môi trường kiểm thử chặn tên miền vercel.app.
+
+### Lỗi đã sửa
+
+1. **Vuốt bị kẹt nửa chừng khi có ngón thứ hai chạm vào** (vd. đang vuốt thì chụm tay để phóng to): danh sách đơn đứng lệch, phải vuốt lần nữa mới về. Nay ngón thứ hai chạm vào thì huỷ thao tác vuốt, danh sách trượt về chỗ cũ.
+2. **Không phóng to được bằng hai ngón trên danh sách đơn** (vùng vuốt chỉ cho cuộn dọc). Nay cho phóng to. Test giao diện chặn việc dùng lại thiết lập cũ.
+3. **Đang phóng to mà kéo ngang thì bị đổi tab** thay vì xem phần bị khuất. Nay khi trang đang phóng to thì tắt vuốt đổi tab, trình duyệt kéo ngang như thường.
+4. **Hàng tab tự cuộn về tab đang chọn mỗi lần app vẽ lại** (thêm vào giỏ, có thông báo, đồng bộ dữ liệu), làm mất chỗ người dùng vừa kéo. Nay chỉ cuộn khi đổi tab.
+5. **Bấm phím Home ở tab đầu (hoặc End ở tab cuối) để lại cờ sai:** lần đổi tab sau, focus nhảy lên hàng tab.
+6. **Dữ liệu đơn hỏng làm hỏng cả trang Tài khoản** (từ khi gộp Đơn hàng vào Tài khoản). Nay chỉ khung Đơn mua báo lỗi, có nút Thử lại; thông tin cá nhân, Tiện ích, Đăng xuất vẫn dùng được.
+7. **HTX chưa có số nào thì mục Hồ sơ không hiện ô nhập SĐT.** Nay luôn có đủ 2 ô.
+8. **Sửa tên trong Tài khoản, bấm Huỷ, mở lại vẫn thấy chữ đã gõ.** Nay mở lại thấy tên đang lưu.
+9. **HTX bấm nhầm "Không cung cấp được" hoặc "Từ chối" yêu cầu huỷ thì không có đường quay lại.** Nay có nút "Thôi".
+10. **"Xác nhận cả lô" mở từ một đơn: đóng xong không về lại đơn đó.** Nay về lại đúng đơn.
+11. **Tính toán thừa:**
+    - Tài khoản lọc danh sách đơn 2 lần; nay 1 lần, dùng chung cho biểu tượng và danh sách.
+    - Gợi ý "Có thể bạn cũng thích" tính lại điểm đánh giá trong lúc sắp xếp; nay tính trước một lần.
+
+### Kiểm thử các lỗi đã sửa
+
+- **Lỗi 1, 3, 4, 5:** kịch bản Đơn mua có thêm phép thử bằng sự kiện con trỏ. Chạy trên cả bản trước khi sửa và bản đã sửa:
+  - Bản trước khi sửa hỏng đúng như mô tả: vuốt kẹt lệch 89,5px; đang phóng to vẫn đổi tab; focus nhảy lên hàng tab; hàng tab tự cuộn từ 0 sang 545px.
+  - Bản đã sửa: đều đạt.
+  - Phép thử bằng thao tác chạm giả lập của trình duyệt không tái hiện được lỗi 1 và 3, nên không dùng để chứng minh.
+- **Lỗi 6:** kịch bản mới giả lập dữ liệu đơn hỏng từ API. Chỉ khung Đơn mua báo "Không hiển thị được đơn mua"; thông tin cá nhân, Tiện ích, Đăng xuất, thanh dưới vẫn hiện; không lỗi JS.
+- **Lỗi 8, 9, 10:** kịch bản mới chạy ở 390 và 1.280px:
+  - sửa tên → Huỷ → mở lại thấy tên đang lưu;
+  - HTX bấm "Không cung cấp được" → có "Thôi" → quay lại các nút cũ;
+  - "Xác nhận cả lô" → Huỷ → về lại đúng đơn.
+- **Chạy lại toàn bộ trên bản đã sửa:** 34 lượt (31 lượt trên và các kịch bản mới), đều đạt.
+  - 0 lỗi axe, 0 vùng bấm dưới 44px, 0 chữ dưới 12px, không tràn ngang.
+  - Lỗi console chỉ còn các lỗi có chủ đích nêu trên.
+  - Kịch bản dữ liệu hỏng có 2 lỗi, cả 2 đều được khung báo lỗi bắt và hiện thông báo; không có lỗi JS lọt ra ngoài.
+
+---
+
 ## Sau Giai đoạn 6 – Gộp Đơn hàng vào Tài khoản
 
 **Yêu cầu của chủ repo:** gộp phần đơn hàng vào luôn Tài khoản, không cần chuyển tab như cũ.
