@@ -595,8 +595,19 @@ export const ACCOUNT_ROLE_LABEL: Record<AccountRole, string> = {
   regulator: 'Cơ quan QLNN',
 };
 
+/** Tài khoản đăng nhập bằng Google. Chỉ lưu mã đã băm và email đã che, không lưu email đầy đủ. */
+export interface GoogleIdentity {
+  /** Mã băm SHA-256 của mã tài khoản Google (đăng nhập thật) hoặc của email (mô phỏng). */
+  id: string;
+  /** Email đã che, vd. "ho•••@gmail.com". */
+  emailMasked: string;
+  /** Đăng nhập Google mô phỏng (chưa cấu hình Client ID, hoặc mở ngoài Vercel). */
+  simulated: boolean;
+}
+
 export interface UserAccount {
   id: string;
+  /** SĐT đăng nhập. Rỗng với khách đăng nhập bằng Google. */
   phone: string;
   name: string;
   role: AccountRole;
@@ -605,6 +616,7 @@ export interface UserAccount {
   adminGroup?: AdminSubGroup;
   status: 'active' | 'locked';
   createdAt: string;
+  google?: GoogleIdentity;
 }
 
 export type NotificationLink = { type: 'order'; id: string } | { type: 'ticket'; id: string } | { type: 'product'; id: string };

@@ -4,6 +4,7 @@ import { useUi } from '../../app/UiContext';
 import { BrocadeBand } from '../../components/Brand';
 import { Field, Input, PrimaryButton, SecondaryButton } from '../../components/form';
 import { updateCustomerProfile } from '../../domain/account';
+import { loginIdentityLabel } from '../../domain/auth';
 import { useStore } from '../../store/AppDataContext';
 import { BankLinkSection } from './BankLinkSection';
 
@@ -12,6 +13,7 @@ export function AccountTab() {
   const { state, run } = useStore();
   const { customerActor, openModal, logout, showToast } = useUi();
   const customer = state.customers.find((c) => c.id === customerActor.id);
+  const account = state.users.find((u) => u.id === customerActor.userId);
   const addressCount = state.addresses.filter((a) => a.customerId === customerActor.id).length;
   const [editingName, setEditingName] = useState(false);
   const [name, setName] = useState(customer?.name ?? '');
@@ -36,7 +38,11 @@ export function AccountTab() {
           </div>
         </div>
         <div className="relative mt-3 flex items-end justify-between gap-3">
-          <p className="text-sm text-forest-100">SĐT: {customer.phone.replace(/(\d{4})(\d{3})(\d{3})/, '$1 $2 $3')} (dùng để đăng nhập, không đổi tại đây)</p>
+          <p className="text-sm text-forest-100">
+            {account?.google
+              ? `Đăng nhập bằng ${loginIdentityLabel(account)}`
+              : `SĐT: ${customer.phone.replace(/(\d{4})(\d{3})(\d{3})/, '$1 $2 $3')} (dùng để đăng nhập, không đổi tại đây)`}
+          </p>
           {!editingName && (
             <button
               onClick={() => setEditingName(true)}

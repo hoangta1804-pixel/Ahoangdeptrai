@@ -3,10 +3,11 @@ import { BrandEmblem, BrocadeBand, Ornament, SectionHeading } from '../component
 import { SimBadge } from '../components/EmptyState';
 import { LandscapeArt } from '../components/LandscapeArt';
 import { Field, Input, PrimaryButton, SecondaryButton } from '../components/form';
-import { DEMO_OTP, registerCustomer, requestOtp, verifyLogin } from '../domain/auth';
+import { DEMO_OTP, googleLogin, registerCustomer, registerGoogleCustomer, requestOtp, verifyLogin, type GoogleProfile } from '../domain/auth';
 import { formatPhone, PHONE_RULE } from '../domain/phone';
 import { ACCOUNT_ROLE_LABEL, ADMIN_GROUP_LABEL, type UserAccount } from '../domain/types';
 import { useStore } from '../store/AppDataContext';
+import { GoogleSignIn } from './GoogleSignIn';
 import { useUi } from './UiContext';
 
 type Step = 'phone' | 'otp' | 'register';
@@ -71,8 +72,31 @@ export function LoginScreen() {
     showToast('Đăng ký thành công.');
   };
 
+  // Đăng nhập bằng Google: tài khoản đã có thì vào luôn, lần đầu thì tạo tài khoản khách hàng.
+  const googleSignIn = (profile: GoogleProfile) => {
+    const found = googleLogin(state, profile);
+    if (!found.ok) return setError(found.error);
+    if (found.value) {
+      login(found.value.id);
+      showToast(`Xin chào ${found.value.name}.`);
+      return;
+    }
+    let id = '';
+    const r = run(
+      (s, at) => registerGoogleCustomer(s, profile, at),
+      (v) => {
+        id = v.user.id;
+        return v.state;
+      },
+    );
+    if (!r.ok) return setError(r.error);
+    login(id);
+    showToast(`Chào mừng ${r.value.user.name}. Đã tạo tài khoản khách hàng.`);
+  };
+
+  // Tài khoản đăng nhập bằng Google là của người dùng thật, không đưa vào danh sách tài khoản demo.
   const groups: { title: string; users: UserAccount[] }[] = [
-    { title: 'Khách hàng', users: state.users.filter((u) => u.role === 'customer') },
+    { title: 'Khách hàng', users: state.users.filter((u) => u.role === 'customer' && !u.google) },
     { title: 'HTX', users: state.users.filter((u) => u.role === 'coop') },
     { title: 'Admin', users: state.users.filter((u) => u.role === 'admin') },
     { title: 'Cơ quan QLNN', users: state.users.filter((u) => u.role === 'regulator') },
@@ -132,6 +156,12 @@ export function LoginScreen() {
               >
                 Khách hàng mới? Đăng ký
               </SecondaryButton>
+              <div className="flex items-center gap-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-champagne-700" aria-hidden="true">
+                <span className="h-px flex-1 bg-champagne-200" />
+                hoặc
+                <span className="h-px flex-1 bg-champagne-200" />
+              </div>
+              <GoogleSignIn onProfile={googleSignIn} />
             </>
           )}
 
