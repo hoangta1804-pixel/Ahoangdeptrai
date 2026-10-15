@@ -18,6 +18,7 @@ const OrderDetailSheet = lazy(() => import('../screens/customer/OrderDetailSheet
 const ComplaintSheet = lazy(() => import('../screens/customer/ComplaintSheet').then((m) => ({ default: m.ComplaintSheet })));
 const ReviewSheet = lazy(() => import('../screens/customer/ReviewSheet').then((m) => ({ default: m.ReviewSheet })));
 const CoopOrderSheet = lazy(() => import('../screens/coop/CoopOrderSheet').then((m) => ({ default: m.CoopOrderSheet })));
+const CoopHarvestSheet = lazy(() => import('../screens/coop/CoopHarvestSheet').then((m) => ({ default: m.CoopHarvestSheet })));
 const CoopProductFormSheet = lazy(() => import('../screens/coop/CoopProductFormSheet').then((m) => ({ default: m.CoopProductFormSheet })));
 
 /** Hiển thị đúng một sheet đang mở. Sheet nhận mã bản ghi và đọc dữ liệu mới nhất từ store. */
@@ -59,6 +60,8 @@ function ModalContent() {
       return <ComplaintSheet orderId={modal.orderId} onClose={closeModal} />;
     case 'coop_order':
       return <CoopOrderSheet key={modal.orderId} orderId={modal.orderId} onClose={closeModal} />;
+    case 'coop_harvest':
+      return <CoopHarvestSheet key={modal.productId} productId={modal.productId} onClose={closeModal} />;
     case 'demo_panel':
       return <DemoPanel onClose={closeModal} />;
     case 'review':

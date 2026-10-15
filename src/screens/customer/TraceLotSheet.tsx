@@ -1,5 +1,6 @@
 import { BottomSheet } from '../../components/BottomSheet';
 import { ProductImage } from '../../components/ProductImage';
+import { latestHarvest } from '../../domain/harvest';
 import { findProduct, formatDateKey } from '../../domain/state';
 import { CATEGORY_LABEL, ORDER_KIND_LABEL } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
@@ -13,6 +14,7 @@ export function TraceLotSheet({ productId, onClose }: { productId: string; onClo
   const product = findProduct(state, productId);
   if (!product) return null;
   const coop = state.coops.find((c) => c.id === product.coopId);
+  const harvest = latestHarvest(state, product.id);
   const rows: [string, string | undefined][] = [
     ['Sản phẩm', product.name],
     ['Đơn vị bán', coop?.name],
@@ -29,6 +31,7 @@ export function TraceLotSheet({ productId, onClose }: { productId: string; onClo
         ? `${formatDateKey(product.preorder.deliveryFrom)} – ${formatDateKey(product.preorder.deliveryTo)}${product.sample?.deliveryWindowIsSample ? ' (mẫu, chờ HTX xác nhận)' : ''}`
         : undefined,
     ],
+    ['Thu hoạch gần nhất', harvest ? `${formatDateKey(harvest.harvestedOn)} (HTX xác nhận)` : undefined],
   ];
   return (
     <BottomSheet title="Thông tin nguồn gốc" onClose={onClose}>
@@ -52,6 +55,7 @@ export function TraceLotSheet({ productId, onClose }: { productId: string; onClo
       <p className="text-sm leading-relaxed text-stone-600">{product.description}</p>
       <p className="rounded-2xl border border-champagne-200 bg-champagne-50 p-3 text-sm leading-relaxed text-champagne-950">
         Thông tin lô (mã lô, ngày thu hoạch, ngày đóng gói) do HTX khai khi tạo lô hàng.
+        {harvest && ' Ngày thu hoạch gần nhất do HTX tự khai khi xác nhận thu hoạch xong, sàn không kiểm chứng.'}
         {product.sample && ' Dữ liệu trên là dữ liệu mẫu, chờ HTX xác nhận.'}
       </p>
     </BottomSheet>

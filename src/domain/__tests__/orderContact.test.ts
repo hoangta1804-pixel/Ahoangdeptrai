@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { placeCheckout } from '../checkout';
+import { coopConfirmHarvest } from '../harvest';
 import { deriveNotifications } from '../notifications';
 import {
   contactForCoop,
@@ -33,29 +34,35 @@ function preorder(): { s: DemoState; id: string } {
 }
 
 const keys = (s: DemoState, id: string) => orderJourney(s, s.orders.find((o) => o.id === id)!).steps.map((x) => `${x.key}:${x.state}`);
+const step = (s: DemoState, key: string) => orderJourney(s, s.orders[0]).steps.find((x) => x.key === key);
 
 describe('Hành trình giao hàng đơn đặt trước: vào mùa → HTX liên hệ → giao', () => {
   it('các bước đi đúng thứ tự; bước liên hệ hiện khi HTX báo sẵn sàng và xong khi HTX gọi điện', () => {
     let { s, id } = preorder();
-    expect(keys(s, id)).toEqual(['placed:done', 'confirmed:current', 'ready:upcoming', 'contact:upcoming', 'remaining:upcoming', 'handover:upcoming', 'shipping:upcoming', 'delivered:upcoming']);
+    expect(keys(s, id)).toEqual(['placed:done', 'confirmed:current', 'harvest:upcoming', 'ready:upcoming', 'contact:upcoming', 'remaining:upcoming', 'handover:upcoming', 'shipping:upcoming', 'delivered:upcoming']);
 
     s = must(coopConfirm(s, id, COOP_X, T0));
-    expect(keys(s, id).slice(1, 3)).toEqual(['confirmed:done', 'ready:current']);
-    expect(orderJourney(s, s.orders[0]).steps[2].detail).toBe('Chờ thu hoạch, giao dự kiến ngày 24/10/2026');
+    expect(keys(s, id).slice(1, 4)).toEqual(['confirmed:done', 'harvest:current', 'ready:upcoming']);
+    expect(step(s, 'harvest')?.detail).toBe('Chờ thu hoạch, giao dự kiến ngày 24/10/2026');
     expect(needsReadyContact(s, s.orders[0])).toBe(false);
 
-    // Vào mùa: HTX báo sẵn sàng → cần liên hệ khách; khách cần trả phần còn lại (hai việc song song).
+    // Vào mùa: HTX xác nhận thu hoạch xong (chưa báo sẵn sàng) → bước báo sẵn sàng đến lượt.
+    const t0 = addMs(T0, 30 * MINUTE_MS);
+    s = must(coopConfirmHarvest(s, COOP_X, { productId: 'x-pre', orderId: id, harvestedOn: '2026-10-14', note: 'Lô đầu mùa', photos: ['data:image/jpeg;base64,AA'], reportReady: false }, t0)).state;
+    expect(keys(s, id).slice(2, 4)).toEqual(['harvest:done', 'ready:current']);
+    expect(step(s, 'harvest')).toMatchObject({ at: t0.toISOString(), detail: 'Thu hoạch ngày 14/10/2026 – Lô đầu mùa', photos: ['data:image/jpeg;base64,AA'] });
+
+    // HTX báo sẵn sàng → cần liên hệ khách; khách cần trả phần còn lại (hai việc song song).
     const t1 = addMs(T0, HOUR_MS);
     s = must(coopReportReady(s, id, COOP_X, t1));
-    expect(keys(s, id).slice(2, 5)).toEqual(['ready:done', 'contact:current', 'remaining:current']);
+    expect(keys(s, id).slice(3, 6)).toEqual(['ready:done', 'contact:current', 'remaining:current']);
     expect(needsReadyContact(s, s.orders[0])).toBe(true);
 
     // HTX gọi điện và ghi kết quả → bước liên hệ xong, khách có thông báo.
     const t2 = addMs(t1, 10 * MINUTE_MS);
     const before = s;
     s = must(logCoopCall(s, id, COOP_X, 'scheduled', 'Giao sáng thứ Bảy', t2));
-    const contact = orderJourney(s, s.orders[0]).steps[3];
-    expect(contact).toMatchObject({ state: 'done', at: t2.toISOString(), detail: 'Gọi điện: Đã hẹn lịch giao – Giao sáng thứ Bảy' });
+    expect(step(s, 'contact')).toMatchObject({ state: 'done', at: t2.toISOString(), detail: 'Gọi điện: Đã hẹn lịch giao – Giao sáng thứ Bảy' });
     expect(needsReadyContact(s, s.orders[0])).toBe(false);
     const notified = deriveNotifications(before, s, t2).notifications.filter((n) => n.title.includes('đã gọi cho bạn'));
     expect(notified.map((n) => n.userId)).toEqual(['u-kh1']);
@@ -76,7 +83,9 @@ describe('Hành trình giao hàng đơn đặt trước: vào mùa → HTX liên
     const { tx, state: withTx } = must(ensureRemainingTransaction(s, id, T0));
     s = must(applyGatewayResult(withTx, tx.id, 'success', 'R2', T0)).state;
     s = must(coopHandover(s, id, COOP_X, T0));
-    expect(orderJourney(s, s.orders[0]).steps.find((x) => x.key === 'contact')).toMatchObject({ state: 'skipped', detail: 'Không ghi nhận liên hệ' });
+    expect(step(s, 'contact')).toMatchObject({ state: 'skipped', detail: 'Không ghi nhận liên hệ' });
+    // Đơn báo sẵn sàng từ trước khi có bước xác nhận thu hoạch: bước thu hoạch coi như xong, không có ngày.
+    expect(step(s, 'harvest')).toMatchObject({ state: 'done', at: undefined, detail: undefined });
 
     const cancelled = preorder();
     const j = orderJourney(cancelled.s, { ...cancelled.s.orders[0], status: 'cancelled', statusHistory: [...cancelled.s.orders[0].statusHistory, { from: 'awaiting_confirmation', to: 'cancelled', at: T0.toISOString(), actor: COOP_X, reason: 'HTX từ chối' }] });
@@ -145,9 +154,9 @@ describe('Bước liên hệ trong hành trình', () => {
     s = must(coopReportReady(s, id, COOP_X, T0));
     const t1 = addMs(T0, MINUTE_MS);
     s = must(sendOrderMessage(s, id, COOP_X, 'Hàng đã vào mùa', t1));
-    expect(orderJourney(s, s.orders[0]).steps[3]).toMatchObject({ state: 'done', at: t1.toISOString(), detail: 'Đã nhắn tin cho khách' });
+    expect(step(s, 'contact')).toMatchObject({ state: 'done', at: t1.toISOString(), detail: 'Đã nhắn tin cho khách' });
     s = must(logCoopCall(s, id, COOP_X, 'no_answer', '', addMs(T0, 2 * MINUTE_MS)));
     s = must(logCoopCall(s, id, COOP_X, 'scheduled', 'Chiều Chủ nhật', addMs(T0, 3 * MINUTE_MS)));
-    expect(orderJourney(s, s.orders[0]).steps[3]).toMatchObject({ at: t1.toISOString(), detail: 'Gọi điện: Đã hẹn lịch giao – Chiều Chủ nhật' });
+    expect(step(s, 'contact')).toMatchObject({ at: t1.toISOString(), detail: 'Gọi điện: Đã hẹn lịch giao – Chiều Chủ nhật' });
   });
 });

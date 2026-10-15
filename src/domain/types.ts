@@ -415,6 +415,28 @@ export interface Order {
   cancelReason?: string;
   /** Lần cuối khách / HTX mở phần trao đổi của đơn (để đếm tin chưa đọc). */
   chatReadAt?: { customer?: string; coop?: string };
+  /** Đơn đặt trước: HTX đã xác nhận thu hoạch xong cho từng sản phẩm của đơn (mã lần thu hoạch). */
+  harvest?: Record<string, string>;
+}
+
+/** Một lần HTX xác nhận thu hoạch xong một sản phẩm đặt trước (cho một đơn hoặc cả lô đơn đang chờ). */
+export interface HarvestRecord {
+  id: string;
+  coopId: string;
+  productId: string;
+  productName: string;
+  unit: string;
+  /** Ngày thu hoạch, yyyy-mm-dd. */
+  harvestedOn: string;
+  /** Sản lượng HTX khai cho lần này (đơn vị bán của sản phẩm). */
+  quantity: number;
+  note: string;
+  /** Ảnh lô hàng HTX chụp (đã thu nhỏ), không bắt buộc. */
+  photos: string[];
+  /** Các đơn được chia hàng từ lần thu hoạch này. */
+  orderIds: string[];
+  confirmedAt: string;
+  confirmedBy: string;
 }
 
 /** Kết quả cuộc gọi HTX ghi lại sau khi gọi khách. */
@@ -729,4 +751,6 @@ export interface DemoState {
   lowStockAlerts: Record<string, string>;
   /** Trao đổi theo đơn giữa khách và HTX. Không bắt buộc để dữ liệu đã lưu từ bản trước vẫn đọc được. */
   orderMessages?: OrderMessage[];
+  /** Các lần HTX xác nhận thu hoạch xong. Không bắt buộc, như orderMessages. */
+  harvests?: HarvestRecord[];
 }
