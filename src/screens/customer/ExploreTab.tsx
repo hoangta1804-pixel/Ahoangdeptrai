@@ -238,9 +238,9 @@ export function ExploreTab() {
 
 /**
  * Thẻ sản phẩm: khung ảnh hình vòm viền vàng, tên chữ có chân căn giữa, giá và nút thêm vào giỏ.
- * Đã có trong giỏ thì thẻ hiện − / số / + để tăng giảm tại chỗ.
+ * Đã có trong giỏ thì thẻ hiện − / số / + để tăng giảm tại chỗ. Dùng lại ở "Có thể bạn cũng thích" của Đơn mua.
  */
-function ProductCard({ product: p }: { product: Product }) {
+export function ProductCard({ product: p }: { product: Product }) {
   const { state } = useStore();
   const { openModal } = useUi();
   const { add, cart, update, remove } = useCartActions();

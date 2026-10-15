@@ -4,6 +4,7 @@
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { actorOf } from '../domain/auth';
+import type { OrderTabKey } from '../domain/orderTabs';
 import type { Actor, AdminSubGroup, CartLine, UserAccount } from '../domain/types';
 import { useStore } from '../store/AppDataContext';
 import { loadSession, saveSession } from '../store/persistence';
@@ -50,6 +51,11 @@ interface UiContextValue {
   adminGroup: AdminSubGroup;
   customerTab: CustomerTab;
   setCustomerTab: (tab: CustomerTab) => void;
+  /** Tab đang chọn trong "Đơn mua" của khách. */
+  orderTab: OrderTabKey;
+  setOrderTab: (tab: OrderTabKey) => void;
+  /** Mở "Đơn mua" ở đúng tab (từ các biểu tượng trạng thái trong Tài khoản). */
+  openOrders: (tab: OrderTabKey) => void;
   modal: ModalState | null;
   openModal: (modal: ModalState) => void;
   closeModal: () => void;
@@ -63,6 +69,7 @@ export function UiProvider({ children }: { children: ReactNode }) {
   const { state } = useStore();
   const [userId, setUserId] = useState<string | null>(() => loadSession());
   const [customerTab, setCustomerTab] = useState<CustomerTab>('explore');
+  const [orderTab, setOrderTab] = useState<OrderTabKey>('all');
   const [modal, setModal] = useState<ModalState | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -81,6 +88,11 @@ export function UiProvider({ children }: { children: ReactNode }) {
     setUserId(id);
     setModal(null);
     setCustomerTab('explore');
+    setOrderTab('all');
+  }, []);
+  const openOrders = useCallback((tab: OrderTabKey) => {
+    setOrderTab(tab);
+    setCustomerTab('orders');
   }, []);
   const logout = useCallback(() => {
     saveSession(null);
@@ -103,13 +115,16 @@ export function UiProvider({ children }: { children: ReactNode }) {
       adminGroup: user?.adminGroup ?? 'operations',
       customerTab,
       setCustomerTab,
+      orderTab,
+      setOrderTab,
+      openOrders,
       modal,
       openModal: setModal,
       closeModal,
       toast,
       showToast,
     };
-  }, [user, login, logout, customerTab, modal, closeModal, toast, showToast]);
+  }, [user, login, logout, customerTab, orderTab, openOrders, modal, closeModal, toast, showToast]);
   return <UiContext.Provider value={value}>{children}</UiContext.Provider>;
 }
 

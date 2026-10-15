@@ -33,6 +33,75 @@ npm test         # unit test vitest: src/domain, dữ liệu mẫu, quy ước g
 
 ---
 
+## Sau Giai đoạn 6 – "Đơn mua" trong Tài khoản và tab đơn vuốt ngang
+
+**Yêu cầu của chủ repo:** gửi video quay màn "Tôi" của một ứng dụng mua sắm. Muốn tài khoản khách có các chức năng như vậy, và vuốt qua lại giữa các tab đơn được như trong video.
+
+### Tài khoản của khách
+
+- **"Đơn mua"** ngay dưới thẻ thông tin cá nhân:
+  - 5 biểu tượng trạng thái: Chờ xác nhận, Chờ thu hoạch, Chờ lấy hàng, Đang giao, Đánh giá. Mỗi biểu tượng có số đếm khi có đơn.
+  - "Đánh giá" đếm số đơn Đã giao còn sản phẩm chưa đánh giá.
+  - Bấm một biểu tượng là mở Đơn hàng đúng tab đó; "Xem lịch sử mua hàng" mở tab Tất cả.
+  - Có đơn chờ thanh toán thì có thêm dòng "Bạn có N đơn chờ thanh toán".
+- **"Tiện ích của tôi":** Sổ địa chỉ (số địa chỉ), Giỏ hàng (số sản phẩm), Thông báo (số chưa đọc), Khiếu nại. Bấm là mở đúng cửa sổ.
+- Tài khoản ngân hàng nhận hoàn tiền và nút Đăng xuất giữ nguyên. Máy tính: 2 cột (Đơn mua, Tiện ích | ngân hàng, đăng xuất).
+
+### Đơn hàng: tab vuốt ngang
+
+- **9 tab theo trạng thái:** Tất cả · Chờ thanh toán · Chờ xác nhận · Chờ thu hoạch · Chờ lấy hàng · Đang giao · Đã giao · Trả hàng · Đã huỷ.
+  - Mỗi trạng thái đơn của SRS thuộc đúng một tab: Chờ lấy hàng = Đã xác nhận + Đang chuẩn bị; Trả hàng = Trả hàng – hoàn tiền + Đang chuyển hoàn + Đã hoàn về.
+  - Tab có đơn thì hiện số đơn.
+- **Hàng tab:** có gạch chân chạy theo tab đang chọn, tự cuộn để tab đang chọn nằm giữa, dính ngay dưới thanh "Nhận hàng tại" khi cuộn.
+- **Vuốt trái / phải trên danh sách** để sang tab bên cạnh, nội dung trượt theo ngón tay.
+  - Thả tay quá 1/5 bề rộng, hoặc vuốt nhanh, thì chuyển tab; không thì trượt về.
+  - Vuốt dọc vẫn cuộn trang như thường. Ở tab đầu / cuối, vuốt ra ngoài chỉ nhích nhẹ rồi trượt về.
+  - Đổi tab khi đang cuộn xuống dưới thì trang đưa đầu danh sách về ngay dưới hàng tab.
+- **Máy tính:** bấm tab, hoặc dùng phím mũi tên / Home / End trên hàng tab (mẫu tablist của WAI-ARIA). Chuột không kéo để vuốt, để không cản việc chọn chữ và bấm thẻ đơn.
+- **Tab trống:** "Chưa có đơn nào ở mục …", kèm "Có thể bạn cũng thích".
+  - Gợi ý: sản phẩm đang mở bán khách chưa mua, ưu tiên điểm đánh giá cao. Không dùng số lượng bán ra, vì dữ liệu mẫu không có số này.
+  - Thẻ sản phẩm giống trang Khám phá, thêm vào giỏ ngay được.
+- **Thẻ đơn có thêm nút theo tình trạng:**
+  - Chờ thanh toán: **Thanh toán** (mở cổng thanh toán mô phỏng).
+  - Đã giao còn sản phẩm chưa đánh giá: dòng "Chờ bạn đánh giá N sản phẩm" và nút **Đánh giá**.
+  - Đơn có hoàn tiền (huỷ, trả hàng): dòng "Số tiền hoàn: … · Chờ hoàn tiền / Đang hoàn tiền / Đã hoàn tiền" và nút **Xem hoàn tiền**.
+  - Đã giao, Đã huỷ, Trả hàng: **Mua lại**.
+    - Đưa các sản phẩm của đơn vào giỏ với số lượng như cũ, bớt lại nếu không còn đủ. Sản phẩm không còn bán hoặc hết hàng thì bỏ qua và nêu lý do.
+    - Giỏ mở ngay sau đó; giá trong giỏ là giá hiện tại.
+
+### Mã nguồn
+
+- **Nghiệp vụ:** `src/domain/orderTabs.ts` (nhóm tab, đếm, đơn chờ đánh giá, tiền hoàn của đơn, "Mua lại", gợi ý).
+- **Thành phần dùng chung:** `src/components/SwipeTabs.tsx`.
+  - Chỉ dựng nội dung tab đang chọn. Tab hai bên chỉ dựng trong lúc vuốt / đang trượt, nên một đơn không xuất hiện 2 lần trên trang.
+  - Tab không hiển thị được đánh dấu `inert`, nên không bấm hay Tab tới được.
+  - Người dùng bật giảm chuyển động thì không trượt.
+- **Giao diện:**
+  - `OrdersTab.tsx` (viết lại);
+  - phần Đơn mua và Tiện ích trong `AccountTab.tsx`;
+  - `UiContext` thêm tab đơn đang chọn và `openOrders(tab)`;
+  - `CustomerTopBar` ghi chiều cao của thanh để hàng tab dính đúng chỗ.
+
+### Kiểm thử
+
+- **Lint, test, build:**
+  - lint không lỗi;
+  - 24 file, 183 test đạt. Test mới `orderTabs.test.ts`: mỗi trạng thái thuộc đúng một tab, đếm theo tab, đơn chờ đánh giá, tiền hoàn, Mua lại (cả hàng đặt trước, sản phẩm ngừng bán, không phải đơn của mình), gợi ý.
+  - build thành công, không cảnh báo.
+- **Playwright ở 320, 390 và 1.280px, vuốt bằng sự kiện chạm thật (CDP):**
+  1. Tài khoản có 5 biểu tượng đúng số đếm và Tiện ích.
+  2. Bấm "Chờ xác nhận" → Đơn hàng đúng tab.
+  3. Vuốt trái → Chờ thu hoạch (tab trống có 6 sản phẩm gợi ý; tab đang chọn nằm trong tầm nhìn). Vuốt trái → Chờ lấy hàng; vuốt phải → quay lại. Vuốt dọc không đổi tab. Phím → và Home đổi tab, focus theo tab.
+  4. Mỗi đơn chỉ có 1 thẻ trên trang.
+  5. Huỷ đơn đã thanh toán → tab Đã huỷ có "Số tiền hoàn 163.000đ · Chờ hoàn tiền", nút Xem hoàn tiền, Mua lại. Mua lại → giỏ mở, có sản phẩm.
+  6. Khách 2: "Đánh giá: 1 đơn" → tab Đã giao có nút Đánh giá, mở đúng cửa sổ đánh giá.
+
+  Kết quả: 0 lỗi axe, 0 vùng bấm dưới 44px, 0 chữ dưới 12px, không tràn ngang, không lỗi JS.
+- **Chạy lại các kịch bản cũ, đều đạt:** kiểm tra giao diện toàn app, xác nhận thu hoạch, giao hàng trên hai máy, Luồng 6, biểu đồ bán chạy, chọn số lượng, giỏ hàng, liên kết ngân hàng, địa chỉ, mã ưu đãi, tràn ngang, dữ liệu chung trên hai máy, SĐT HTX, toàn màn hình 1.920px.
+  - Kịch bản kiểm tra toàn app lần đầu dừng vì nút "Thông báo" mới trong Tiện ích trùng tên với chuông trên đầu trang. Hai nút đều đúng; đã sửa kịch bản để bấm chuông trên đầu trang, chạy lại thì đạt.
+
+---
+
 ## Sau Giai đoạn 6 – Toàn màn hình trên máy tính, 2 SĐT cho mỗi HTX
 
 **Yêu cầu của chủ repo:**
@@ -1500,6 +1569,10 @@ Ngoài các ca trên còn có test cho:
 68. **Mỗi HTX có đúng 2 SĐT liên hệ,** cả 2 đều bắt buộc. Nhận số di động 10 số và số cố định 11 số bắt đầu bằng 02; chưa nhận đầu số 1800 / 1900.
 69. **HTX đổi SĐT liên hệ không cần Admin duyệt,** khác các thông tin hồ sơ khác (tên, vùng, người đại diện, giới thiệu), để khách luôn gọi được số đang dùng. Mỗi lần đổi có ghi nhật ký thao tác.
 70. **SĐT liên hệ của HTX chỉ Admin (mọi nhóm quyền) và chính HTX xem được.** Khách và Cơ quan QLNN không xem được.
+71. **Tab đơn theo kiểu ứng dụng mua sắm gộp trạng thái SRS:** "Chờ lấy hàng" gồm Đã xác nhận và Đang chuẩn bị; "Trả hàng" gồm 3 trạng thái trả hàng. Nhãn trạng thái trên từng thẻ đơn vẫn theo SRS.
+72. **"Mua lại" chỉ đưa sản phẩm vào giỏ, không đặt hàng ngay.** Giá theo giá hiện tại; hàng đặt trước lấy ngày giao sớm nhất còn chọn được, khách đổi ngày trong giỏ.
+73. **"Có thể bạn cũng thích" không cá nhân hoá theo hành vi:** chỉ bỏ sản phẩm khách đã mua và xếp theo điểm đánh giá. Khách đã mua hết thì gợi ý lại mọi sản phẩm đang bán.
+74. **Biểu tượng "Đánh giá" mở tab Đã giao,** nơi đơn chờ đánh giá có nút Đánh giá. Đơn nhiều sản phẩm thì nút mở sản phẩm đầu tiên chưa đánh giá; các sản phẩm còn lại đánh giá trong chi tiết đơn.
 
 ## Vấn đề chờ nhóm chốt
 
