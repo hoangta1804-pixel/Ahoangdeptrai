@@ -33,6 +33,75 @@ npm test         # unit test vitest: src/domain, dữ liệu mẫu, quy ước g
 
 ---
 
+## Sau Giai đoạn 6 – Nhận diện "sang" cho toàn app
+
+**Yêu cầu của chủ repo:** giao diện còn đơn giản quá, cần đặc sắc và sang hơn.
+
+**Hướng làm:** lấy cảm hứng từ thổ cẩm vùng cao và bao bì quà biếu cao cấp. Màu vẫn là xanh rừng và vàng champagne của nhóm (không đổi token màu gốc), thêm hoa văn, khung ảnh, chữ có chân.
+- Không thêm lời quảng cáo, cam kết, giải thưởng hay số liệu nào.
+- Các bước "Cách mua" chỉ mô tả đúng luồng của app.
+- Mọi hoa văn vẽ bằng SVG nhúng, không tải ảnh ngoài.
+
+### Thành phần dùng chung
+
+- **Logo và chữ thương hiệu** (`src/components/Brand.tsx`):
+  - Biểu tượng hình tròn viền vàng: núi, mặt trời, ruộng bậc thang.
+  - Chữ "ĐẶC SẢN SỐ" viết hoa, "Lào Cai" chữ có chân nghiêng.
+  - Có thêm đường trang trí (vạch – quả trám – vạch), dải hoa văn và tiêu đề mục (dòng nhỏ màu vàng + tiêu đề chữ có chân).
+- **Hoa văn trong `src/index.css`** (SVG nhúng, chỉ để trang trí):
+  - `brocade-dark` / `brocade-light`: dải quả trám, răng cưa;
+  - `lattice`: hoa văn chìm rất mờ trên nền tối;
+  - `paper-grain`: nền giấy ngà có vân nhẹ;
+  - `text-gold`: chữ ánh vàng cho tiêu đề lớn trên nền tối;
+  - `drop-cap`: chữ hoa đầu đoạn mô tả;
+  - `leader`: dòng chấm trong bảng thông tin.
+- **Thanh đầu trang:**
+  - Có logo và chữ thương hiệu, dải hoa văn ở mép dưới.
+  - Trên máy tính hiện thêm tên và vai trò.
+  - Trên điện thoại, tài khoản HTX / Admin / QLNN hiện tên và vai trò thay cho chữ thương hiệu.
+- **Thanh tab của khách:** nền xanh rừng đậm, tab đang mở có quả trám vàng. Trên máy tính là thanh nổi bo tròn.
+- **Bảng trượt (sheet):** tiêu đề chữ có chân, mép trên có hoa văn, viền vàng mảnh. Thông báo nổi nền xanh đậm.
+- **Nút:**
+  - Nút chính màu chuyển nhẹ, có bóng.
+  - Nút phụ viền vàng.
+  - Ô trống có đường trang trí.
+
+### Màn của khách
+
+- **Bố cục rộng trên máy tính:** trang khách và màn đăng nhập rộng tối đa 1152px thay vì một cột 640px. Lưới sản phẩm 2 cột trên điện thoại, 3 cột trên máy tính bảng, 4 cột trên máy tính.
+- **Khám phá:**
+  - **Đầu trang:** nền tối có hoa văn chìm, tiêu đề chữ ánh vàng, dải số liệu (số sản phẩm, số HTX, nơi giao), nút "Xem sản phẩm" và "Đặt trước theo mùa". Trên máy tính có thêm 3 khung tranh hình vòm.
+  - **Tìm và lọc:** ô tìm bo tròn, chip lọc viền vàng.
+  - **Khối "Đặt trước theo mùa":** liệt kê sản phẩm đang nhận đặt trước, ẩn khi đang tìm hoặc lọc.
+  - **Thẻ sản phẩm:** ảnh trong khung vòm viền vàng, chữ căn giữa, giá chữ có chân. Màn hẹp hơn 390px dùng cỡ giá nhỏ hơn để giá không bị nút "+" che.
+  - **Cuối trang:** mục "Cách mua" 3 bước và chân trang có logo.
+- **Chi tiết sản phẩm:**
+  - Khung ảnh viền kép, nút "Xem nguồn gốc" nền tối chữ vàng, giá cỡ lớn chữ có chân.
+  - Mô tả có chữ hoa đầu đoạn.
+  - Bảng "thông tin" có dòng chấm: vùng, HTX, nhóm hàng, hình thức, quy cách, lấy từ dữ liệu sản phẩm.
+- **Vụ mùa:** đầu trang cùng kiểu, ảnh khung vòm dẹt, 3 cột trên máy tính.
+- **Đơn hàng:** tiêu đề mục mới; thẻ đơn có vạch vàng bên trái, tên hàng và tổng tiền chữ có chân.
+- **Tài khoản:** thẻ đầu trang nền tối với vòng tròn chữ viết tắt tên viền vàng. Các mục khác viền vàng, biểu tượng trong vòng tròn tối.
+- **Đăng nhập:**
+  - Khối giới thiệu có logo lớn và tiêu đề chữ ánh vàng.
+  - Trên máy tính chia 2 cột: giới thiệu bên trái, đăng nhập bên phải.
+  - Tài khoản demo có vòng tròn chữ viết tắt, màu theo vai trò.
+- **HTX, Admin, QLNN:** đầu trang của từng kênh cùng kiểu (nền tối, hoa văn, chữ có chân). Phần làm việc giữ nguyên để dễ thao tác.
+
+### Kiểm thử
+
+- **Lint, test, build:** lint không lỗi; 17 file, 142 test đạt; build thành công. Phần chung 485 kB (gzip 142 kB), tăng khoảng 16 kB.
+- **Kiểm tra giao diện tự động**, chạy cả bản thường và bản tắt nền vân giấy để công cụ đo tương phản đọc được màu nền thật:
+  - mọi màn;
+  - Luồng 1, Luồng 2;
+  - chọn số lượng ở 320px và 390px, liên kết ngân hàng, chọn sản phẩm trong giỏ, địa chỉ, mã ưu đãi;
+  - hai máy dùng chung dữ liệu.
+
+  Kết quả: 0 lỗi axe, 0 vùng bấm dưới 44px, 0 chữ dưới 12px, không lỗi JS.
+- **Tràn chữ:** đo ở 320, 360, 390, 768 và 1280px. Không có chữ bị cắt hay bị che, không cuộn ngang.
+
+---
+
 ## Sau Giai đoạn 6 – Chọn số lượng, nhãn địa chỉ, liên kết ngân hàng (mô phỏng)
 
 **Chủ repo báo 3 việc:**

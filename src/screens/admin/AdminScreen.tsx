@@ -68,13 +68,14 @@ export function AdminScreen() {
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 lg:flex-row">
       <aside className="space-y-3 lg:w-56 lg:shrink-0">
-        <div className="rounded-3xl bg-forest-900 p-4 text-white">
-          <span className="text-xs font-bold uppercase tracking-wider text-forest-200">Quản trị</span>
-          <p className="text-base font-bold">Admin – {ADMIN_GROUP_LABEL[adminGroup]}</p>
+        <div className="lattice relative overflow-hidden rounded-3xl bg-forest-950 p-4 pb-6 text-white">
+          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-champagne-300">Quản trị</span>
+          <p className="font-display text-lg font-semibold">Admin – {ADMIN_GROUP_LABEL[adminGroup]}</p>
+          <div aria-hidden="true" className="brocade-dark absolute inset-x-0 bottom-0 h-2" />
         </div>
         <nav className="no-scrollbar flex gap-1 overflow-x-auto lg:flex-col" aria-label="Chức năng quản trị">
           {TABS[adminGroup].map((t) => (
-            <button key={t.key} onClick={() => setTab(t.key)} aria-current={current.key === t.key ? 'page' : undefined} className={`min-h-11 whitespace-nowrap rounded-xl px-3 text-left text-sm font-medium ${current.key === t.key ? 'bg-forest-800 text-white' : 'bg-white text-stone-700 hover:bg-stone-100'}`}>
+            <button key={t.key} onClick={() => setTab(t.key)} aria-current={current.key === t.key ? 'page' : undefined} className={`min-h-11 whitespace-nowrap rounded-xl px-3 text-left text-sm font-medium ${current.key === t.key ? 'bg-forest-900 text-champagne-100 ring-1 ring-champagne-400/60' : 'bg-white text-stone-700 hover:bg-stone-100'}`}>
               {t.label}
             </button>
           ))}

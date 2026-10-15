@@ -21,7 +21,7 @@ export function PrimaryButton({ children, className = '', ...rest }: ButtonHTMLA
   return (
     <button
       {...rest}
-      className={`min-h-11 rounded-2xl bg-forest-800 px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-forest-700 disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-600 ${className}`}
+      className={`min-h-11 rounded-2xl bg-forest-800 bg-linear-to-b from-forest-700 to-forest-900 px-4 py-3 text-sm font-bold text-white shadow-[inset_0_1px_0_rgb(255,255,255,0.14),0_6px_16px_rgb(31,77,58,0.22)] transition hover:from-forest-600 hover:to-forest-800 disabled:cursor-not-allowed disabled:bg-stone-300 disabled:bg-none disabled:text-stone-600 disabled:shadow-none ${className}`}
     >
       {children}
     </button>
@@ -32,7 +32,7 @@ export function SecondaryButton({ children, className = '', ...rest }: ButtonHTM
   return (
     <button
       {...rest}
-      className={`min-h-11 rounded-2xl border border-stone-300 bg-white px-4 py-3 text-sm font-bold text-stone-800 transition-colors hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+      className={`min-h-11 rounded-2xl border border-champagne-300 bg-white px-4 py-3 text-sm font-bold text-forest-900 transition-colors hover:border-champagne-500 hover:bg-champagne-50 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
     >
       {children}
     </button>

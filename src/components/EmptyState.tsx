@@ -1,9 +1,11 @@
 import type { ReactNode } from 'react';
+import { Ornament } from './Brand';
 
 /** Trạng thái rỗng của danh sách (Giai đoạn 6, mục 10.5). */
 export function EmptyState({ children, action }: { children: ReactNode; action?: ReactNode }) {
   return (
-    <div className="space-y-3 rounded-2xl border border-dashed border-stone-300 bg-white p-6 text-center text-sm text-stone-600">
+    <div className="space-y-3 rounded-3xl border border-champagne-200 bg-white/80 p-6 text-center text-sm text-stone-600">
+      <Ornament className="mx-auto" />
       <div>{children}</div>
       {action}
     </div>
@@ -23,7 +25,7 @@ export function ErrorState({ children, action }: { children: ReactNode; action?:
 /** Nhãn "Mô phỏng" bắt buộc trên mọi chức năng mô phỏng (nguyên tắc 6). */
 export function SimBadge({ className = '' }: { className?: string }) {
   return (
-    <span className={`inline-block rounded-md bg-stone-900 px-1.5 py-0.5 text-xs font-bold uppercase tracking-wide text-champagne-300 ${className}`}>
+    <span className={`inline-block rounded-md bg-stone-900 px-1.5 py-0.5 font-sans text-xs font-bold uppercase tracking-wide text-champagne-300 ${className}`}>
       Mô phỏng
     </span>
   );

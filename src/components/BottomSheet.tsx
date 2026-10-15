@@ -39,11 +39,13 @@ export function BottomSheet({ title, onClose, children, footer, closeLabel = 'Đ
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="flex max-h-[min(90dvh,calc(100dvh-3.5rem))] w-full max-w-[640px] flex-col rounded-t-[32px] bg-white shadow-2xl md:rounded-[32px]"
+        className="relative flex max-h-[min(90dvh,calc(100dvh-3.5rem))] w-full max-w-[640px] flex-col overflow-hidden rounded-t-[32px] bg-white shadow-2xl md:rounded-[32px]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-3 px-5 pt-4 pb-2">
-          <div id={titleId} className="min-w-0 flex-1 pt-2 text-base font-bold text-ink">{title}</div>
+        {/* Viền vàng mảnh và hoa văn ở mép trên của sheet. */}
+        <div aria-hidden="true" className="brocade-light h-2 opacity-80" />
+        <div className="flex items-start justify-between gap-3 border-b border-champagne-200/70 px-5 pt-2 pb-2">
+          <div id={titleId} className="min-w-0 flex-1 pt-2 font-display text-xl font-semibold leading-snug text-ink">{title}</div>
           <button
             type="button"
             onClick={onClose}
@@ -53,9 +55,9 @@ export function BottomSheet({ title, onClose, children, footer, closeLabel = 'Đ
             <X size={20} />
           </button>
         </div>
-        <div className="flex-1 space-y-4 overflow-y-auto overscroll-contain px-5 pb-5">{children}</div>
+        <div className="flex-1 space-y-4 overflow-y-auto overscroll-contain px-5 pt-3 pb-5">{children}</div>
         {footer && (
-          <div className="border-t border-stone-100 px-5 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]">{footer}</div>
+          <div className="border-t border-champagne-200/70 bg-champagne-50/60 px-5 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]">{footer}</div>
         )}
       </div>
     </div>

@@ -79,10 +79,14 @@ export function BankLinkSection() {
   const lastDigits = input.accountNumber.replace(/\D/g, '').slice(-4);
 
   return (
-    <section className="space-y-3 rounded-3xl border border-stone-200 bg-white p-4 shadow-xs" aria-labelledby="bank-link-title">
-      <h3 id="bank-link-title" className="flex flex-wrap items-center gap-2 text-sm font-bold text-ink">
-        <Landmark size={18} className="text-forest-600" /> Tài khoản ngân hàng nhận hoàn tiền
-        <SimBadge />
+    <section className="space-y-3 rounded-3xl border border-champagne-200 bg-white p-4 shadow-xs" aria-labelledby="bank-link-title">
+      <h3 id="bank-link-title" className="flex items-start gap-2.5 font-display text-lg font-semibold leading-snug text-ink">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-forest-900 text-champagne-300">
+          <Landmark size={16} aria-hidden="true" />
+        </span>
+        <span className="pt-1">
+          Tài khoản ngân hàng nhận hoàn tiền <SimBadge className="ml-1 align-middle" />
+        </span>
       </h3>
 
       {step === 'view' &&

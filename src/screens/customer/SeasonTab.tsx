@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Wheat } from 'lucide-react';
 import { useUi } from '../../app/UiContext';
+import { BrocadeBand, SectionHeading } from '../../components/Brand';
 import { EmptyState } from '../../components/EmptyState';
 import { LandscapeArt } from '../../components/LandscapeArt';
 import { PreorderProgress } from '../../components/PreorderProgress';
@@ -21,24 +22,28 @@ export function SeasonTab() {
   const preorders = state.products.filter((p) => p.kind === 'preorder' && p.status === 'active');
 
   return (
-    <div className="space-y-4 p-4">
-      <section className="relative overflow-hidden rounded-[28px] bg-forest-900 text-white shadow-sm">
+    <div className="space-y-8 px-4 pt-4 pb-8 md:px-6 md:pt-6">
+      <section className="relative overflow-hidden rounded-[32px] bg-forest-950 text-white shadow-[0_24px_60px_rgb(14,37,27,0.28)]">
+        <div aria-hidden="true" className="lattice absolute inset-0" />
         <LandscapeArt className="absolute inset-0 h-full w-full" />
-        <div className="relative space-y-2 px-5 pt-6 pb-24">
-          <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-champagne-300">
+        <div className="relative space-y-3 px-6 pt-8 pb-28 md:max-w-xl md:px-10 md:pt-12 md:pb-36">
+          <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-champagne-300">
             <Wheat size={16} aria-hidden /> Đặt trước theo mùa
           </p>
-          <h2 className="font-display text-[1.6rem] font-semibold leading-tight text-balance">Giữ suất trước mùa thu hoạch</h2>
-          <p className="max-w-md text-sm leading-relaxed text-forest-100">
+          <h2 className="text-gold font-display text-[2rem] font-semibold leading-[1.1] text-balance md:text-5xl">Giữ suất trước mùa thu hoạch</h2>
+          <p className="max-w-md text-sm leading-relaxed text-forest-100 md:text-base">
             Cọc {params.depositPercent}% khi đặt; phần còn lại trả khi hàng sẵn sàng hoặc khi nhận hàng. Đơn đặt trước không có giao hoả tốc.
           </p>
         </div>
+        <BrocadeBand className="absolute inset-x-0 bottom-0" />
       </section>
+
+      <SectionHeading eyebrow="Vụ mùa" title="Đang nhận đặt trước" action={<span className="pb-1 text-xs text-muted">{preorders.length} sản phẩm</span>} />
 
       {preorders.length === 0 ? (
         <EmptyState>Hiện chưa có sản phẩm nào mở đặt trước.</EmptyState>
       ) : (
-        <div className="space-y-3 md:grid md:grid-cols-2 md:gap-3 md:space-y-0">
+        <div className="space-y-4 md:grid md:grid-cols-2 md:gap-5 md:space-y-0 lg:grid-cols-3">
           {preorders.map((p) => {
             const coop = state.coops.find((c) => c.id === p.coopId);
             const remaining = remainingFor(state, p);
@@ -46,22 +51,23 @@ export function SeasonTab() {
             const blocked = !isOrderableIn(state, p) ? 'Chưa mở đặt trước' : remaining <= 0 ? 'Hết suất' : !win ? 'Đã hết thời gian nhận đặt trước' : null;
             const quantity = Math.min(quantities[p.id] ?? 1, Math.max(1, remaining));
             return (
-              <article key={p.id} className="overflow-hidden rounded-3xl bg-white shadow-[0_1px_2px_rgb(0,0,0,0.04),0_10px_28px_rgb(31,77,58,0.07)] ring-1 ring-stone-200/60">
+              <article key={p.id} className="overflow-hidden rounded-[28px] bg-white p-2 shadow-[0_1px_2px_rgb(0,0,0,0.04),0_14px_34px_rgb(31,77,58,0.08)] ring-1 ring-champagne-200/80">
                 <button
                   type="button"
                   onClick={() => openModal({ type: 'product_detail', productId: p.id })}
                   aria-label={`Xem ${p.name}`}
-                  className="block aspect-[16/9] w-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-600"
+                  className="relative block aspect-[16/9] w-full overflow-hidden rounded-tl-[50%_40%] rounded-tr-[50%_40%] rounded-b-[20px] ring-1 ring-champagne-300/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-600"
                 >
                   <ProductImage product={p} variant="card" className="h-full w-full" />
+                  <span aria-hidden="true" className="pointer-events-none absolute inset-1.5 rounded-tl-[50%_40%] rounded-tr-[50%_40%] rounded-b-[16px] border border-white/70" />
                 </button>
-                <div className="space-y-3 p-4">
+                <div className="space-y-3 px-2.5 pt-3 pb-2.5">
                   <div className="min-w-0">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-champagne-700">{p.region}</span>
+                    <span className="text-xs font-semibold uppercase tracking-[0.14em] text-champagne-700">{p.region}</span>
                     <h3 className="font-display text-xl font-semibold leading-snug text-ink">{p.name}</h3>
                     <p className="truncate text-sm text-muted">{coop?.name}</p>
                     <p className="mt-1 text-sm">
-                      <span className="font-extrabold tabular-nums text-forest-800">
+                      <span className="font-display text-lg font-semibold tabular-nums text-forest-900">
                         {formatMoney(p.price)}/{p.unit}
                       </span>{' '}
                       {isSamplePrice(p) && <span className="text-xs font-semibold text-champagne-800">(giá mẫu) </span>}
@@ -85,7 +91,7 @@ export function SeasonTab() {
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       onClick={() => openModal({ type: 'trace_lot', productId: p.id })}
-                      className="min-h-11 rounded-2xl border border-stone-200 bg-white text-sm font-bold text-stone-800 hover:bg-stone-50"
+                      className="min-h-11 rounded-2xl border border-champagne-300 bg-white text-sm font-bold text-forest-900 hover:border-champagne-500 hover:bg-champagne-50"
                     >
                       Nguồn gốc
                     </button>
@@ -95,7 +101,7 @@ export function SeasonTab() {
                         win &&
                         openModal({ type: 'checkout', source: { type: 'buy_now', line: { productId: p.id, quantity, deliveryDate: win.min, seenPrice: p.price } } })
                       }
-                      className="min-h-11 rounded-2xl bg-forest-800 text-sm font-bold text-white hover:bg-forest-700 disabled:bg-stone-300 disabled:text-stone-600"
+                      className="min-h-11 rounded-2xl bg-forest-800 bg-linear-to-b from-forest-700 to-forest-900 text-sm font-bold text-white shadow-[inset_0_1px_0_rgb(255,255,255,0.14)] hover:from-forest-600 hover:to-forest-800 disabled:bg-stone-300 disabled:bg-none disabled:text-stone-600 disabled:shadow-none"
                     >
                       {blocked ?? 'Đặt trước'}
                     </button>

@@ -77,7 +77,7 @@ export function OrderDetailSheet({ orderId, onClose }: { orderId: string; onClos
       title={
         <>
           <span className="block font-mono">{order.id}</span>
-          <span className="mt-1 flex flex-wrap gap-1">
+          <span className="mt-1 flex flex-wrap gap-1 font-sans">
             <OrderStatusBadge status={order.status} />
             <PaymentStatusBadge status={order.paymentStatus} />
           </span>
