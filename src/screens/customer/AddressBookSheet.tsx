@@ -34,7 +34,7 @@ export function AddressBookSheet({ onClose }: { onClose: () => void }) {
       title={
         <>
             Sổ địa chỉ
-            <span className="block text-sm font-normal text-muted">
+            <span className="block font-sans text-sm font-normal text-muted">
               {mine.length}/{MAX_ADDRESSES} địa chỉ · chỉ giao trong Hà Nội
             </span>
         </>

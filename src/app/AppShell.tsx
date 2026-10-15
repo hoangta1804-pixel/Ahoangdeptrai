@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useRef } from 'react';
 import { Bell, FlaskConical, LogOut } from 'lucide-react';
+import { BrandEmblem, BrandWordmark } from '../components/Brand';
 import { DemoBand } from '../components/DemoBand';
 import { ListBoundary } from '../components/ListBoundary';
 import { Toast } from '../components/Toast';
@@ -17,14 +18,17 @@ const RegulatorScreen = lazy(() => import('../screens/regulator/RegulatorScreen'
 
 /**
  * Khung app. Không có thanh chuyển vai trò công khai: vai trò theo tài khoản đăng nhập (mục 5.9).
- * Khách và HTX dùng bố cục điện thoại (rộng tối đa ~640px); Admin và QLNN dùng bố cục rộng.
+ * HTX dùng bố cục điện thoại (rộng tối đa ~640px). Khách, màn đăng nhập, Admin và QLNN dùng bố cục rộng trên máy tính
+ * (trang của khách giãn ra lưới nhiều cột thay vì một cột hẹp như điện thoại).
  */
 export function AppShell() {
   const { state, syncNotice, clearSyncNotice } = useStore();
   const { user, logout, openModal, showToast } = useUi();
   const wide = user?.role === 'admin' || user?.role === 'regulator';
+  const storefront = !user || user.role === 'customer';
   const unread = user ? state.notifications.filter((n) => n.userId === user.id && !n.read).length : 0;
-  const width = wide ? 'max-w-7xl' : 'max-w-[640px]';
+  const width = wide ? 'max-w-7xl' : storefront ? 'max-w-6xl' : 'max-w-[640px]';
+  const roleText = user ? (user.role === 'admin' && user.adminGroup ? `Admin – ${ADMIN_GROUP_LABEL[user.adminGroup]}` : ACCOUNT_ROLE_LABEL[user.role]) : '';
 
   // Chiều cao header (có dải demo, có thể xuống 2 dòng trên điện thoại) để thanh dính bên dưới nằm ngay dưới header.
   const headerRef = useRef<HTMLElement>(null);
@@ -64,25 +68,28 @@ export function AppShell() {
   }, [user?.id]);
 
   return (
-    <div className="flex min-h-dvh flex-col bg-stone-100 text-ink">
-      <header ref={headerRef} className="sticky top-0 z-40 border-b border-forest-950 bg-forest-900 text-forest-100">
+    <div className={`flex min-h-dvh flex-col text-ink ${storefront ? 'paper-grain' : 'bg-stone-100'}`}>
+      <header ref={headerRef} className="sticky top-0 z-40 bg-forest-950 text-forest-100 shadow-[0_6px_20px_rgb(14,37,27,0.18)]">
         <DemoBand />
         <div className={`mx-auto flex w-full items-center gap-1 px-3 py-1.5 ${width}`}>
-          <div className="min-w-0 flex-1">
-            {user ? (
-              <>
+          {/* Logo và chữ thương hiệu. Trên điện thoại, tài khoản HTX / Admin / QLNN hiện tên và vai trò thay cho chữ thương hiệu. */}
+          <div className="flex min-w-0 flex-1 items-center gap-2.5">
+            <BrandEmblem size={38} />
+            <span className={storefront ? 'flex' : 'hidden sm:flex'}>
+              <BrandWordmark />
+            </span>
+            {user && (
+              <span className={`min-w-0 ${storefront ? 'hidden md:block' : 'block'} sm:ml-1 sm:border-l sm:border-champagne-400/30 sm:pl-3`}>
                 <span className="block truncate text-sm font-bold text-white">{user.name}</span>
-                <span className="block truncate text-xs text-forest-200">{user.role === 'admin' && user.adminGroup ? `Admin – ${ADMIN_GROUP_LABEL[user.adminGroup]}` : ACCOUNT_ROLE_LABEL[user.role]}</span>
-              </>
-            ) : (
-              <span className="font-display text-base font-semibold text-white">Đặc Sản Số Lào Cai</span>
+                <span className="block truncate text-xs text-forest-200">{roleText}</span>
+              </span>
             )}
           </div>
           {user && (
             <button
               onClick={() => openModal({ type: 'notifications' })}
               aria-label={`Thông báo, ${unread} chưa đọc`}
-              className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-forest-100 hover:bg-forest-800"
+              className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-forest-100 hover:bg-forest-900"
             >
               <Bell size={20} />
               {unread > 0 && <span className="absolute top-1 right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-champagne-500 px-1 text-xs font-bold text-ink">{unread}</span>}
@@ -91,7 +98,7 @@ export function AppShell() {
           <button
             onClick={() => openModal({ type: 'demo_panel' })}
             aria-label="Công cụ demo: tua thời gian, mô phỏng cổng thanh toán, khôi phục dữ liệu mẫu"
-            className="flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-champagne-400/60 px-2.5 text-sm font-semibold text-champagne-300 hover:bg-forest-800"
+            className="flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-champagne-400/50 px-2.5 text-sm font-semibold text-champagne-300 hover:bg-forest-900"
           >
             <FlaskConical size={16} />
             <span className="hidden sm:inline">Công cụ demo</span>
@@ -103,16 +110,17 @@ export function AppShell() {
                 showToast('Đã đăng xuất.');
               }}
               aria-label="Đăng xuất"
-              className="flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-xl px-2.5 text-sm text-forest-100 hover:bg-forest-800"
+              className="flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-xl px-2.5 text-sm text-forest-100 hover:bg-forest-900"
             >
               <LogOut size={16} />
               <span className="hidden sm:inline">Đăng xuất</span>
             </button>
           )}
         </div>
+        <div aria-hidden="true" className="brocade-dark h-2.5 border-t border-forest-950" />
       </header>
 
-      <main className={`mx-auto flex w-full flex-1 flex-col bg-ivory ${width}`}>
+      <main className={`mx-auto flex w-full flex-1 flex-col ${storefront ? '' : 'bg-ivory'} ${width}`}>
         <ListBoundary key={user?.id ?? 'guest'} label="màn này" resetKey={state}>
           <Suspense fallback={<p className="p-6 text-center text-sm text-stone-600">Đang tải…</p>}>
             {!user && <LoginScreen />}

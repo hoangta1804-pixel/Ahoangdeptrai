@@ -19,12 +19,13 @@ export function RegulatorScreen() {
   const rows = regulatorOrderRows(state, actor);
   return (
     <div className="space-y-4 p-4">
-      <div className="space-y-1 rounded-3xl bg-forest-900 p-4 text-white">
-        <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-champagne-300">
+      <div className="lattice relative space-y-1 overflow-hidden rounded-3xl bg-forest-950 p-4 pb-6 text-white">
+        <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-champagne-300">
           <Building2 size={16} /> Cơ quan quản lý nhà nước – chỉ xem
         </span>
-        <h2 className="text-lg font-bold">Số liệu tổng hợp</h2>
+        <h2 className="font-display text-2xl font-semibold">Số liệu tổng hợp</h2>
         <p className="text-sm text-forest-100">Số liệu tính từ dữ liệu demo hiện có. Không có dữ liệu cá nhân của khách hàng.</p>
+        <div aria-hidden="true" className="brocade-dark absolute inset-x-0 bottom-0 h-2" />
       </div>
       <ExportButtons />
       <StatsPanel />

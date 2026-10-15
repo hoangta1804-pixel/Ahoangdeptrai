@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { BadgeCheck, FileBadge, Share2 } from 'lucide-react';
 import { useUi } from '../../app/UiContext';
+import { Ornament } from '../../components/Brand';
 import { BottomSheet } from '../../components/BottomSheet';
 import { PreorderProgress } from '../../components/PreorderProgress';
 import { QuantityStepper } from '../../components/QuantityStepper';
@@ -59,11 +60,11 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
     <BottomSheet
       title={
         <>
-          <span className="block text-xs font-semibold uppercase tracking-wider text-champagne-700">
+          <span className="block font-sans text-xs font-semibold uppercase tracking-[0.14em] text-champagne-700">
             {product.region} · {CATEGORY_LABEL[product.category]}
           </span>
           <span className="block font-display text-2xl font-semibold leading-tight">{product.name}</span>
-          <span className="block text-sm font-normal text-muted">{coop?.name}</span>
+          <span className="block font-sans text-sm font-normal text-muted">{coop?.name}</span>
         </>
       }
       onClose={onClose}
@@ -107,11 +108,12 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
         </div>
       }
     >
-      <div className="relative aspect-[4/3] max-h-80 w-full overflow-hidden rounded-3xl">
+      <div className="relative aspect-[4/3] max-h-80 w-full overflow-hidden rounded-3xl ring-1 ring-champagne-300/80">
         <ProductImage product={product} variant="cover" className="h-full w-full" />
+        <span aria-hidden="true" className="pointer-events-none absolute inset-2 rounded-[20px] border border-white/70" />
         <button
           onClick={() => openModal({ type: 'trace_lot', productId: product.id })}
-          className="absolute right-2 bottom-2 flex min-h-11 items-center gap-1 rounded-lg bg-black/75 px-3 text-sm font-semibold text-white hover:bg-black/90"
+          className="absolute right-3 bottom-3 flex min-h-11 items-center gap-1.5 rounded-full bg-forest-950/90 px-4 text-sm font-semibold text-champagne-200 ring-1 ring-champagne-400/60 hover:bg-forest-900"
         >
           <FileBadge size={16} />
           Xem nguồn gốc
@@ -119,9 +121,9 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
       </div>
 
       <div className="flex items-center justify-between gap-2">
-        <span className="text-xl font-extrabold tabular-nums text-ink">
+        <span className="font-display text-3xl font-semibold tabular-nums text-forest-900">
           {formatMoney(product.price)}
-          <span className="text-sm font-normal text-muted">/{product.unit}</span>
+          <span className="font-sans text-sm font-normal text-muted">/{product.unit}</span>
           {isSamplePrice(product) && <span className="ml-1.5 text-sm font-semibold text-champagne-800">(giá mẫu)</span>}
         </span>
         <span className="flex items-center gap-1">
@@ -141,7 +143,30 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
         )}
       </p>
 
-      <p className="text-sm leading-relaxed text-stone-600">{product.description}</p>
+      <Ornament className="mx-auto" />
+
+      <p className="drop-cap text-sm leading-relaxed text-stone-700">{product.description}</p>
+
+      {/* Thông tin sản phẩm, lấy từ dữ liệu sản phẩm. */}
+      <dl className="space-y-1.5 rounded-2xl border border-champagne-200 bg-champagne-50/60 p-3.5 text-sm">
+        {(
+          [
+            ['Vùng', product.region],
+            ['HTX', coop?.name ?? '—'],
+            ['Nhóm hàng', CATEGORY_LABEL[product.category]],
+            ['Hình thức', ORDER_KIND_LABEL[product.kind]],
+            ['Quy cách', product.unit],
+          ] as const
+        ).map(([label, value]) => (
+          <div key={label} className="flex items-baseline gap-2">
+            <dt className="flex flex-1 items-baseline gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-champagne-700">
+              <span className="shrink-0">{label}</span>
+              <span aria-hidden="true" className="leader" />
+            </dt>
+            <dd className="max-w-[65%] text-right font-semibold text-ink">{value}</dd>
+          </div>
+        ))}
+      </dl>
 
       {product.sample && (
         <div role="note" className="space-y-1 rounded-2xl border border-stone-300 bg-stone-50 p-3 text-sm text-stone-700">

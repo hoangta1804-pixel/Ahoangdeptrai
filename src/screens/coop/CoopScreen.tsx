@@ -28,12 +28,13 @@ export function CoopScreen() {
 
   return (
     <div className="flex flex-1 flex-col space-y-4 p-4">
-      <div className="space-y-2 rounded-3xl bg-forest-900 p-4 text-white shadow-md">
-        <span className="text-xs font-bold uppercase tracking-wider text-forest-300">Kênh HTX</span>
-        <h2 className="text-lg font-bold">{coop?.name}</h2>
+      <div className="lattice relative space-y-1.5 overflow-hidden rounded-3xl bg-forest-950 p-4 pb-6 text-white shadow-md">
+        <span className="text-xs font-semibold uppercase tracking-[0.18em] text-champagne-300">Kênh HTX</span>
+        <h2 className="font-display text-2xl font-semibold">{coop?.name}</h2>
         <p className="text-sm text-forest-100">
           Vùng {coop?.region} · Tài khoản nhận chi trả {coop?.payoutAccountMasked}
         </p>
+        <div aria-hidden="true" className="brocade-dark absolute inset-x-0 bottom-0 h-2" />
       </div>
 
       <div className="grid grid-cols-3 gap-1 rounded-2xl bg-stone-200/70 p-1 text-sm font-medium" role="tablist">
