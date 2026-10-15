@@ -15,7 +15,7 @@ Tài liệu này cập nhật sau mỗi giai đoạn của `PROMPT_SUA_APP.md`. 
 
 ```bash
 npm install
-npm run dev      # http://localhost:3000
+npm run dev      # http://localhost:3000, có sẵn /api/state lưu trong bộ nhớ server
 npm run build    # ra thư mục dist/ (Vercel dùng thư mục này)
 npm run lint     # kiểm tra kiểu TypeScript
 npm test         # unit test vitest: src/domain, dữ liệu mẫu, quy ước giao diện
@@ -30,6 +30,85 @@ npm test         # unit test vitest: src/domain, dữ liệu mẫu, quy ước g
 | `npm run build` | Thành công, không cảnh báo. Phần chung 431 kB (gzip 127 kB); màn HTX, Admin, QLNN tải riêng theo vai trò |
 | Luồng 1 và Luồng 2 (mục 11.2) bằng Playwright, chặn mọi request ngoài localhost | Đạt trọn vẹn. Không có request ra ngoài, không lỗi JS |
 | Kiểm tra giao diện tự động trên mọi màn và trong Luồng 1 (axe-core 4.10 + đo vùng bấm và cỡ chữ) | 0 lỗi tương phản AA, 0 nút thiếu tên, 0 vùng bấm dưới 44×44, 0 chữ dưới 12px |
+
+---
+
+## Sau Giai đoạn 6 – API dữ liệu dùng chung giữa nhiều máy
+
+**Yêu cầu của chủ repo:** thêm API cho bản demo. Chủ repo chọn phương án dữ liệu dùng chung giữa nhiều máy: khách đặt trên điện thoại, HTX và Admin trên máy khác thấy được đơn đó. Thanh toán, OTP và giao hàng vẫn là mô phỏng.
+
+### Cách hoạt động
+
+- **API:** một hàm Vercel, file `api/state.ts`, đường dẫn `/api/state`. Toàn bộ dữ liệu demo lưu thành một bản ghi trên Upstash Redis, kèm số phiên bản. Upstash thêm qua Vercel Marketplace, có gói miễn phí.
+- **Quy tắc nghiệp vụ không đổi chỗ:** vẫn chạy trong `src/domain` trên trình duyệt. API chỉ đọc và ghi bản ghi, không có quy tắc nghiệp vụ nào ở server.
+
+| Yêu cầu | Trả về |
+|---|---|
+| `GET /api/state` | `{ version, schema, data, updatedAt }`. Chưa có dữ liệu thì `data = null`, `version = 0` |
+| `GET /api/state?since=N` | `{ changed: false, version }` nếu phiên bản vẫn là N; khác thì trả cả dữ liệu như trên |
+| `PUT /api/state` gửi `{ baseVersion, schema, data }` | `200 { version }`: ghi xong, phiên bản tăng 1 |
+| | `409` kèm dữ liệu mới nhất: máy khác vừa ghi trước |
+| | `400` dữ liệu sai dạng; `413` quá 900 KB |
+| Vercel chưa nối Upstash | `503`, app tự lưu trên trình duyệt như trước |
+
+- **Hai máy ghi cùng lúc:**
+  - Mỗi lần ghi gửi kèm số phiên bản máy đang có. Redis so phiên bản và ghi trong một bước (đoạn Lua), nên không máy nào ghi đè mất thay đổi của máy kia.
+  - Máy ghi sau nhận `409` kèm dữ liệu mới nhất. App chạy lại các thao tác chưa gửi trên dữ liệu đó rồi gửi lại. Ví dụ hai máy cùng thêm hàng vào một giỏ thì giữ cả hai món.
+  - Thao tác không còn hợp lệ trên dữ liệu mới thì bỏ, và báo: "… thao tác không áp dụng được vì dữ liệu vừa được máy khác thay đổi". Ví dụ: hai máy cùng đăng ký một SĐT.
+  - Mã đơn, mã giao dịch giữ nguyên khi chạy lại: app ghi lại các số ngẫu nhiên đã dùng (`recordRandom` / `replayRandom` trong `src/domain/ids.ts`).
+- **Thấy thay đổi của máy khác:** app hỏi API mỗi 10 giây khi trang đang hiện trên màn hình, và hỏi ngay khi quay lại tab hoặc app. Nếu không có gì mới, mỗi lần hỏi chỉ đọc số phiên bản.
+- **Màn hình không chờ mạng:** thao tác hiện ngay, gửi lên sau. Mất mạng thì giữ thay đổi trên máy, thử lại sau 5 giây, tăng dần tới 30 giây.
+- **Không có API thì chạy như cũ:** lưu `localStorage` như trước. Gồm các trường hợp: mở bản trên claude.ai, Vercel chưa nối Upstash, hoặc không gọi được API lúc mở app. Công cụ demo ghi rõ lý do.
+- **Chạy local:** `npm run dev` và `npm run preview` có sẵn `/api/state`, cùng logic với hàm Vercel nhưng lưu trong bộ nhớ server, mất khi tắt server. Mở hai trình duyệt để thử. `npm run dev` mở cổng cho mạng nội bộ, nên thử được cả với điện thoại cùng mạng Wi-Fi.
+- **Mã nguồn:** `api/state.ts` (API), `src/store/remoteSync.ts` (đồng bộ phía app), `src/store/AppDataContext.tsx` (mọi thay đổi đi qua `run()` như cũ, nay thêm bước gửi lên API), `vite.config.ts` (API trong bộ nhớ cho dev / preview).
+
+### Trên màn hình
+
+- **Dải "Bản demo":** thêm "Dữ liệu dùng chung giữa các máy." Mất kết nối thì ghi "Mất kết nối – thay đổi đang giữ trên máy này."
+- **Công cụ demo → mục Dữ liệu:** trạng thái lưu, giờ đồng bộ lần cuối, nút "Đồng bộ ngay".
+- **"Khôi phục dữ liệu mẫu" khi đang dùng chung:** áp dụng cho mọi máy. Câu hỏi lại đổi thành "Khôi phục dữ liệu mẫu cho mọi máy đang dùng demo?…"
+
+### Cài trên Vercel (chủ repo làm, một lần)
+
+1. Vào Vercel → project `dacsan-vung-mien` → tab **Storage** → **Create Database** → chọn **Upstash for Redis** (Marketplace) → gói **Free** → chọn vùng gần (Singapore) → **Create**.
+2. Ở bước **Connect Project**, chọn project `dacsan-vung-mien` và cả 3 môi trường (Production, Preview, Development). Để tiền tố tên biến mặc định; Vercel sẽ tạo `KV_REST_API_URL` và `KV_REST_API_TOKEN`. Có đặt tiền tố khác thì API vẫn tìm được.
+3. Vào **Deployments** → bản mới nhất → **Redeploy**. Biến môi trường chỉ có hiệu lực từ lần deploy sau khi thêm.
+4. Mở web → **Công cụ demo** → mục Dữ liệu phải hiện "Dữ liệu dùng chung – đã đồng bộ".
+
+Lần đầu mở sau khi nối, trình duyệt mở trước đưa dữ liệu nó đang có lên làm dữ liệu chung. Muốn bắt đầu sạch thì bấm "Khôi phục dữ liệu mẫu".
+
+Repo không thêm `vercel.json`, không đổi cấu hình build. File `api/tsconfig.json` chỉ để Vercel dịch hàm API mà không báo lỗi kiểu thừa trong log build.
+
+### Giới hạn và lưu ý an toàn
+
+- **Không có đăng nhập phía server.** Ai có link đều đọc và ghi được dữ liệu demo qua API; đăng nhập OTP vẫn là mô phỏng trên trình duyệt. Chỉ dùng dữ liệu mẫu, không nhập SĐT, địa chỉ, tài khoản ngân hàng hay ảnh thật.
+- **Kích thước:** dữ liệu mẫu khoảng 20 KB; mỗi lần ghi gửi cả bộ dữ liệu. Giới hạn 900 KB để mỗi lần ghi gọn, nằm trong giới hạn của gói miễn phí. Ảnh khiếu nại, đánh giá đã thu nhỏ còn khoảng 20–40 KB mỗi ảnh. Vượt giới hạn thì Công cụ demo báo lỗi; khôi phục dữ liệu mẫu là hết.
+- **Số lệnh Redis:** mỗi máy đang hiện trang hỏi 1 lệnh mỗi 10 giây, khoảng 360 lệnh mỗi giờ; tab bị ẩn thì không hỏi. Đủ cho buổi demo hay buổi thử nghiệm. Để app mở cả ngày trên nhiều máy thì có thể chạm hạn mức lệnh của gói miễn phí; xem số đã dùng trong trang Upstash.
+- **Đồng hồ demo nằm trong dữ liệu chung:** tua giờ trên một máy thì mọi máy cùng tua.
+- **Giỏ hàng nằm trong dữ liệu chung:** đăng nhập cùng một tài khoản trên hai máy thì thấy cùng một giỏ. Phiên đăng nhập vẫn riêng từng tab, như trước.
+
+### Kiểm thử
+
+- **Unit test:** thêm 14 test, ở `src/store/__tests__/api.test.ts` (API) và `remoteSync.test.ts` (đồng bộ). Nội dung:
+  - GET, PUT, `?since=`, 409, 400, 413, 405;
+  - đọc biến môi trường, kể cả khi có tiền tố;
+  - hai máy dùng chung một kho: máy sau nhận dữ liệu máy trước;
+  - ghi xung đột vẫn giữ cả hai món trong giỏ, mã đơn giữ nguyên khi chạy lại;
+  - bỏ thao tác trùng SĐT;
+  - mất mạng rồi gửi lại;
+  - quay về `localStorage` khi API lỗi, trả 503, hoặc trả trang HTML.
+- **Lint, test, build:** lint không lỗi, 17 file 141 test đạt, build thành công. Phần chung 460 kB (gzip 135 kB).
+- **Build kiểu Vercel:** chạy `vercel build` (Vercel CLI 64.2.0) trên máy. Hàm `api/state` đóng gói cho Node.js 22, log build không có lỗi.
+  - Chạy thử hàm đã build với thư viện `@upstash/redis` thật, gọi tới một server giả lập Upstash: GET, PUT, 409, `?since=`, 405 đúng; thiếu biến môi trường thì 503; sai token thì 502.
+  - Chưa chạy với Upstash thật, vì môi trường làm việc không vào được mạng ngoài. Kiểm tra theo bước 4 ở phần cài đặt sau khi nối.
+- **Hai trình duyệt riêng, chạy trên `npm run preview` bằng Playwright:** một bên là điện thoại của khách, một bên là máy tính của HTX.
+  1. Khách đặt đơn và thanh toán mô phỏng.
+  2. Máy HTX tự thấy đơn sau 7,4 giây, không bấm gì. HTX xác nhận đơn.
+  3. Khách quay lại app thì thấy đơn "Đang chuẩn bị".
+  4. Xoá `localStorage` của máy khách rồi tải lại trang, đơn vẫn còn (lấy từ API).
+
+  Không lỗi JS.
+- **Chạy lại ở chế độ dùng chung:** Luồng 1, Luồng 2 và kiểm tra giao diện tự động đều đạt: 0 lỗi axe, 0 vùng bấm dưới 44px, 0 chữ dưới 12px.
 
 ---
 
@@ -814,8 +893,12 @@ Ngoài các ca trên còn có test cho:
 44. **Ô nhập dùng chữ 16px trên điện thoại** để iOS không tự phóng to khi bấm vào ô (chuyện này xảy ra sau khi bỏ chặn phóng to).
 45. **Dải demo dùng chữ 12px đậm** vì là nhãn, không phải nội dung; ở 320px dải xuống 2 dòng.
 46. **Màn QLNN đổi thẻ đầu trang từ xanh lam sang xanh rừng** để theo bảng nhận diện. Nhãn trạng thái đơn và khung "Hoàn tiền" vẫn dùng màu thông tin (xanh lam).
-47. **Trạng thái lỗi của danh sách** gồm 2 trường hợp: lỗi khi hiển thị (bắt bằng error boundary) và lỗi không có quyền xem (hiện lý do). Dữ liệu demo đọc từ `localStorage` nên không có lỗi mạng.
+47. **Trạng thái lỗi của danh sách** gồm 2 trường hợp: lỗi khi hiển thị (bắt bằng error boundary) và lỗi không có quyền xem (hiện lý do). Danh sách đọc từ dữ liệu trên máy, kể cả khi dùng API dữ liệu chung, nên không có trạng thái lỗi mạng. Mất kết nối API thì báo ở dải demo và Công cụ demo.
 48. **SĐT nhập 9 số được hiểu là số di động bỏ số 0 đầu.** Chuỗi 11 số bắt đầu bằng `84` được hiểu là có mã nước. App lưu dạng 10 số `0xxxxxxxxx` để tương thích với dữ liệu đã có.
+49. **Dữ liệu dùng chung là một bản ghi cho mọi người mở link,** không chia theo người xem hay theo buổi demo.
+50. **Server chưa có dữ liệu, hoặc dữ liệu khác phiên bản cấu trúc (`STORAGE_VERSION`):** trình duyệt mở trước đưa dữ liệu của nó lên làm dữ liệu chung.
+51. **Hai thao tác trùng nhau trên hai máy:** giữ thao tác tới server trước. Thao tác sau chạy lại trên dữ liệu mới; không hợp lệ nữa thì bỏ và báo.
+52. **Đồng hồ demo và giỏ hàng nằm trong dữ liệu chung.** Phiên đăng nhập vẫn riêng từng tab.
 
 ## Vấn đề chờ nhóm chốt
 
@@ -855,4 +938,4 @@ Tài liệu yêu cầu không mô tả nội dung của OI-02, OI-04, OI-05, OI-
 | Quản trị gốc (mẫu) | 0900 000 209 | Quản trị gốc |
 | Cơ quan QLNN (mẫu) | 0900 000 301 | Cơ quan QLNN (chỉ xem) |
 
-- **Khôi phục dữ liệu mẫu:** bấm "Công cụ demo" ở góc phải thanh trên cùng, rồi bấm "Khôi phục dữ liệu mẫu". Thao tác này xoá dữ liệu trong `localStorage` (khoá `dac-san-so-lao-cai:data`), nạp lại dữ liệu mẫu và đưa đồng hồ demo về giờ thật.
+- **Khôi phục dữ liệu mẫu:** bấm "Công cụ demo" ở góc phải thanh trên cùng, rồi bấm "Khôi phục dữ liệu mẫu". Thao tác này xoá dữ liệu trong `localStorage` (khoá `dac-san-so-lao-cai:data`), nạp lại dữ liệu mẫu và đưa đồng hồ demo về giờ thật. Khi đang dùng API dữ liệu chung, thao tác áp dụng cho mọi máy.

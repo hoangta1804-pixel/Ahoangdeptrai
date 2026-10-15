@@ -20,7 +20,7 @@ const RegulatorScreen = lazy(() => import('../screens/regulator/RegulatorScreen'
  * Khách và HTX dùng bố cục điện thoại (rộng tối đa ~640px); Admin và QLNN dùng bố cục rộng.
  */
 export function AppShell() {
-  const { state } = useStore();
+  const { state, syncNotice, clearSyncNotice } = useStore();
   const { user, logout, openModal, showToast } = useUi();
   const wide = user?.role === 'admin' || user?.role === 'regulator';
   const unread = user ? state.notifications.filter((n) => n.userId === user.id && !n.read).length : 0;
@@ -37,6 +37,13 @@ export function AppShell() {
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
+
+  // Thao tác bị bỏ khi đồng bộ dữ liệu dùng chung (máy khác vừa đổi dữ liệu): báo cho người dùng.
+  useEffect(() => {
+    if (!syncNotice) return;
+    showToast(syncNotice);
+    clearSyncNotice();
+  }, [syncNotice, showToast, clearSyncNotice]);
 
   // Đăng nhập, đăng xuất thì về đầu trang (màn đăng nhập dài, không giữ vị trí cuộn sang màn mới).
   useEffect(() => window.scrollTo({ top: 0 }), [user?.id]);
