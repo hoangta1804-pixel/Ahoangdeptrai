@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { MessageSquareWarning } from 'lucide-react';
 import { useUi } from '../../app/UiContext';
+import { PAGE_X } from '../../app/layout';
 import { SectionHeading } from '../../components/Brand';
 import { EmptyState, ErrorState } from '../../components/EmptyState';
 import { OrderStatusBadge, PaymentStatusBadge } from '../../components/StatusBadge';
@@ -22,7 +23,7 @@ export function OrdersTab() {
   const shown = filter === 'all' ? mine : mine.filter((o) => o.status === filter);
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-4 px-4 pt-5 pb-8 md:px-6 md:pt-8">
+    <div className={`w-full space-y-4 pt-5 pb-8 md:pt-8 ${PAGE_X}`}>
       <SectionHeading
         eyebrow="Đơn hàng"
         title="Đơn mua của tôi"
@@ -48,7 +49,7 @@ export function OrdersTab() {
       {shown.length === 0 ? (
         <EmptyState>{mine.length === 0 ? 'Bạn chưa có đơn nào.' : 'Không có đơn ở trạng thái này.'}</EmptyState>
       ) : (
-        <ul className="space-y-3">
+        <ul className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
           {shown.map((o) => {
             const tx = state.transactions.find((t) => t.status === 'pending' && t.orderIds.includes(o.id));
             const unread = unreadCount(state, o, 'customer');
@@ -56,7 +57,7 @@ export function OrdersTab() {
               <li key={o.id}>
                 <button
                   onClick={() => openModal({ type: 'order_detail', orderId: o.id })}
-                  className="relative w-full space-y-2.5 overflow-hidden rounded-3xl border border-champagne-200 bg-white p-4 pl-5 text-left shadow-[0_10px_28px_rgb(31,77,58,0.06)] hover:border-champagne-400"
+                  className="relative h-full w-full space-y-2.5 overflow-hidden rounded-3xl border border-champagne-200 bg-white p-4 pl-5 text-left shadow-[0_10px_28px_rgb(31,77,58,0.06)] hover:border-champagne-400"
                 >
                   <span aria-hidden="true" className="absolute inset-y-0 left-0 w-1.5 bg-linear-to-b from-champagne-300 to-champagne-600" />
                   <div className="flex flex-wrap items-start justify-between gap-2">

@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { useUi } from '../../app/UiContext';
+import { PAGE_X } from '../../app/layout';
 import { ListBoundary } from '../../components/ListBoundary';
 import { useStore } from '../../store/AppDataContext';
 import { ADMIN_GROUP_LABEL, type AdminSubGroup } from '../../domain/types';
@@ -66,8 +67,8 @@ export function AdminScreen() {
   const current = TABS[adminGroup].find((t) => t.key === tab) ?? TABS[adminGroup][0];
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4 lg:flex-row">
-      <aside className="space-y-3 lg:w-56 lg:shrink-0">
+    <div className={`flex flex-1 flex-col gap-4 py-4 lg:flex-row lg:gap-6 ${PAGE_X}`}>
+      <aside className="space-y-3 lg:sticky lg:top-[calc(var(--app-header-h,0px)+1rem)] lg:w-60 lg:shrink-0 lg:self-start">
         <div className="lattice relative overflow-hidden rounded-3xl bg-forest-950 p-4 pb-6 text-white">
           <span className="text-xs font-semibold uppercase tracking-[0.18em] text-champagne-300">Quản trị</span>
           <p className="font-display text-lg font-semibold">Admin – {ADMIN_GROUP_LABEL[adminGroup]}</p>

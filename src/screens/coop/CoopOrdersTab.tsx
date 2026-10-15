@@ -35,7 +35,7 @@ export function CoopOrdersTab() {
             <Wheat size={18} aria-hidden="true" className="text-champagne-700" /> Chờ thu hoạch
           </h3>
           <p className="text-xs text-muted">Thu hoạch xong, xác nhận một lần cho cả lô: hàng chia theo thứ tự đặt, đơn đặt sớm nhận trước.</p>
-          <ul className="space-y-2">
+          <ul className="grid gap-2 lg:grid-cols-2 2xl:grid-cols-3">
             {toHarvest.map(({ product, waiting }) => {
               const needed = waiting.reduce((s, o) => s + quantityIn(o, product.id), 0);
               const earliest = waiting.map((o) => o.deliveryDate).filter((d): d is string => !!d).sort()[0];
@@ -78,10 +78,10 @@ export function CoopOrdersTab() {
       {shown.length === 0 ? (
         <EmptyState>Chưa có đơn nào.</EmptyState>
       ) : (
-        <ul className="space-y-2">
+        <ul className="grid gap-2 xl:grid-cols-2 2xl:grid-cols-3">
           {shown.map((o) => (
             <li key={o.id}>
-              <button onClick={() => openModal({ type: 'coop_order', orderId: o.id })} className="w-full space-y-1.5 rounded-2xl border border-stone-200 bg-white p-3 text-left hover:bg-stone-50">
+              <button onClick={() => openModal({ type: 'coop_order', orderId: o.id })} className="h-full w-full space-y-1.5 rounded-2xl border border-stone-200 bg-white p-3 text-left hover:bg-stone-50">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="font-mono text-sm font-bold">{o.id}</span>
                   <span className="flex flex-wrap gap-1">

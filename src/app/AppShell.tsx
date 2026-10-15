@@ -7,6 +7,7 @@ import { Toast } from '../components/Toast';
 import { ACCOUNT_ROLE_LABEL, ADMIN_GROUP_LABEL } from '../domain/types';
 import { CustomerScreen } from '../screens/customer/CustomerScreen';
 import { useStore } from '../store/AppDataContext';
+import { PAGE_X } from './layout';
 import { LoginScreen } from './LoginScreen';
 import { ModalHost } from './ModalHost';
 import { useUi } from './UiContext';
@@ -18,16 +19,14 @@ const RegulatorScreen = lazy(() => import('../screens/regulator/RegulatorScreen'
 
 /**
  * Khung app. Không có thanh chuyển vai trò công khai: vai trò theo tài khoản đăng nhập (mục 5.9).
- * HTX dùng bố cục điện thoại (rộng tối đa ~640px). Khách, màn đăng nhập, Admin và QLNN dùng bố cục rộng trên máy tính
- * (trang của khách giãn ra lưới nhiều cột thay vì một cột hẹp như điện thoại).
+ * Mọi vai trò dùng toàn bộ bề rộng màn hình trên máy tính: trang giãn ra lưới nhiều cột thay vì một cột hẹp như điện thoại;
+ * HTX có thanh mục bên trái từ màn hình lớn.
  */
 export function AppShell() {
   const { state, syncNotice, clearSyncNotice } = useStore();
   const { user, logout, openModal, showToast } = useUi();
-  const wide = user?.role === 'admin' || user?.role === 'regulator';
   const storefront = !user || user.role === 'customer';
   const unread = user ? state.notifications.filter((n) => n.userId === user.id && !n.read).length : 0;
-  const width = wide ? 'max-w-7xl' : storefront ? 'max-w-6xl' : 'max-w-[640px]';
   const roleText = user ? (user.role === 'admin' && user.adminGroup ? `Admin – ${ADMIN_GROUP_LABEL[user.adminGroup]}` : ACCOUNT_ROLE_LABEL[user.role]) : '';
 
   // Chiều cao header (có dải demo, có thể xuống 2 dòng trên điện thoại) để thanh dính bên dưới nằm ngay dưới header.
@@ -71,7 +70,7 @@ export function AppShell() {
     <div className={`flex min-h-dvh flex-col text-ink ${storefront ? 'paper-grain' : 'bg-stone-100'}`}>
       <header ref={headerRef} className="sticky top-0 z-40 bg-forest-950 text-forest-100 shadow-[0_6px_20px_rgb(14,37,27,0.18)]">
         <DemoBand />
-        <div className={`mx-auto flex w-full items-center gap-1 px-3 py-1.5 ${width}`}>
+        <div className={`flex w-full items-center gap-1 py-1.5 ${PAGE_X}`}>
           {/* Logo và chữ thương hiệu. Trên điện thoại, tài khoản HTX / Admin / QLNN hiện tên và vai trò thay cho chữ thương hiệu. */}
           <div className="flex min-w-0 flex-1 items-center gap-2.5">
             <BrandEmblem size={38} />
@@ -120,7 +119,7 @@ export function AppShell() {
         <div aria-hidden="true" className="brocade-dark h-2.5 border-t border-forest-950" />
       </header>
 
-      <main className={`mx-auto flex w-full flex-1 flex-col ${storefront ? '' : 'bg-ivory'} ${width}`}>
+      <main className={`flex w-full flex-1 flex-col ${storefront ? '' : 'bg-ivory'}`}>
         <ListBoundary key={user?.id ?? 'guest'} label="màn này" resetKey={state}>
           <Suspense fallback={<p className="p-6 text-center text-sm text-stone-600">Đang tải…</p>}>
             {!user && <LoginScreen />}

@@ -1,6 +1,7 @@
 /**
- * Bottom sheet dùng chung cho mọi màn: cùng độ rộng, đóng bằng nút X, bấm nền tối hoặc phím Esc.
+ * Bottom sheet dùng chung cho mọi màn: đóng bằng nút X, bấm nền tối hoặc phím Esc.
  * Trên điện thoại trượt từ đáy; từ md trở lên hiện giữa màn hình.
+ * `wide`: sheet nhiều nội dung (chi tiết sản phẩm, chi tiết đơn) rộng hơn trên máy tính để chia 2 cột (xem SheetColumns).
  */
 import { useEffect, useId, type ReactNode } from 'react';
 import { X } from 'lucide-react';
@@ -13,9 +14,10 @@ interface BottomSheetProps {
   /** Nội dung cố định ở đáy sheet (nút hành động chính). */
   footer?: ReactNode;
   closeLabel?: string;
+  wide?: boolean;
 }
 
-export function BottomSheet({ title, onClose, children, footer, closeLabel = 'Đóng' }: BottomSheetProps) {
+export function BottomSheet({ title, onClose, children, footer, closeLabel = 'Đóng', wide = false }: BottomSheetProps) {
   const titleId = useId();
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
@@ -39,7 +41,7 @@ export function BottomSheet({ title, onClose, children, footer, closeLabel = 'Đ
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="relative flex max-h-[min(90dvh,calc(100dvh-3.5rem))] w-full max-w-[640px] flex-col overflow-hidden rounded-t-[32px] bg-white shadow-2xl md:rounded-[32px]"
+        className={`relative flex max-h-[min(90dvh,calc(100dvh-3.5rem))] w-full max-w-[640px] flex-col overflow-hidden rounded-t-[32px] bg-white shadow-2xl md:rounded-[32px] ${wide ? 'lg:max-w-5xl xl:max-w-6xl' : ''}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Viền vàng mảnh và hoa văn ở mép trên của sheet. */}
@@ -60,6 +62,19 @@ export function BottomSheet({ title, onClose, children, footer, closeLabel = 'Đ
           <div className="border-t border-champagne-200/70 bg-champagne-50/60 px-5 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]">{footer}</div>
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Hai cột trong sheet rộng trên máy tính; điện thoại vẫn một cột theo đúng thứ tự cũ.
+ * Cột trái là phần đầu, cột phải là phần sau của nội dung, nên thứ tự đọc (và thứ tự Tab) không đổi.
+ */
+export function SheetColumns({ left, right }: { left: ReactNode; right: ReactNode }) {
+  return (
+    <div className="space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6 lg:space-y-0">
+      <div className="space-y-4">{left}</div>
+      <div className="space-y-4">{right}</div>
     </div>
   );
 }

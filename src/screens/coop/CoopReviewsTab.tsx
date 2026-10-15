@@ -14,7 +14,7 @@ export function CoopReviewsTab() {
   const mine = state.reviews.filter((r) => state.orders.find((o) => o.id === r.orderId)?.coopId === coopId);
   if (mine.length === 0) return <EmptyState>Chưa có đánh giá nào.</EmptyState>;
   return (
-    <ul className="space-y-3">
+    <ul className="grid items-start gap-3 xl:grid-cols-2 2xl:grid-cols-3">
       {mine.map((r) => (
         <ReviewRow key={r.id} review={r} />
       ))}

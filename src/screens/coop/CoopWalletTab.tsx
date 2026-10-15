@@ -20,8 +20,8 @@ export function CoopWalletTab() {
   const periods = state.payoutPeriods.filter((p) => p.coopId === coopId);
 
   return (
-    <div className="space-y-3">
-      <div className="space-y-1 rounded-3xl bg-forest-900 p-4 text-white">
+    <div className="space-y-3 xl:grid xl:grid-cols-2 xl:items-start xl:gap-4 xl:space-y-0">
+      <div className="space-y-1 rounded-3xl bg-forest-900 p-4 text-white xl:col-span-2">
         <p className="text-sm text-forest-100">
           Kỳ tuần {weekStart(at).toLocaleDateString('vi-VN')} – {addMs(currentEnd, -1).toLocaleDateString('vi-VN')} (tạm tính)
         </p>

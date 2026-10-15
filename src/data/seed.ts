@@ -14,6 +14,7 @@
  * - Đơn mẫu được tạo qua chính các hàm trong src/domain để dữ liệu luôn nhất quán.
  */
 import { groupKey, placeCheckout } from '../domain/checkout';
+import { SAMPLE_COOP_PHONES } from '../domain/coopContact';
 import { carrierSimulate, coopConfirm, coopHandover, customerConfirmReceived } from '../domain/orders';
 import { DEFAULT_PARAMS } from '../domain/params';
 import { applyGatewayResult } from '../domain/payment';
@@ -201,13 +202,13 @@ function baseState(now: Date): DemoState {
       { id: 'cust-2', name: 'Khách hàng mẫu 2', phone: '0900000002' },
     ],
     coops: [
-      { id: 'coop-bacha', name: 'HTX mẫu Bắc Hà', region: 'Bắc Hà', payoutAccountMasked: '**** 0101', status: 'active', profileStatus: 'approved' },
-      { id: 'coop-muongkhuong', name: 'HTX mẫu Mường Khương', region: 'Mường Khương', payoutAccountMasked: '**** 0102', status: 'active', profileStatus: 'approved' },
-      { id: 'coop-suoigiang', name: 'HTX mẫu Suối Giàng', region: 'Suối Giàng', payoutAccountMasked: '**** 0103', status: 'active', profileStatus: 'approved' },
-      { id: 'coop-sapa', name: 'HTX mẫu Sa Pa', region: 'Sa Pa', payoutAccountMasked: '**** 0104', status: 'active', profileStatus: 'approved' },
-      { id: 'coop-baoha', name: 'HTX mẫu Bảo Hà', region: 'Bảo Hà', payoutAccountMasked: '**** 0105', status: 'active', profileStatus: 'approved' },
-      { id: 'coop-tule', name: 'HTX mẫu Tú Lệ', region: 'Tú Lệ', payoutAccountMasked: '**** 0106', status: 'active', profileStatus: 'approved' },
-      { id: 'coop-thacba', name: 'HTX mẫu Thác Bà', region: 'hồ Thác Bà', payoutAccountMasked: '**** 0107', status: 'active', profileStatus: 'approved' },
+      { id: 'coop-bacha', name: 'HTX mẫu Bắc Hà', region: 'Bắc Hà', phones: [...SAMPLE_COOP_PHONES['coop-bacha']], payoutAccountMasked: '**** 0101', status: 'active', profileStatus: 'approved' },
+      { id: 'coop-muongkhuong', name: 'HTX mẫu Mường Khương', region: 'Mường Khương', phones: [...SAMPLE_COOP_PHONES['coop-muongkhuong']], payoutAccountMasked: '**** 0102', status: 'active', profileStatus: 'approved' },
+      { id: 'coop-suoigiang', name: 'HTX mẫu Suối Giàng', region: 'Suối Giàng', phones: [...SAMPLE_COOP_PHONES['coop-suoigiang']], payoutAccountMasked: '**** 0103', status: 'active', profileStatus: 'approved' },
+      { id: 'coop-sapa', name: 'HTX mẫu Sa Pa', region: 'Sa Pa', phones: [...SAMPLE_COOP_PHONES['coop-sapa']], payoutAccountMasked: '**** 0104', status: 'active', profileStatus: 'approved' },
+      { id: 'coop-baoha', name: 'HTX mẫu Bảo Hà', region: 'Bảo Hà', phones: [...SAMPLE_COOP_PHONES['coop-baoha']], payoutAccountMasked: '**** 0105', status: 'active', profileStatus: 'approved' },
+      { id: 'coop-tule', name: 'HTX mẫu Tú Lệ', region: 'Tú Lệ', phones: [...SAMPLE_COOP_PHONES['coop-tule']], payoutAccountMasked: '**** 0106', status: 'active', profileStatus: 'approved' },
+      { id: 'coop-thacba', name: 'HTX mẫu Thác Bà', region: 'hồ Thác Bà', phones: [...SAMPLE_COOP_PHONES['coop-thacba']], payoutAccountMasked: '**** 0107', status: 'active', profileStatus: 'approved' },
     ],
     products: products(now),
     productChanges: [],

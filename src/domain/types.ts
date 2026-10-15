@@ -86,6 +86,8 @@ export interface Coop {
   description?: string;
   /** Tài khoản nhận chi trả đối soát, luôn hiện dạng che. */
   payoutAccountMasked: string;
+  /** 2 SĐT liên hệ của cửa hàng HTX để khách gọi (domain/coopContact.ts). Không bắt buộc để dữ liệu đã lưu từ bản trước vẫn đọc được. */
+  phones?: string[];
   /** Quyền bán (FR-TK-13): tạm khoá thì sản phẩm của HTX không đặt được. */
   status: 'active' | 'suspended';
   suspendReason?: string;

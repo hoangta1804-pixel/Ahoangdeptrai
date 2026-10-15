@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ChevronRight, LogOut, MapPin, UserRound } from 'lucide-react';
 import { useUi } from '../../app/UiContext';
+import { PAGE_X } from '../../app/layout';
 import { BrocadeBand } from '../../components/Brand';
 import { Field, Input, PrimaryButton, SecondaryButton } from '../../components/form';
 import { updateCustomerProfile } from '../../domain/account';
@@ -23,7 +24,7 @@ export function AccountTab() {
   const initials = (words[0]?.[0] ?? '') + (words.length > 1 ? (words[words.length - 1][0] ?? '') : '');
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-4 px-4 pt-5 pb-8 md:px-6 md:pt-8">
+    <div className={`w-full space-y-4 pt-5 pb-8 md:pt-8 ${PAGE_X}`}>
       <section className="relative overflow-hidden rounded-[28px] bg-forest-950 px-5 pt-5 pb-8 text-white shadow-[0_20px_50px_rgb(14,37,27,0.25)]" aria-labelledby="thong-tin-ca-nhan">
         <div aria-hidden="true" className="lattice absolute inset-0" />
         <div className="relative flex items-center gap-4">
@@ -56,7 +57,7 @@ export function AccountTab() {
       </section>
 
       {editingName && (
-        <section className="space-y-2 rounded-3xl border border-champagne-200 bg-white p-4 shadow-xs" aria-label="Sửa thông tin cá nhân">
+        <section className="space-y-2 rounded-3xl border border-champagne-200 bg-white p-4 shadow-xs lg:max-w-2xl" aria-label="Sửa thông tin cá nhân">
           <Field label="Họ tên">
             <Input value={name} onChange={(e) => setName(e.target.value)} />
           </Field>
@@ -76,25 +77,30 @@ export function AccountTab() {
         </section>
       )}
 
-      <BankLinkSection />
+      {/* Máy tính: hai cột (tài khoản nhận hoàn tiền | sổ địa chỉ, đăng xuất). */}
+      <div className="space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5 lg:space-y-0">
+        <BankLinkSection />
 
-      <button onClick={() => openModal({ type: 'address_book' })} className="flex min-h-14 w-full items-center justify-between rounded-3xl border border-champagne-200 bg-white p-4 text-left shadow-xs hover:border-champagne-400">
-        <span className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-forest-900 text-champagne-300">
-            <MapPin size={17} aria-hidden="true" />
-          </span>
-          <span>
-            <span className="block font-display text-lg font-semibold text-ink">Sổ địa chỉ</span>
-            <span className="text-xs text-muted">{addressCount}/10 địa chỉ</span>
-          </span>
-        </span>
-        <ChevronRight size={16} className="text-muted" />
-      </button>
+        <div className="space-y-4">
+          <button onClick={() => openModal({ type: 'address_book' })} className="flex min-h-14 w-full items-center justify-between rounded-3xl border border-champagne-200 bg-white p-4 text-left shadow-xs hover:border-champagne-400">
+            <span className="flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-forest-900 text-champagne-300">
+                <MapPin size={17} aria-hidden="true" />
+              </span>
+              <span>
+                <span className="block font-display text-lg font-semibold text-ink">Sổ địa chỉ</span>
+                <span className="text-xs text-muted">{addressCount}/10 địa chỉ</span>
+              </span>
+            </span>
+            <ChevronRight size={16} className="text-muted" />
+          </button>
 
-      <button onClick={logout} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-rose-200 bg-white/70 text-sm font-bold text-rose-800 hover:bg-rose-50">
-        <LogOut size={16} />
-        Đăng xuất
-      </button>
+          <button onClick={logout} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-rose-200 bg-white/70 text-sm font-bold text-rose-800 hover:bg-rose-50">
+            <LogOut size={16} />
+            Đăng xuất
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

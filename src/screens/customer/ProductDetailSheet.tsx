@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { BadgeCheck, FileBadge, Share2 } from 'lucide-react';
 import { useUi } from '../../app/UiContext';
 import { Ornament } from '../../components/Brand';
-import { BottomSheet } from '../../components/BottomSheet';
+import { BottomSheet, SheetColumns } from '../../components/BottomSheet';
+import { CoopCallLinks } from '../../components/CoopPhones';
 import { PreorderProgress } from '../../components/PreorderProgress';
 import { QuantityStepper } from '../../components/QuantityStepper';
 import { Stars } from '../../components/Stars';
@@ -68,8 +69,9 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
         </>
       }
       onClose={onClose}
+      wide
       footer={
-        <div className="space-y-2">
+        <div className="space-y-2 lg:ml-auto lg:max-w-[calc(50%-0.75rem)]">
           {!blocked && (
             <div className="flex items-center justify-between gap-3">
               <span className="min-w-0 text-sm">
@@ -108,133 +110,149 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
         </div>
       }
     >
-      <div className="relative aspect-[4/3] max-h-80 w-full overflow-hidden rounded-3xl ring-1 ring-champagne-300/80">
-        <ProductImage product={product} variant="cover" className="h-full w-full" />
-        <span aria-hidden="true" className="pointer-events-none absolute inset-2 rounded-[20px] border border-white/70" />
-        <button
-          onClick={() => openModal({ type: 'trace_lot', productId: product.id })}
-          className="absolute right-3 bottom-3 flex min-h-11 items-center gap-1.5 rounded-full bg-forest-950/90 px-4 text-sm font-semibold text-champagne-200 ring-1 ring-champagne-400/60 hover:bg-forest-900"
-        >
-          <FileBadge size={16} />
-          Xem nguồn gốc
-        </button>
-      </div>
-
-      <div className="flex items-center justify-between gap-2">
-        <span className="font-display text-3xl font-semibold tabular-nums text-forest-900">
-          {formatMoney(product.price)}
-          <span className="font-sans text-sm font-normal text-muted">/{product.unit}</span>
-          {isSamplePrice(product) && <span className="ml-1.5 text-sm font-semibold text-champagne-800">(giá mẫu)</span>}
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="whitespace-nowrap rounded-md bg-stone-100 px-2 py-0.5 text-xs font-semibold text-stone-700">{ORDER_KIND_LABEL[product.kind]}</span>
-          <button onClick={share} aria-label="Chia sẻ link sản phẩm" className="flex h-11 w-11 items-center justify-center rounded-xl text-stone-700 hover:bg-stone-100">
-            <Share2 size={18} />
-          </button>
-        </span>
-      </div>
-      <p className="flex items-center gap-2 text-sm text-stone-700">
-        {rating.average !== null ? (
+      <SheetColumns
+        left={
           <>
-            <Stars value={rating.average} /> {rating.average}/5 · {rating.count} đánh giá
-          </>
-        ) : (
-          'Chưa có đánh giá'
-        )}
-      </p>
+            <div className="relative aspect-[4/3] max-h-80 w-full overflow-hidden rounded-3xl ring-1 ring-champagne-300/80 lg:max-h-none">
+              <ProductImage product={product} variant="cover" className="h-full w-full" />
+              <span aria-hidden="true" className="pointer-events-none absolute inset-2 rounded-[20px] border border-white/70" />
+              <button
+                onClick={() => openModal({ type: 'trace_lot', productId: product.id })}
+                className="absolute right-3 bottom-3 flex min-h-11 items-center gap-1.5 rounded-full bg-forest-950/90 px-4 text-sm font-semibold text-champagne-200 ring-1 ring-champagne-400/60 hover:bg-forest-900"
+              >
+                <FileBadge size={16} />
+                Xem nguồn gốc
+              </button>
+            </div>
 
-      <Ornament className="mx-auto" />
-
-      <p className="drop-cap text-sm leading-relaxed text-stone-700">{product.description}</p>
-
-      {/* Thông tin sản phẩm, lấy từ dữ liệu sản phẩm. */}
-      <dl className="space-y-1.5 rounded-2xl border border-champagne-200 bg-champagne-50/60 p-3.5 text-sm">
-        {(
-          [
-            ['Vùng', product.region],
-            ['HTX', coop?.name ?? '—'],
-            ['Nhóm hàng', CATEGORY_LABEL[product.category]],
-            ['Hình thức', ORDER_KIND_LABEL[product.kind]],
-            ['Quy cách', product.unit],
-          ] as const
-        ).map(([label, value]) => (
-          <div key={label} className="flex items-baseline gap-2">
-            <dt className="flex flex-1 items-baseline gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-champagne-700">
-              <span className="shrink-0">{label}</span>
-              <span aria-hidden="true" className="leader" />
-            </dt>
-            <dd className="max-w-[65%] text-right font-semibold text-ink">{value}</dd>
-          </div>
-        ))}
-      </dl>
-
-      {product.sample && (
-        <div role="note" className="space-y-1 rounded-2xl border border-stone-300 bg-stone-50 p-3 text-sm text-stone-700">
-          <p className="font-bold text-ink">Dữ liệu mẫu – chờ HTX xác nhận</p>
-          <p>
-            {product.sample.surveyedPrice
-              ? `Giá mẫu, chọn trong khoảng giá bán lẻ tại Hà Nội nhóm đã khảo sát: ${product.sample.surveyedPrice}.`
-              : 'Giá mẫu: nhóm chưa có giá khảo sát cho sản phẩm này.'}
-          </p>
-          {product.sample.deliveryWindowIsSample && <p>Khoảng ngày giao là mẫu, chờ HTX xác nhận.</p>}
-          {product.sample.dossierNote && <p>{product.sample.dossierNote}.</p>}
-        </div>
-      )}
-
-      {product.kind === 'preorder' ? (
-        <>
-          <PreorderProgress product={product} />
-          <div className="space-y-1 rounded-2xl border border-champagne-200 bg-champagne-50 p-3 text-sm text-champagne-950">
-            <p>
-              <strong>Cọc {params.depositPercent}%</strong> trả online khi đặt: {formatMoney(deposit)} (chưa gồm phí giao).
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-display text-3xl font-semibold tabular-nums text-forest-900">
+                {formatMoney(product.price)}
+                <span className="font-sans text-sm font-normal text-muted">/{product.unit}</span>
+                {isSamplePrice(product) && <span className="ml-1.5 text-sm font-semibold text-champagne-800">(giá mẫu)</span>}
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="whitespace-nowrap rounded-md bg-stone-100 px-2 py-0.5 text-xs font-semibold text-stone-700">{ORDER_KIND_LABEL[product.kind]}</span>
+                <button onClick={share} aria-label="Chia sẻ link sản phẩm" className="flex h-11 w-11 items-center justify-center rounded-xl text-stone-700 hover:bg-stone-100">
+                  <Share2 size={18} />
+                </button>
+              </span>
+            </div>
+            <p className="flex items-center gap-2 text-sm text-stone-700">
+              {rating.average !== null ? (
+                <>
+                  <Stars value={rating.average} /> {rating.average}/5 · {rating.count} đánh giá
+                </>
+              ) : (
+                'Chưa có đánh giá'
+              )}
             </p>
-            <p>Phần còn lại trả online khi HTX báo hàng sẵn sàng, hoặc trả khi nhận hàng nếu đơn đủ điều kiện.</p>
-            {win && (
-              <p>
-                Chọn ngày giao từ {formatDateKey(win.min)} đến {formatDateKey(win.max)} ở bước đặt hàng.
+          </>
+        }
+        right={
+          <>
+            <Ornament className="mx-auto" />
+
+            <p className="drop-cap text-sm leading-relaxed text-stone-700">{product.description}</p>
+
+            {/* Thông tin sản phẩm, lấy từ dữ liệu sản phẩm. */}
+            <dl className="space-y-1.5 rounded-2xl border border-champagne-200 bg-champagne-50/60 p-3.5 text-sm">
+              {(
+                [
+                  ['Vùng', product.region],
+                  ['HTX', coop?.name ?? '—'],
+                  ['Nhóm hàng', CATEGORY_LABEL[product.category]],
+                  ['Hình thức', ORDER_KIND_LABEL[product.kind]],
+                  ['Quy cách', product.unit],
+                ] as const
+              ).map(([label, value]) => (
+                <div key={label} className="flex items-baseline gap-2">
+                  <dt className="flex flex-1 items-baseline gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-champagne-700">
+                    <span className="shrink-0">{label}</span>
+                    <span aria-hidden="true" className="leader" />
+                  </dt>
+                  <dd className="max-w-[65%] text-right font-semibold text-ink">{value}</dd>
+                </div>
+              ))}
+            </dl>
+
+            {coop && (
+              <section aria-label={`Liên hệ ${coop.name}`} className="space-y-2">
+                <p className="text-sm font-semibold text-stone-700">Cần hỏi thêm? Gọi {coop.name}</p>
+                <CoopCallLinks coop={coop} />
+              </section>
+            )}
+
+            {product.sample && (
+              <div role="note" className="space-y-1 rounded-2xl border border-stone-300 bg-stone-50 p-3 text-sm text-stone-700">
+                <p className="font-bold text-ink">Dữ liệu mẫu – chờ HTX xác nhận</p>
+                <p>
+                  {product.sample.surveyedPrice
+                    ? `Giá mẫu, chọn trong khoảng giá bán lẻ tại Hà Nội nhóm đã khảo sát: ${product.sample.surveyedPrice}.`
+                    : 'Giá mẫu: nhóm chưa có giá khảo sát cho sản phẩm này.'}
+                </p>
+                {product.sample.deliveryWindowIsSample && <p>Khoảng ngày giao là mẫu, chờ HTX xác nhận.</p>}
+                {product.sample.dossierNote && <p>{product.sample.dossierNote}.</p>}
+              </div>
+            )}
+
+            {product.kind === 'preorder' ? (
+              <>
+                <PreorderProgress product={product} />
+                <div className="space-y-1 rounded-2xl border border-champagne-200 bg-champagne-50 p-3 text-sm text-champagne-950">
+                  <p>
+                    <strong>Cọc {params.depositPercent}%</strong> trả online khi đặt: {formatMoney(deposit)} (chưa gồm phí giao).
+                  </p>
+                  <p>Phần còn lại trả online khi HTX báo hàng sẵn sàng, hoặc trả khi nhận hàng nếu đơn đủ điều kiện.</p>
+                  {win && (
+                    <p>
+                      Chọn ngày giao từ {formatDateKey(win.min)} đến {formatDateKey(win.max)} ở bước đặt hàng.
+                    </p>
+                  )}
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-stone-600">
+                Còn <strong>{remaining}</strong> {product.unit} có thể đặt.
               </p>
             )}
-          </div>
-        </>
-      ) : (
-        <p className="text-sm text-stone-600">
-          Còn <strong>{remaining}</strong> {product.unit} có thể đặt.
-        </p>
-      )}
 
-      {(product.certifications?.length ?? 0) > 0 && (
-        <ul className="space-y-1 text-sm">
-          {product.certifications!.map((c) => (
-            <li key={c.id} className="flex items-center gap-1.5 text-stone-700">
-              <BadgeCheck size={16} className="text-forest-600" />
-              {c.label} · {c.issuer} · hiệu lực đến {c.validUntil.split('-').reverse().join('/')} (Admin đã xem hồ sơ – mô phỏng)
-            </li>
-          ))}
-        </ul>
-      )}
+            {(product.certifications?.length ?? 0) > 0 && (
+              <ul className="space-y-1 text-sm">
+                {product.certifications!.map((c) => (
+                  <li key={c.id} className="flex items-center gap-1.5 text-stone-700">
+                    <BadgeCheck size={16} className="text-forest-600" />
+                    {c.label} · {c.issuer} · hiệu lực đến {c.validUntil.split('-').reverse().join('/')} (Admin đã xem hồ sơ – mô phỏng)
+                  </li>
+                ))}
+              </ul>
+            )}
 
-      {reviews.length > 0 && (
-        <section className="space-y-2 border-t border-stone-100 pt-3">
-          <h4 className="text-sm font-bold text-stone-800">Đánh giá của khách</h4>
-          {reviews.map((r) => (
-            <div key={r.id} className="space-y-1 rounded-xl bg-stone-50 p-2.5 text-sm">
-              <p className="flex items-center gap-2">
-                <Stars value={r.stars} /> <span className="font-semibold">{r.reviewerName}</span>
-                <span className="text-xs text-muted">· đơn {r.orderRef}</span>
-              </p>
-              {r.comment && <p className="text-stone-700">{r.comment}</p>}
-              {r.photos.length > 0 && (
-                <div className="flex gap-1">
-                  {r.photos.map((src, i) => (
-                    <img key={i} src={src} alt={`Ảnh đánh giá ${i + 1}`} className="h-14 w-14 rounded-lg object-cover" />
-                  ))}
-                </div>
-              )}
-              {r.coopReply && <p className="border-l-2 border-forest-600 pl-2 text-stone-700">HTX phản hồi: {r.coopReply}</p>}
-            </div>
-          ))}
-        </section>
-      )}
+            {reviews.length > 0 && (
+              <section className="space-y-2 border-t border-stone-100 pt-3">
+                <h4 className="text-sm font-bold text-stone-800">Đánh giá của khách</h4>
+                {reviews.map((r) => (
+                  <div key={r.id} className="space-y-1 rounded-xl bg-stone-50 p-2.5 text-sm">
+                    <p className="flex items-center gap-2">
+                      <Stars value={r.stars} /> <span className="font-semibold">{r.reviewerName}</span>
+                      <span className="text-xs text-muted">· đơn {r.orderRef}</span>
+                    </p>
+                    {r.comment && <p className="text-stone-700">{r.comment}</p>}
+                    {r.photos.length > 0 && (
+                      <div className="flex gap-1">
+                        {r.photos.map((src, i) => (
+                          <img key={i} src={src} alt={`Ảnh đánh giá ${i + 1}`} className="h-14 w-14 rounded-lg object-cover" />
+                        ))}
+                      </div>
+                    )}
+                    {r.coopReply && <p className="border-l-2 border-forest-600 pl-2 text-stone-700">HTX phản hồi: {r.coopReply}</p>}
+                  </div>
+                ))}
+              </section>
+            )}
+          </>
+        }
+      />
     </BottomSheet>
   );
 }
