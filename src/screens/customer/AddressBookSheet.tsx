@@ -9,7 +9,8 @@ import { useStore } from '../../store/AppDataContext';
 
 /**
  * Sổ địa chỉ (FR-TK-04): tối đa 10 địa chỉ, sửa, xoá.
- * Bấm vào một địa chỉ để chọn giao tới: địa chỉ đó thành mặc định, hiện ở thanh "Giao tới" và được chọn sẵn khi đặt hàng.
+ * Bấm vào một địa chỉ để chọn làm địa chỉ nhận hàng: địa chỉ đó thành mặc định, hiện ở thanh "Nhận hàng tại" và được chọn sẵn khi đặt hàng.
+ * Nhãn ghi "Mặc định", không ghi "Đang giao tới" để khỏi bị hiểu nhầm là có đơn đang giao.
  */
 export function AddressBookSheet({ onClose }: { onClose: () => void }) {
   const { state, run } = useStore();
@@ -24,7 +25,7 @@ export function AddressBookSheet({ onClose }: { onClose: () => void }) {
       const r = run((s) => setDefaultAddress(s, customerActor.id!, id));
       if (!r.ok) return showToast(r.error);
     }
-    showToast(`Giao tới: ${label}.`);
+    showToast(`Địa chỉ nhận hàng: ${label}.`);
     onClose();
   };
 
@@ -54,7 +55,7 @@ export function AddressBookSheet({ onClose }: { onClose: () => void }) {
         <EmptyState>Chưa có địa chỉ nào. Bấm "Thêm địa chỉ" để thêm địa chỉ giao hàng tại Hà Nội.</EmptyState>
       ) : (
         <>
-          <p className="text-sm text-stone-600">Bấm vào một địa chỉ để chọn giao tới.</p>
+          <p className="text-sm text-stone-600">Bấm vào một địa chỉ để chọn làm địa chỉ nhận hàng khi đặt đơn.</p>
           <div className="space-y-2" role="radiogroup" aria-label="Chọn địa chỉ giao hàng">
             {mine.map((a) => (
               <div key={a.id} className={`rounded-2xl border ${a.isDefault ? 'border-forest-600 bg-forest-50/50' : 'border-stone-200 bg-white'}`}>
@@ -70,7 +71,7 @@ export function AddressBookSheet({ onClose }: { onClose: () => void }) {
                     <span className="flex items-center justify-between gap-2">
                       <span className="text-sm font-bold text-ink">
                         {a.label}
-                        {a.isDefault && <span className="ml-2 rounded-md bg-forest-700 px-1.5 py-0.5 text-xs text-white">Đang giao tới</span>}
+                        {a.isDefault && <span className="ml-2 rounded-md bg-forest-700 px-1.5 py-0.5 text-xs text-white">Mặc định</span>}
                       </span>
                       <span className="text-xs text-muted">{a.houseType === 'apartment' ? 'Chung cư' : 'Nhà mặt đất'}</span>
                     </span>

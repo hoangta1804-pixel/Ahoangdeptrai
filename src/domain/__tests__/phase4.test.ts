@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { opsCreateAccount, opsSetAccountLocked, rootSetAdminGroup, setRefundAccount, updateCustomerProfile } from '../account';
+import { linkRefundAccount, opsCreateAccount, opsSetAccountLocked, prepareBankLink, rootSetAdminGroup, unlinkRefundAccount, updateCustomerProfile } from '../account';
 import { adminCreateVoucher, adminSetVoucherActive, opsDeleteGiftBox, opsSaveGiftBox, opsUpdateParam } from '../adminConfig';
 import { verifyLogin } from '../auth';
 import { addToCart } from '../cart';
@@ -64,13 +64,38 @@ describe('Đánh giá (mục 5.8)', () => {
 });
 
 describe('Tài khoản, hồ sơ HTX, quyền bán (FR-TK)', () => {
+  it('liên kết ngân hàng (mô phỏng): chọn ngân hàng, kiểm tra số tài khoản, xác thực OTP, huỷ liên kết', () => {
+    let s = makeState();
+    expect(prepareBankLink({ bankCode: '', accountNumber: '000011112222', holder: 'A' })).toEqual({ ok: false, error: 'Vui lòng chọn ngân hàng.' });
+    expect(prepareBankLink({ bankCode: 'KHAC', otherBankName: ' ', accountNumber: '000011112222', holder: 'A' })).toEqual({ ok: false, error: 'Vui lòng nhập tên ngân hàng.' });
+    expect(prepareBankLink({ bankCode: 'VCB', accountNumber: '12345', holder: 'A' }).ok).toBe(false);
+    expect(prepareBankLink({ bankCode: 'VCB', accountNumber: '000011112222', holder: '  ' }).ok).toBe(false);
+    // Tên chủ tài khoản viết hoa, bỏ dấu như ngân hàng in; ngân hàng khác thì giữ tên khách gõ.
+    expect(prepareBankLink({ bankCode: 'KHAC', otherBankName: 'Ngân hàng X', accountNumber: '0000-1111-2222', holder: 'Nguyễn  Thị Đào' })).toEqual({
+      ok: true,
+      value: { bankCode: 'KHAC', bankName: 'Ngân hàng X', accountNumber: '000011112222', holder: 'NGUYEN THI DAO' },
+    });
+    // Sai OTP thì không lưu; chỉ khách tự liên kết được.
+    const input = { bankCode: 'TCB', accountNumber: '19001234567', holder: 'Khach 1' };
+    expect(linkRefundAccount(s, CUSTOMER, input, '000000', T0)).toEqual({ ok: false, error: 'Mã OTP không đúng.' });
+    expect(linkRefundAccount(s, ADMIN_OPS, input, '123456', T0).ok).toBe(false);
+    s = must(linkRefundAccount(s, CUSTOMER, input, '123456', T0));
+    expect(s.customers[0].refundAccount).toMatchObject({ bankName: 'Techcombank', accountNumber: '19001234567', holder: 'KHACH 1' });
+    // Đang có khoản hoàn chuyển vào tài khoản thì chưa huỷ được.
+    const refunding = { ...s, refunds: [{ id: 'HT-1', orderId: 'o', customerId: 'cust-1', amount: 1, status: 'refunding' as const, source: 'cancel' as const, reason: '', destination: 'bank_account' as const, createdAt: T0.toISOString() }] };
+    expect(unlinkRefundAccount(refunding, CUSTOMER).ok).toBe(false);
+    s = must(unlinkRefundAccount(s, CUSTOMER));
+    expect(s.customers[0].refundAccount).toBeUndefined();
+    expect(unlinkRefundAccount(s, CUSTOMER)).toEqual({ ok: false, error: 'Chưa có tài khoản liên kết.' });
+  });
+
   it('khách sửa tên và khai tài khoản nhận hoàn; Vận hành cấp và khoá tài khoản (không tự khoá); Quản trị gốc phân quyền', () => {
     let s = makeState();
     s = must(updateCustomerProfile(s, CUSTOMER, 'Tên mới'));
     expect(s.users.find((u) => u.id === 'u-kh1')!.name).toBe('Tên mới');
-    expect(setRefundAccount(s, CUSTOMER, { bankName: 'NH', accountNumber: '12', holder: 'A' }).ok).toBe(false);
-    s = must(setRefundAccount(s, CUSTOMER, { bankName: 'NH mẫu', accountNumber: '0000 1111 2222', holder: 'khach' }));
-    expect(s.customers[0].refundAccount).toEqual({ bankName: 'NH mẫu', accountNumber: '000011112222', holder: 'KHACH' });
+    expect(linkRefundAccount(s, CUSTOMER, { bankCode: 'VCB', accountNumber: '12', holder: 'A' }, '123456', T0).ok).toBe(false);
+    s = must(linkRefundAccount(s, CUSTOMER, { bankCode: 'VCB', accountNumber: '0000 1111 2222', holder: 'khach' }, '123456', T0));
+    expect(s.customers[0].refundAccount).toEqual({ bankCode: 'VCB', bankName: 'Vietcombank', accountNumber: '000011112222', holder: 'KHACH', linkedAt: T0.toISOString() });
 
     expect(opsCreateAccount(s, ADMIN_QA, { name: 'HTX Z', phone: '0900000555', role: 'coop', coopId: 'coop-x' }, T0).ok).toBe(false);
     const created = must(opsCreateAccount(s, ADMIN_OPS, { name: 'HTX X 2', phone: '0900000555', role: 'coop', coopId: 'coop-x' }, T0));

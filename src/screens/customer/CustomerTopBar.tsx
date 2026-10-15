@@ -15,7 +15,7 @@ export function CustomerTopBar() {
       <button onClick={() => openModal({ type: 'address_book' })} className="flex min-h-11 min-w-0 flex-1 items-center gap-1.5 text-left">
         <MapPin size={16} className="shrink-0 text-forest-600" />
         <span className="min-w-0">
-          <span className="block text-xs font-semibold text-muted">Giao tới (Hà Nội)</span>
+          <span className="block text-xs font-semibold text-muted">Nhận hàng tại (Hà Nội)</span>
           <span className="block truncate text-sm font-bold text-stone-800">{address ? snapshotAddress(state, address).text : 'Thêm địa chỉ giao hàng'}</span>
         </span>
       </button>

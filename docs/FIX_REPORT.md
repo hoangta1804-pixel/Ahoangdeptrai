@@ -33,6 +33,91 @@ npm test         # unit test vitest: src/domain, dữ liệu mẫu, quy ước g
 
 ---
 
+## Sau Giai đoạn 6 – Chọn số lượng, nhãn địa chỉ, liên kết ngân hàng (mô phỏng)
+
+**Chủ repo báo 3 việc:**
+1. Thêm vào giỏ chỉ thêm được từng cái một; khách mua nhiều không chọn được số lượng.
+2. Khách chưa đặt hàng mà đã thấy trạng thái "Đang giao tới".
+3. Phần tài khoản cần liên kết với ngân hàng.
+
+### Chọn số lượng
+
+- **Nguyên nhân:** trang chi tiết đã có ô chọn số lượng, nhưng nằm cuối trang, dưới mô tả và ghi chú dữ liệu mẫu, nên khách không thấy. Nút "+" trên thẻ sản phẩm mỗi lần chỉ thêm 1. Vụ mùa luôn đặt 1 suất.
+- **Ô số lượng dùng chung** (`src/components/QuantityStepper.tsx`): nút −, ô số, nút +.
+  - Gõ thẳng số vào ô được, có hiệu lực ngay. Gõ quá số còn lại thì tự về mức tối đa.
+  - Bàn phím số trên điện thoại.
+  - Hai nút 44×44px.
+- **Trang chi tiết:** ô số lượng chuyển xuống chân trang, ngay trên "Thêm vào giỏ" / "Mua ngay", luôn thấy. Kèm số còn lại, số đã có trong giỏ và thành tiền.
+- **Thẻ ở Khám phá:** bấm "+" để thêm 1, rồi thẻ hiện − / số / + để tăng giảm ngay tại chỗ. Giảm về 1 thì nút − thành nút bỏ khỏi giỏ.
+  - Thẻ không có ô gõ: ở màn 320px thẻ chỉ rộng khoảng 140px, ô gõ sẽ hẹp hơn 44px.
+  - Gõ số lượng lớn ở trang chi tiết hoặc giỏ hàng.
+- **Vụ mùa:** mỗi sản phẩm có ô số suất (kèm số suất còn lại và thành tiền) trước nút "Đặt trước".
+- **Giỏ hàng:** ô số gõ được.
+
+### Nhãn "Đang giao tới"
+
+- **Nguyên nhân:** đó là nhãn của địa chỉ mặc định trong sổ địa chỉ, không phải trạng thái đơn. Nhưng chữ "Đang giao tới" đọc như có đơn đang trên đường giao.
+- **Sửa:**
+  - Nhãn đổi thành **"Mặc định"**.
+  - Thanh trên cùng đổi "Giao tới (Hà Nội)" thành **"Nhận hàng tại (Hà Nội)"**.
+  - Thông báo khi chọn địa chỉ đổi thành "Địa chỉ nhận hàng: …".
+  - Chữ "Giao tới" chỉ còn ở chi tiết đơn đã đặt, nơi đơn thật sự giao tới địa chỉ đó.
+
+### Liên kết ngân hàng (mô phỏng)
+
+Phần "Tài khoản nhận hoàn tiền (đơn COD)" trong tab Tài khoản của khách trước đây là 3 ô nhập tự do. Nay là luồng liên kết, gắn nhãn "Mô phỏng" (`src/screens/customer/BankLinkSection.tsx`):
+
+1. **Bước 1:**
+   - Chọn ngân hàng trong danh sách (`src/domain/banks.ts`), hoặc "Ngân hàng khác" rồi gõ tên.
+   - Nhập số tài khoản (6–19 chữ số) và tên chủ tài khoản. App tự viết hoa, bỏ dấu như ngân hàng in, và cho xem trước.
+2. **Bước 2:** ngân hàng mô phỏng "gửi OTP". Không gửi tin thật, mã luôn là `123456`, có nút "Điền OTP mô phỏng". Sai mã thì báo "Mã OTP không đúng."
+3. **Đã liên kết:**
+   - Hiện ngân hàng, số tài khoản che (`**** 8901`), tên chủ tài khoản và giờ liên kết.
+   - Có nút "Đổi tài khoản" và "Huỷ liên kết"; huỷ thì hỏi lại ngay trong trang.
+   - Không huỷ được khi đang có khoản hoàn chuyển vào tài khoản đó.
+
+**Giới hạn:**
+- App không kết nối ngân hàng nào và không tra cứu tên chủ tài khoản thật.
+- Danh sách ngân hàng chỉ là tên để chọn; mã trong danh sách là mã nội bộ, không phải mã chính thức.
+- Liên kết thật (tra cứu tên chủ tài khoản, chuyển tiền hoàn tự động) cần ký hợp đồng với một cổng thanh toán hoặc ngân hàng. Nó cũng cần server có đăng nhập thật; nằm ngoài phạm vi bản demo.
+
+**Mã nguồn:**
+- `linkRefundAccount`, `unlinkRefundAccount`, `prepareBankLink` trong `src/domain/account.ts`, thay cho `setRefundAccount`.
+- `BankAccount` thêm `bankCode` và `linkedAt` (không bắt buộc). Dữ liệu đã lưu trước đây vẫn đọc được: tài khoản cũ hiện là đã liên kết, không có giờ liên kết.
+- Khách hàng mẫu 1 có sẵn tài khoản "Ngân hàng mẫu" đã liên kết.
+
+### Kiểm thử
+
+- **Lint, test, build:** lint không lỗi; 17 file, 142 test đạt (thêm test liên kết ngân hàng); build thành công.
+- **Playwright ở 320px và 390px, chặn request ra ngoài:**
+  - Thẻ: "+" rồi tăng 2 lần thì giỏ có 3; giảm về 1 rồi bỏ khỏi giỏ thì nút "+" hiện lại.
+  - Trang chi tiết: ô số lượng thấy ngay ở chân trang; gõ 12 rồi thêm vào giỏ thì giỏ có 12.
+  - Giỏ: gõ 3.
+  - Vụ mùa: chọn 3 suất thì bước đặt hàng ghi "× 3".
+  - Sổ địa chỉ: nhãn "Mặc định", không còn chữ "Đang giao tới".
+  - Liên kết ngân hàng:
+    - bỏ trống thì báo lỗi; sửa ô thì lỗi ẩn;
+    - sai OTP bị từ chối, đúng OTP thì liên kết;
+    - đổi sang ngân hàng khác được;
+    - huỷ liên kết có hỏi lại.
+  - 0 lỗi axe, 0 vùng bấm dưới 44px, 0 chữ dưới 12px, không lỗi JS.
+- **Chạy lại các kịch bản cũ:** Luồng 1, Luồng 2, kiểm tra giao diện toàn app, chọn sản phẩm trong giỏ, địa chỉ giao hàng, mã ưu đãi đều đạt.
+
+### Trước khi đưa web ra dùng thật
+
+Bản này là demo. Khi đưa ra cho người mua thật, cần bỏ hoặc thay những phần sau:
+
+| Phần | Bản demo | Khi dùng thật |
+|---|---|---|
+| Danh sách "Tài khoản demo" ở màn đăng nhập | Bấm để vào nhanh từng vai trò | Bỏ. Tài khoản HTX, Admin, QLNN do Admin cấp; khách tự đăng ký |
+| OTP đăng nhập | Mô phỏng, luôn là 123456 | Gửi SMS OTP thật qua nhà cung cấp SMS |
+| Công cụ demo, dải "Bản demo" | Có | Bỏ |
+| API `/api/state` | Không có đăng nhập phía server | Thay bằng backend có đăng nhập và phân quyền ở server |
+| Thanh toán, hoàn tiền, liên kết ngân hàng | Mô phỏng | Tích hợp cổng thanh toán / ngân hàng (cần hợp đồng) |
+| Dữ liệu mẫu (sản phẩm, giá, HTX) | Ghi "mẫu" | Dữ liệu thật do HTX cung cấp và xác nhận |
+
+---
+
 ## Sau Giai đoạn 6 – API dữ liệu dùng chung giữa nhiều máy
 
 **Yêu cầu của chủ repo:** thêm API cho bản demo. Chủ repo chọn phương án dữ liệu dùng chung giữa nhiều máy: khách đặt trên điện thoại, HTX và Admin trên máy khác thấy được đơn đó. Thanh toán, OTP và giao hàng vẫn là mô phỏng.
@@ -899,6 +984,9 @@ Ngoài các ca trên còn có test cho:
 50. **Server chưa có dữ liệu, hoặc dữ liệu khác phiên bản cấu trúc (`STORAGE_VERSION`):** trình duyệt mở trước đưa dữ liệu của nó lên làm dữ liệu chung.
 51. **Hai thao tác trùng nhau trên hai máy:** giữ thao tác tới server trước. Thao tác sau chạy lại trên dữ liệu mới; không hợp lệ nữa thì bỏ và báo.
 52. **Đồng hồ demo và giỏ hàng nằm trong dữ liệu chung.** Phiên đăng nhập vẫn riêng từng tab.
+53. **Ô số lượng ở trang chi tiết là số muốn thêm,** không phải tổng trong giỏ. Trong giỏ đã có thì thêm cộng dồn; vượt số còn lại thì báo lỗi như trước.
+54. **Liên kết ngân hàng chỉ dùng cho tài khoản nhận hoàn tiền đơn COD của khách.** Tài khoản nhận chi trả của HTX vẫn chỉ hiện dạng che, chưa có luồng liên kết.
+55. **Tên chủ tài khoản lưu dạng viết hoa, không dấu,** theo cách ngân hàng Việt Nam thường in.
 
 ## Vấn đề chờ nhóm chốt
 

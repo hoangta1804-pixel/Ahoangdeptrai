@@ -1,9 +1,11 @@
 /**
  * Tài khoản (FR-TK-03, FR-TK-10..12).
- * - Khách sửa thông tin cá nhân và tài khoản nhận hoàn tiền (TK-03).
+ * - Khách sửa thông tin cá nhân và liên kết tài khoản ngân hàng nhận hoàn tiền (TK-03, liên kết là mô phỏng).
  * - Admin – Vận hành cấp và khoá / mở khoá tài khoản (TK-10, TK-12); không tự khoá chính mình; khoá phải ghi lý do.
  * - Quản trị gốc phân quyền: đổi nhóm quyền của tài khoản Admin (TK-11).
  */
+import { DEMO_OTP } from './auth';
+import { BANKS, OTHER_BANK_CODE } from './banks';
 import { generateId } from './ids';
 import { isValidPhone, normalizePhone, PHONE_RULE } from './phone';
 import { audit, iso } from './state';
@@ -19,14 +21,62 @@ export function updateCustomerProfile(state: DemoState, actor: Actor, name: stri
   });
 }
 
-export function setRefundAccount(state: DemoState, actor: Actor, account: BankAccount): Result<DemoState> {
-  if (actor.kind !== 'customer' || !actor.id) return fail('Chỉ khách hàng khai được tài khoản nhận hoàn của mình.');
-  if (!account.bankName.trim()) return fail('Vui lòng nhập tên ngân hàng.');
-  const digits = account.accountNumber.replace(/\D/g, '');
+export interface BankLinkInput {
+  /** Mã trong BANKS, hoặc OTHER_BANK_CODE kèm `otherBankName`. */
+  bankCode: string;
+  otherBankName?: string;
+  accountNumber: string;
+  holder: string;
+}
+
+/** Tên chủ tài khoản theo cách ngân hàng in: viết hoa, không dấu. */
+export function normalizeHolderName(input: string): string {
+  return input.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toUpperCase().replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Liên kết ngân hàng, bước 1: kiểm tra thông tin tài khoản trước khi ngân hàng gửi OTP (mô phỏng).
+ * Không tra cứu tên chủ tài khoản với ngân hàng thật.
+ */
+export function prepareBankLink(input: BankLinkInput): Result<BankAccount> {
+  const other = input.bankCode === OTHER_BANK_CODE;
+  const bankName = other ? (input.otherBankName ?? '').trim() : (BANKS.find((b) => b.code === input.bankCode)?.name ?? '');
+  if (!bankName) return fail(other ? 'Vui lòng nhập tên ngân hàng.' : 'Vui lòng chọn ngân hàng.');
+  const digits = input.accountNumber.replace(/\D/g, '');
   if (digits.length < 6 || digits.length > 19) return fail('Số tài khoản phải gồm 6–19 chữ số.');
-  if (!account.holder.trim()) return fail('Vui lòng nhập tên chủ tài khoản.');
-  const refundAccount: BankAccount = { bankName: account.bankName.trim(), accountNumber: digits, holder: account.holder.trim().toUpperCase() };
+  const holder = normalizeHolderName(input.holder);
+  if (!holder) return fail('Vui lòng nhập tên chủ tài khoản.');
+  return ok({ bankCode: input.bankCode, bankName, accountNumber: digits, holder });
+}
+
+/**
+ * Liên kết ngân hàng, bước 2 (FR-TK-03): khách nhập OTP mô phỏng của ngân hàng (luôn là 123456) để xác nhận.
+ * Thành công thì tài khoản thành tài khoản nhận hoàn tiền đơn COD. Liên kết lại sẽ thay tài khoản cũ.
+ */
+export function linkRefundAccount(state: DemoState, actor: Actor, input: BankLinkInput, otp: string, at: Date): Result<DemoState> {
+  if (actor.kind !== 'customer' || !actor.id) return fail('Chỉ khách hàng liên kết được tài khoản nhận hoàn của mình.');
+  const prepared = prepareBankLink(input);
+  if (!prepared.ok) return prepared;
+  if (otp.trim() !== DEMO_OTP) return fail('Mã OTP không đúng.');
+  const refundAccount: BankAccount = { ...prepared.value, linkedAt: iso(at) };
   return ok({ ...state, customers: state.customers.map((c) => (c.id === actor.id ? { ...c, refundAccount } : c)) });
+}
+
+/** Huỷ liên kết tài khoản nhận hoàn. Không huỷ được khi đang có khoản hoàn chuyển vào tài khoản này. */
+export function unlinkRefundAccount(state: DemoState, actor: Actor): Result<DemoState> {
+  if (actor.kind !== 'customer' || !actor.id) return fail('Chỉ khách hàng huỷ được liên kết của mình.');
+  const customer = state.customers.find((c) => c.id === actor.id);
+  if (!customer?.refundAccount) return fail('Chưa có tài khoản liên kết.');
+  const transferring = state.refunds.some((r) => r.customerId === actor.id && r.destination === 'bank_account' && r.status === 'refunding');
+  if (transferring) return fail('Đang có khoản hoàn tiền chuyển vào tài khoản này. Huỷ liên kết sau khi hoàn xong.');
+  return ok({
+    ...state,
+    customers: state.customers.map((c) => {
+      if (c.id !== actor.id) return c;
+      const { refundAccount: _removed, ...rest } = c;
+      return rest;
+    }),
+  });
 }
 
 export interface NewAccountInput {

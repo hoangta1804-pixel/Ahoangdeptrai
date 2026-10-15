@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { BadgeCheck, FileBadge, Minus, Plus, Share2 } from 'lucide-react';
+import { BadgeCheck, FileBadge, Share2 } from 'lucide-react';
 import { useUi } from '../../app/UiContext';
 import { BottomSheet } from '../../components/BottomSheet';
 import { PreorderProgress } from '../../components/PreorderProgress';
+import { QuantityStepper } from '../../components/QuantityStepper';
 import { Stars } from '../../components/Stars';
 import { averageRating, publicReviews } from '../../domain/reviews';
 import { ProductImage } from '../../components/ProductImage';
@@ -16,7 +17,7 @@ import { useCartActions } from './useCartActions';
 export function ProductDetailSheet({ productId, onClose }: { productId: string; onClose: () => void }) {
   const { state, now } = useStore();
   const { openModal, showToast } = useUi();
-  const { add } = useCartActions();
+  const { add, cart } = useCartActions();
   const [quantity, setQuantity] = useState(1);
   const product = findProduct(state, productId);
   if (!product) return null;
@@ -33,6 +34,7 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
         ? 'Đã hết thời gian nhận đặt trước'
         : null;
   const qty = Math.min(quantity, Math.max(1, remaining));
+  const inCart = cart.find((l) => l.productId === product.id)?.quantity ?? 0;
   const rating = averageRating(state, product.id);
   const reviews = publicReviews(state, product.id);
 
@@ -66,26 +68,42 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
       }
       onClose={onClose}
       footer={
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            disabled={!!blocked}
-            onClick={() => add(product.id, qty) && onClose()}
-            className="min-h-12 rounded-2xl border border-forest-800 bg-white text-sm font-bold text-forest-800 disabled:border-stone-300 disabled:text-muted"
-          >
-            Thêm vào giỏ
-          </button>
-          <button
-            disabled={!!blocked}
-            onClick={() =>
-              openModal({
-                type: 'checkout',
-                source: { type: 'buy_now', line: { productId: product.id, quantity: qty, deliveryDate: win?.min, seenPrice: product.price } },
-              })
-            }
-            className="min-h-12 rounded-2xl bg-forest-800 text-sm font-bold text-white disabled:bg-stone-300 disabled:text-stone-600"
-          >
-            {blocked ?? (product.kind === 'preorder' ? 'Đặt trước' : 'Mua ngay')}
-          </button>
+        <div className="space-y-2">
+          {!blocked && (
+            <div className="flex items-center justify-between gap-3">
+              <span className="min-w-0 text-sm">
+                <span className="block font-semibold text-stone-700">
+                  Số lượng <span className="font-normal text-muted">({product.unit})</span>
+                </span>
+                <span className="block text-xs text-muted">
+                  Còn {remaining}
+                  {inCart > 0 && ` · trong giỏ ${inCart}`} · <span className="font-semibold tabular-nums text-ink">{formatMoney(itemsTotal)}</span>
+                </span>
+              </span>
+              <QuantityStepper value={qty} max={remaining} onChange={setQuantity} itemName={product.name} />
+            </div>
+          )}
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              disabled={!!blocked}
+              onClick={() => add(product.id, qty) && onClose()}
+              className="min-h-12 rounded-2xl border border-forest-800 bg-white text-sm font-bold text-forest-800 disabled:border-stone-300 disabled:text-muted"
+            >
+              Thêm vào giỏ
+            </button>
+            <button
+              disabled={!!blocked}
+              onClick={() =>
+                openModal({
+                  type: 'checkout',
+                  source: { type: 'buy_now', line: { productId: product.id, quantity: qty, deliveryDate: win?.min, seenPrice: product.price } },
+                })
+              }
+              className="min-h-12 rounded-2xl bg-forest-800 text-sm font-bold text-white disabled:bg-stone-300 disabled:text-stone-600"
+            >
+              {blocked ?? (product.kind === 'preorder' ? 'Đặt trước' : 'Mua ngay')}
+            </button>
+          </div>
         </div>
       }
     >
@@ -170,26 +188,6 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
         </ul>
       )}
 
-      <div className="flex items-center justify-between border-t border-stone-100 pt-3">
-        <span className="text-sm font-semibold text-stone-700">
-          Số lượng ({product.unit})
-          <span className="block text-xs font-normal text-muted">Tối đa {Math.max(0, remaining)}</span>
-        </span>
-        <div className="flex items-center gap-1 rounded-xl bg-stone-100 p-1">
-          <button onClick={() => setQuantity((q) => Math.max(1, q - 1))} aria-label="Giảm số lượng" className="flex h-11 w-11 items-center justify-center rounded-lg bg-white shadow-xs">
-            <Minus size={16} />
-          </button>
-          <span className="w-8 text-center font-bold tabular-nums">{qty}</span>
-          <button
-            onClick={() => setQuantity((q) => Math.min(remaining, q + 1))}
-            disabled={qty >= remaining}
-            aria-label="Tăng số lượng"
-            className="flex h-11 w-11 items-center justify-center rounded-lg bg-white shadow-xs disabled:opacity-40"
-          >
-            <Plus size={16} />
-          </button>
-        </div>
-      </div>
       {reviews.length > 0 && (
         <section className="space-y-2 border-t border-stone-100 pt-3">
           <h4 className="text-sm font-bold text-stone-800">Đánh giá của khách</h4>
