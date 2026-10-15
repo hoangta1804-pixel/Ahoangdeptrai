@@ -33,6 +33,66 @@ npm test         # unit test vitest: src/domain, dữ liệu mẫu, quy ước g
 
 ---
 
+## Sau Giai đoạn 6 – Biểu đồ sản phẩm bán chạy cho HTX
+
+**Yêu cầu của chủ repo:** thêm biểu đồ xem sản phẩm bán chạy cho bên HTX.
+
+### Trên màn hình
+
+- **Màn HTX có thêm tab "Bán chạy".** Tab đặt sau "Sản phẩm"; thanh tab chia 4 cột (3 cột ở màn dưới 360px). Số đơn chờ xác nhận chuyển thành chấm ở góc tab "Đơn hàng" để chữ không xuống dòng.
+- **Bộ lọc:** một hàng phía trên, áp cho mọi số liệu bên dưới.
+  - Khoảng thời gian: 7 ngày / 30 ngày / Tất cả.
+  - Xếp theo: Số lượng / Tiền hàng.
+- **Ba ô số liệu:**
+  - Tiền hàng;
+  - Số đơn;
+  - Sản phẩm có đơn (vd. 2/3 sản phẩm đang bán).
+
+  Màn hẹp dưới 360px xếp thành 3 dòng để số không bị tràn.
+- **Biểu đồ thanh ngang xếp hạng:**
+  - Tên sản phẩm phía trên thanh, giá trị ở đầu thanh (vd. "4 gói 500 g" hoặc "405.000đ").
+  - Rê chuột hoặc chạm vào một dòng thì hiện đủ số liệu: số lượng, số đơn, tiền hàng.
+  - Có nút "Xem dạng bảng" với hạng, sản phẩm, số lượng, số đơn, tiền hàng.
+- **Ghi chú dưới biểu đồ:** cách tính, số sản phẩm đang bán chưa có đơn. Khi xếp theo số lượng mà các sản phẩm có đơn vị tính khác nhau (gói, hộp, kg), ghi chú gợi ý xếp theo tiền hàng để so sánh sát hơn.
+- **Chưa có đơn trong khoảng thời gian:** báo "Số liệu sẽ hiện khi khách đặt hàng", có nút "Xem tất cả".
+
+### Cách tính (`src/domain/salesStats.ts`)
+
+- **Số liệu tính từ đơn thật trong dữ liệu.** Không thêm đơn mẫu hay số lượng mẫu nào cho biểu đồ (mục 9.1 cấm số lượt bán bịa). Vì vậy với dữ liệu mẫu ban đầu, mỗi HTX chỉ có 0–1 đơn; biểu đồ đầy dần khi khách đặt hàng trong demo.
+- **Đơn được tính:** khách đã đặt xong (đã thanh toán hoặc trả khi nhận), gồm Chờ xác nhận, Đã xác nhận, Chờ thu hoạch, Đang chuẩn bị, Đang giao, Đã giao. Không tính đơn chờ thanh toán, đã huỷ, trả hàng.
+- **Thời gian** tính theo lúc tạo đơn và đồng hồ demo (tua thời gian thì số liệu đổi theo).
+- **Tiền hàng** = giá bán × số lượng. Phí giao không tính; mã ưu đãi do sàn chịu.
+
+### Thiết kế biểu đồ
+
+Làm theo hướng dẫn biểu đồ (dataviz):
+- **Dạng biểu đồ:** sản phẩm là các nhóm không có thứ tự, nên dùng thanh ngang (tên dài đọc được). Một chuỗi số liệu nên mọi thanh cùng một màu, không tô màu theo độ lớn, không có hộp chú giải (tiêu đề đã nói đang xếp theo gì).
+- **Màu:** các bậc xanh rừng của app quá nhạt màu để làm thanh; công cụ kiểm màu `validate_palette.js` báo "nhìn như xám" (độ bão hoà 0,07–0,08, dưới ngưỡng 0,10). App dùng `--color-chart-1: #1F7A55`, cùng tông xanh rừng nhưng đậm màu hơn, đạt mọi kiểm tra: trong dải sáng, đủ bão hoà, tương phản ≥ 3:1 trên nền trắng.
+- **Thanh:** dày 16px, đầu thanh bo 4px, gốc thẳng. Thanh dài nhất chừa chỗ cho chữ giá trị, nên chữ không bị cắt.
+- **Chữ:** dùng màu chữ thường, không dùng màu của thanh. Số liệu ở các ô dùng chữ không chân, chữ số không dàn đều; bảng dùng chữ số dàn đều để thẳng cột.
+- **Không chỉ xem được bằng rê chuột:** giá trị ghi sẵn ở đầu thanh và có trong bảng. Dòng nào cũng chọn được bằng bàn phím, kèm nhãn đọc màn hình đủ số liệu.
+- **Không làm chế độ tối:** app chưa có chế độ tối nên biểu đồ chỉ kiểm trên nền sáng.
+
+### Kiểm thử
+
+- **Lint, test, build:** lint không lỗi; 21 file, 164 test đạt (thêm test cách tính); build thành công, không cảnh báo.
+  - Test cách tính:
+    - chỉ đơn của đúng HTX;
+    - bỏ đơn chưa trả cọc, đơn đã huỷ, đơn của HTX khác;
+    - lọc theo 7 / 30 ngày / tất cả;
+    - xếp theo số lượng và theo tiền hàng;
+    - HTX chưa có đơn.
+- **Playwright ở 320px và 390px:**
+  1. Khách đặt thêm 2 hộp mứt và 4 gói phở hồng của HTX Bắc Hà.
+  2. Tab "Bán chạy" của HTX Bắc Hà hiện Phở hồng 4 gói, Mứt 3 hộp (1 hộp từ đơn mẫu); tiền hàng 665.000đ; 2 đơn; 2/3 sản phẩm có đơn.
+  3. Xếp theo tiền hàng thì Mứt (405.000đ) lên trước; khung số liệu khi chạm vào dòng và bảng hiện đúng.
+  4. HTX Sa Pa (chưa có đơn) hiện thông báo trống.
+
+  Kết quả: 0 lỗi axe, 0 vùng bấm dưới 44px, 0 chữ dưới 12px, không chữ nào bị tràn, không lỗi JS.
+- **Chạy lại các kịch bản cũ:** kiểm tra giao diện toàn app, Luồng 1, Luồng 2, luồng giao hàng hai máy đều đạt.
+
+---
+
 ## Sau Giai đoạn 6 – Quá trình giao hàng, HTX gọi điện / nhắn tin với khách
 
 **Yêu cầu của chủ repo:** thêm quá trình giao hàng. Khi hàng đặt trước vào mùa, HTX xác nhận đơn, rồi gọi điện hoặc chat với khách.

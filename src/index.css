@@ -34,6 +34,13 @@
   --color-champagne-800: #5E4921;
   --color-champagne-900: #493818;
   --color-champagne-950: #2F230F;
+  /*
+   * Màu cột biểu đồ (một chuỗi số liệu). Cùng tông xanh rừng nhưng đậm màu hơn: các bậc forest-* quá nhạt màu
+   * (độ bão hoà dưới ngưỡng, nhìn như xám khi làm cột). Đã kiểm bằng validate_palette.js của hướng dẫn biểu đồ:
+   * trong dải sáng, đủ bão hoà, tương phản >= 3:1 trên nền trắng.
+   */
+  --color-chart-1: #1F7A55;
+  --color-chart-1-hover: #2E8B57;
 }
 
 /* Giữ hành vi mặc định giống Tailwind v3 (bản CDN cũ) để giao diện không đổi */

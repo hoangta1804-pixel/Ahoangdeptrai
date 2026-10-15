@@ -6,13 +6,15 @@ import { CoopOrdersTab } from './CoopOrdersTab';
 import { CoopProductsTab } from './CoopProductsTab';
 import { CoopProfileTab } from './CoopProfileTab';
 import { CoopReviewsTab } from './CoopReviewsTab';
+import { CoopSalesTab } from './CoopSalesTab';
 import { CoopTicketsTab } from './CoopTicketsTab';
 import { CoopWalletTab } from './CoopWalletTab';
 
-type CoopTab = 'orders' | 'products' | 'tickets' | 'reviews' | 'wallet' | 'profile';
+type CoopTab = 'orders' | 'products' | 'sales' | 'tickets' | 'reviews' | 'wallet' | 'profile';
 const TABS: { key: CoopTab; label: string }[] = [
   { key: 'orders', label: 'Đơn hàng' },
   { key: 'products', label: 'Sản phẩm' },
+  { key: 'sales', label: 'Bán chạy' },
   { key: 'tickets', label: 'Khiếu nại' },
   { key: 'reviews', label: 'Đánh giá' },
   { key: 'wallet', label: 'Đối soát' },
@@ -37,11 +39,23 @@ export function CoopScreen() {
         <div aria-hidden="true" className="brocade-dark absolute inset-x-0 bottom-0 h-2" />
       </div>
 
-      <div className="grid grid-cols-3 gap-1 rounded-2xl bg-stone-200/70 p-1 text-sm font-medium" role="tablist">
+      <div className="grid grid-cols-3 gap-1 rounded-2xl bg-stone-200/70 p-1 text-sm font-medium min-[360px]:grid-cols-4" role="tablist">
         {TABS.map((t) => (
-          <button key={t.key} role="tab" aria-selected={tab === t.key} onClick={() => setTab(t.key)} className={`min-h-11 rounded-xl ${tab === t.key ? 'bg-white font-bold text-ink shadow-xs' : 'text-stone-700'}`}>
+          <button
+            key={t.key}
+            role="tab"
+            aria-selected={tab === t.key}
+            onClick={() => setTab(t.key)}
+            className={`relative min-h-11 whitespace-nowrap rounded-xl px-1 ${tab === t.key ? 'bg-white font-bold text-ink shadow-xs' : 'text-stone-700'}`}
+          >
             {t.label}
-            {t.key === 'orders' && pendingConfirm > 0 && <span className="ml-1 rounded-full bg-champagne-600 px-1.5 text-xs text-white">{pendingConfirm}</span>}
+            {/* Số đơn chờ xác nhận: chấm ở góc tab để chữ không bị xuống dòng khi chia 4 cột. */}
+            {t.key === 'orders' && pendingConfirm > 0 && (
+              <span className="absolute -top-1 -right-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-champagne-600 px-1 text-xs font-bold text-white">
+                {pendingConfirm}
+                <span className="sr-only"> đơn chờ xác nhận</span>
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -49,6 +63,7 @@ export function CoopScreen() {
       <ListBoundary key={tab} label="mục này" resetKey={state}>
         {tab === 'orders' && <CoopOrdersTab />}
         {tab === 'products' && <CoopProductsTab />}
+        {tab === 'sales' && <CoopSalesTab />}
         {tab === 'tickets' && <CoopTicketsTab />}
         {tab === 'reviews' && <CoopReviewsTab />}
         {tab === 'wallet' && <CoopWalletTab />}
