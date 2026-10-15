@@ -3,7 +3,6 @@ import { BadgeCheck, FileBadge, Share2 } from 'lucide-react';
 import { useUi } from '../../app/UiContext';
 import { Ornament } from '../../components/Brand';
 import { BottomSheet, SheetColumns } from '../../components/BottomSheet';
-import { CoopCallLinks } from '../../components/CoopPhones';
 import { PreorderProgress } from '../../components/PreorderProgress';
 import { QuantityStepper } from '../../components/QuantityStepper';
 import { Stars } from '../../components/Stars';
@@ -175,13 +174,6 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
                 </div>
               ))}
             </dl>
-
-            {coop && (
-              <section aria-label={`Liên hệ ${coop.name}`} className="space-y-2">
-                <p className="text-sm font-semibold text-stone-700">Cần hỏi thêm? Gọi {coop.name}</p>
-                <CoopCallLinks coop={coop} />
-              </section>
-            )}
 
             {product.sample && (
               <div role="note" className="space-y-1 rounded-2xl border border-stone-300 bg-stone-50 p-3 text-sm text-stone-700">

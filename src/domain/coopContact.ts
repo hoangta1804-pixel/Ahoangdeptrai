@@ -1,11 +1,21 @@
 /**
- * Số điện thoại liên hệ của HTX (chủ repo yêu cầu: mỗi cửa hàng HTX có 2 số).
- * - Khách gọi HTX từ trang sản phẩm và chi tiết đơn.
+ * Số điện thoại liên hệ của HTX (chủ repo yêu cầu: mỗi cửa hàng HTX có 2 số, để Admin gọi cho HTX).
+ * - Chỉ Admin (mọi nhóm quyền) và chính HTX xem được. Không công khai cho khách: không hiện ở trang sản phẩm hay trong đơn.
+ *   QLNN cũng không xem (listCoopContacts kiểm quyền ngay trong hàm, mục 5.9).
  * - HTX tự cập nhật ở mục Hồ sơ, lưu ngay (không chờ Admin duyệt như hồ sơ), có ghi nhật ký thao tác.
  * - Nhận số di động (10 số) hoặc số cố định (11 số, bắt đầu bằng 02), nhập dạng nào cũng lưu dạng bắt đầu bằng 0.
  */
 import { audit } from './state';
 import { fail, ok, type Actor, type Coop, type DemoState, type Result } from './types';
+
+export interface CoopContact {
+  coopId: string;
+  name: string;
+  region: string;
+  representative?: string;
+  status: Coop['status'];
+  phones: string[];
+}
 
 /** Mỗi HTX có đúng 2 số. */
 export const COOP_PHONE_COUNT = 2;
@@ -68,4 +78,11 @@ export function coopSetPhones(state: DemoState, actor: Actor, phones: string[], 
   if (new Set(normalized).size !== normalized.length) return fail('Hai số điện thoại phải khác nhau.');
   const next = { ...state, coops: state.coops.map((c) => (c.id === coop.id ? { ...c, phones: normalized } : c)) };
   return ok(audit(next, actor, 'Cập nhật SĐT liên hệ', coop.name, at, normalized.map(formatContactPhone).join(' · ')));
+}
+
+/** Danh bạ SĐT HTX: Admin xem mọi HTX, HTX chỉ xem của mình; khách và QLNN không xem được. */
+export function listCoopContacts(state: DemoState, actor: Actor): Result<CoopContact[]> {
+  if (actor.kind !== 'admin' && actor.kind !== 'coop') return fail('SĐT của HTX chỉ dành cho Admin liên hệ HTX.');
+  const coops = actor.kind === 'admin' ? state.coops : state.coops.filter((c) => c.id === actor.id);
+  return ok(coops.map((c) => ({ coopId: c.id, name: c.name, region: c.region, representative: c.representative, status: c.status, phones: coopPhonesOf(c) })));
 }

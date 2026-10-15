@@ -58,6 +58,11 @@ describe('Giao diện (mục 10)', () => {
     expect(calls).toEqual([]);
   });
 
+  it('SĐT của HTX không công khai: màn của khách và QLNN không dùng tới (chỉ Admin gọi HTX)', () => {
+    const phoneUse = offenders(/coopPhonesOf|listCoopContacts|CoopCallLinks|\.phones\b/);
+    expect(phoneUse.filter((f) => /src\/screens\/(customer|regulator)\//.test(f) || f.startsWith('src/app/'))).toEqual([]);
+  });
+
   it('mọi sheet dùng chung BottomSheet', () => {
     expect(offenders(/role="dialog"/)).toEqual(['src/components/BottomSheet.tsx']);
   });

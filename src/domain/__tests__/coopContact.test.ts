@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { coopPhonesOf, coopSetPhones, formatContactPhone, isValidContactPhone, normalizeContactPhone } from '../coopContact';
-import { ADMIN_QA, COOP_X, CUSTOMER, makeState, T0 } from './fixtures';
+import { coopPhonesOf, coopSetPhones, formatContactPhone, isValidContactPhone, listCoopContacts, normalizeContactPhone } from '../coopContact';
+import { ADMIN_CSKH, ADMIN_FIN, ADMIN_OPS, ADMIN_QA, ADMIN_ROOT, COOP_X, CUSTOMER, makeState, REGULATOR, T0 } from './fixtures';
 
 describe('SĐT liên hệ của HTX', () => {
   it('nhận số di động và số cố định, nhập dạng nào cũng lưu dạng bắt đầu bằng 0', () => {
@@ -42,5 +42,23 @@ describe('SĐT liên hệ của HTX', () => {
   it('dữ liệu đã lưu từ bản trước (chưa có SĐT HTX): HTX mẫu dùng số mẫu, HTX khác chưa có số', () => {
     expect(coopPhonesOf({ id: 'coop-bacha' })).toEqual(['0900000411', '0900000412']);
     expect(coopPhonesOf({ id: 'coop-x' })).toEqual([]);
+  });
+
+  it('chỉ Admin (mọi nhóm) xem danh bạ SĐT HTX; HTX chỉ thấy số của mình; khách và QLNN không xem được', () => {
+    const r = coopSetPhones(makeState(), COOP_X, ['0912345678', '0912345679'], T0);
+    if (!r.ok) throw new Error(r.error);
+    const s = r.value;
+    for (const admin of [ADMIN_OPS, ADMIN_QA, ADMIN_CSKH, ADMIN_FIN, ADMIN_ROOT]) {
+      const listed = listCoopContacts(s, admin);
+      if (!listed.ok) throw new Error(listed.error);
+      expect(listed.value.map((c) => [c.coopId, c.phones])).toEqual([
+        ['coop-x', ['0912345678', '0912345679']],
+        ['coop-y', []],
+      ]);
+    }
+    const own = listCoopContacts(s, COOP_X);
+    expect(own.ok && own.value.map((c) => c.coopId)).toEqual(['coop-x']);
+    expect(listCoopContacts(s, CUSTOMER)).toEqual({ ok: false, error: 'SĐT của HTX chỉ dành cho Admin liên hệ HTX.' });
+    expect(listCoopContacts(s, REGULATOR).ok).toBe(false);
   });
 });

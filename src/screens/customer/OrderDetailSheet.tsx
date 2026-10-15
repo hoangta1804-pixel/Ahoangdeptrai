@@ -1,7 +1,6 @@
-import { useId, useState } from 'react';
+import { useState } from 'react';
 import { useUi } from '../../app/UiContext';
 import { BottomSheet, SheetColumns } from '../../components/BottomSheet';
-import { CoopCallLinks } from '../../components/CoopPhones';
 import { OrderChat } from '../../components/OrderChat';
 import { OrderJourney } from '../../components/OrderJourney';
 import { DangerButton, Field, Input, PrimaryButton, SecondaryButton, Select, Textarea } from '../../components/form';
@@ -39,11 +38,9 @@ export function OrderDetailSheet({ orderId, onClose }: { orderId: string; onClos
   const [newDate, setNewDate] = useState('');
   const [giftMessage, setGiftMessage] = useState('');
   const [recipient, setRecipient] = useState({ name: '', phone: '', wardId: '', street: '' });
-  const callTitleId = useId();
   const found = getOrderFor(state, customerActor, orderId);
   if (!found.ok) return null;
   const order = found.value;
-  const coop = state.coops.find((c) => c.id === order.coopId);
   const p = order.pricing;
   const at = now();
 
@@ -118,15 +115,6 @@ export function OrderDetailSheet({ orderId, onClose }: { orderId: string; onClos
         }
         right={
           <>
-            {coop && (
-              <section aria-labelledby={callTitleId} className="space-y-3 rounded-3xl border border-champagne-200 bg-white p-4">
-                <h4 id={callTitleId} className="font-display text-lg font-semibold text-ink">
-                  Gọi {coop.name}
-                </h4>
-                <CoopCallLinks coop={coop} />
-                <p className="text-xs text-muted">Bấm số để gọi bằng điện thoại của bạn, hoặc nhắn tin cho HTX ngay bên dưới.</p>
-              </section>
-            )}
             <OrderChat order={order} side="customer" />
 
             <section className="space-y-1 rounded-2xl border border-stone-200 p-3 text-sm">

@@ -1,10 +1,8 @@
 import { Phone } from 'lucide-react';
-import { coopPhonesOf, formatContactPhone, isSamplePhone } from '../domain/coopContact';
-import type { Coop } from '../domain/types';
+import { formatContactPhone, isSamplePhone } from '../domain/coopContact';
 
-/** 2 nút gọi SĐT của HTX: bấm là mở ứng dụng gọi của máy (`tel:`). */
-export function CoopCallLinks({ coop }: { coop: Coop }) {
-  const phones = coopPhonesOf(coop);
+/** 2 nút gọi SĐT của HTX cho Admin: bấm là mở ứng dụng gọi của máy (`tel:`). Không dùng ở màn của khách. */
+export function CoopCallLinks({ name, phones }: { name: string; phones: string[] }) {
   if (phones.length === 0) return <p className="text-sm text-muted">HTX chưa cập nhật số điện thoại.</p>;
   return (
     <div className="space-y-1.5">
@@ -13,7 +11,7 @@ export function CoopCallLinks({ coop }: { coop: Coop }) {
           <li key={p}>
             <a
               href={`tel:${p}`}
-              aria-label={`Gọi ${coop.name}, số ${i + 1}: ${formatContactPhone(p)}`}
+              aria-label={`Gọi ${name}, số ${i + 1}: ${formatContactPhone(p)}`}
               className="flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-forest-800 bg-white px-3 text-sm font-bold text-forest-900 hover:bg-forest-50"
             >
               <Phone size={16} aria-hidden="true" />

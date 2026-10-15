@@ -7,7 +7,7 @@ import { useStore } from '../../store/AppDataContext';
 
 const STATUS = { approved: 'Đã duyệt', pending: 'Chờ duyệt', rejected: 'Bị từ chối' } as const;
 
-/** Hồ sơ HTX: sửa và gửi duyệt, theo dõi kết quả (FR-TK-06/07); 2 SĐT liên hệ cho khách gọi (lưu ngay). */
+/** Hồ sơ HTX: sửa và gửi duyệt, theo dõi kết quả (FR-TK-06/07); 2 SĐT để Admin gọi cho HTX (lưu ngay, không công khai cho khách). */
 export function CoopProfileTab() {
   const { state, run } = useStore();
   const { coopActor, showToast } = useUi();
@@ -33,7 +33,7 @@ export function CoopProfileTab() {
       return;
     }
     setPhones(coopPhonesOf(r.value.coops.find((c) => c.id === coop.id)!).map(formatContactPhone));
-    showToast('Đã lưu số điện thoại. Khách thấy ngay ở trang sản phẩm và chi tiết đơn.');
+    showToast('Đã lưu số điện thoại. Admin thấy số mới trong Danh bạ HTX.');
   };
 
   return (
@@ -53,7 +53,7 @@ export function CoopProfileTab() {
           <h4 id="sdt-htx" className="text-sm font-bold">
             Số điện thoại liên hệ (2 số)
           </h4>
-          <p className="text-sm text-stone-600">Khách thấy 2 số này ở trang sản phẩm và chi tiết đơn để gọi cho cửa hàng. Lưu ngay, không cần chờ duyệt.</p>
+          <p className="text-sm text-stone-600">Để Admin gọi cho HTX khi cần. Chỉ Admin xem được, không hiện cho khách. Lưu ngay, không cần chờ duyệt.</p>
           <div className="grid gap-3 sm:grid-cols-2">
             {phones.map((p, i) => (
               <Field key={i} label={`Số điện thoại ${i + 1}`}>

@@ -35,7 +35,10 @@ npm test         # unit test vitest: src/domain, dữ liệu mẫu, quy ước g
 
 ## Sau Giai đoạn 6 – Toàn màn hình trên máy tính, 2 SĐT cho mỗi HTX
 
-**Yêu cầu của chủ repo:** cho app hiện toàn màn hình trên cả web; thêm SĐT của HTX, mỗi cửa hàng 2 số.
+**Yêu cầu của chủ repo:**
+- cho app hiện toàn màn hình trên cả web;
+- thêm SĐT của HTX, mỗi cửa hàng 2 số;
+- SĐT này để Admin gọi cho HTX, không được công khai trong đơn.
 
 ### Toàn màn hình trên máy tính
 
@@ -74,29 +77,34 @@ npm test         # unit test vitest: src/domain, dữ liệu mẫu, quy ước g
   - Báo lỗi nếu thiếu số, sai số hoặc hai số trùng nhau.
   - **Lưu ngay, không chờ Admin duyệt** như các thông tin hồ sơ khác; nhật ký thao tác ghi "Cập nhật SĐT liên hệ".
   - Thẻ HTX ở đầu màn hình hiện "SĐT cửa hàng".
-- **Khách:** có 2 nút gọi (mở ứng dụng gọi của máy) ở:
-  - trang chi tiết sản phẩm: "Cần hỏi thêm? Gọi …";
-  - chi tiết đơn: khung "Gọi …", ngay trên phần trao đổi với HTX.
-
-  Số mẫu thì ghi "Bản demo: số điện thoại mẫu".
-- **Admin – Chất lượng:** bảng "Hồ sơ HTX & quyền bán" hiện SĐT của từng HTX.
+- **Admin (mọi nhóm quyền: Vận hành, Chất lượng, CSKH, Tài chính, Quản trị gốc):** mục mới "Danh bạ HTX".
+  - Mỗi HTX một thẻ, có 2 nút gọi (mở ứng dụng gọi của máy). Số mẫu thì ghi "Bản demo: số điện thoại mẫu".
+  - Dùng thẻ thay cho bảng, để trên điện thoại nút gọi hiện ngay, không phải cuộn ngang.
+  - Bảng "Hồ sơ HTX & quyền bán" của Admin – Chất lượng cũng hiện SĐT.
+- **Không công khai:** khách không thấy SĐT HTX ở bất kỳ đâu (trang sản phẩm, đơn hàng, chi tiết đơn); Cơ quan QLNN cũng không.
+  - Kiểm quyền ngay trong hàm `listCoopContacts`: chỉ Admin, hoặc HTX xem số của chính mình.
+  - Test giao diện chặn màn của khách, QLNN và màn đăng nhập dùng tới SĐT HTX.
+  - Khách vẫn liên hệ HTX bằng nhắn tin trong đơn như trước.
 - **Dữ liệu:**
   - thêm `Coop.phones` (không bắt buộc);
   - 7 HTX mẫu có 2 số mẫu mỗi HTX, dạng `0900000xxx` như mọi SĐT mẫu khác;
   - dữ liệu đã lưu từ bản trước (kể cả trên máy chủ dùng chung) chưa có SĐT HTX thì app dùng số mẫu cho HTX mẫu, không phải khôi phục dữ liệu mẫu.
-- **Mã nguồn:** `src/domain/coopContact.ts`, `src/components/CoopPhones.tsx`.
+- **Mã nguồn:** `src/domain/coopContact.ts`, `src/components/CoopPhones.tsx`, `src/screens/admin/AdminCoopContactsTab.tsx`.
 
 ### Kiểm thử
 
 - **Lint, test, build:**
   - lint không lỗi;
-  - 23 file, 176 test đạt. Test mới `coopContact.test.ts`: chuẩn hoá, kiểm tra, hiển thị số; HTX lưu số; các trường hợp bị chặn; dữ liệu cũ. Test dữ liệu mẫu kiểm tra mỗi HTX có 2 số mẫu khác nhau.
+  - 23 file, 178 test đạt.
+  - Test mới `coopContact.test.ts`: chuẩn hoá, kiểm tra, hiển thị số; HTX lưu số; các trường hợp bị chặn; dữ liệu cũ; quyền xem (Admin mọi nhóm xem được; HTX chỉ thấy số của mình; khách, QLNN không xem được).
+  - Test dữ liệu mẫu kiểm tra mỗi HTX có 2 số mẫu khác nhau. Test giao diện kiểm tra màn của khách và QLNN không dùng tới SĐT HTX.
   - build thành công, không cảnh báo.
 - **Playwright, bố cục:** đăng nhập, mọi màn của khách, HTX (7 mục và cửa sổ đơn), Admin, QLNN ở 768, 1.024, 1.440 và 1.920px. Kết quả: không tràn ngang, 0 lỗi axe, 0 vùng bấm dưới 44px, 0 chữ dưới 12px, không lỗi JS.
-- **Playwright, SĐT** (HTX, khách, Admin trên 3 máy, dùng chung dữ liệu qua API, ở 320, 390, 1.280 và 1.920px):
+- **Playwright, SĐT** (HTX, khách, Admin, QLNN trên 4 máy, dùng chung dữ liệu qua API, ở 320, 390, 1.280 và 1.920px):
   1. HTX nhập số sai → báo lỗi; sửa ô thì lỗi ẩn. Nhập trùng số 1 → báo lỗi. Lưu số cố định → được.
-  2. Khách thấy 2 nút gọi `tel:` đúng số mới ở trang sản phẩm và chi tiết đơn.
-  3. Admin thấy SĐT trong bảng HTX.
+  2. Khách: trang sản phẩm và chi tiết đơn không có số nào của HTX, không có link `tel:`.
+  3. Cả 5 nhóm Admin thấy "Danh bạ HTX" với 14 nút gọi đúng số mới.
+  4. QLNN không có mục này, không có nút gọi.
 
   Kết quả: 0 lỗi axe, 0 vùng bấm dưới 44px, 0 chữ dưới 12px, không tràn ngang, không lỗi JS.
 - **Chạy lại các kịch bản cũ, đều đạt:** kiểm tra giao diện toàn app trên điện thoại, xác nhận thu hoạch (390 và 1.280px), giao hàng trên hai máy, Luồng 6, biểu đồ bán chạy, chọn số lượng, giỏ hàng, liên kết ngân hàng, địa chỉ, mã ưu đãi, dữ liệu chung trên hai máy, kiểm tra tràn ngang ở 320–1.280px.
@@ -1483,7 +1491,7 @@ Ngoài các ca trên còn có test cho:
 59. **Tài khoản Google mô phỏng và Google thật là hai tài khoản khác nhau,** kể cả khi cùng email.
 60. **"Vào mùa" là lúc HTX xác nhận thu hoạch xong** (trước đây là lúc bấm Báo sẵn sàng giao). App không tự đoán ngày vào mùa; ngày giao dự kiến lấy từ ngày giao của đơn.
 61. **Gọi điện dùng điện thoại của HTX** (mở ứng dụng gọi của máy), không qua tổng đài. App không biết kết quả cuộc gọi nên HTX tự ghi lại.
-62. **Khách gọi HTX qua 2 SĐT liên hệ của HTX** (trước đây chỉ nhắn tin được vì dữ liệu chưa có số của HTX). Cần hỗ trợ ngoài đơn thì vẫn dùng Khiếu nại / CSKH như trước.
+62. **Khách nhắn tin cho HTX, không có nút gọi HTX.** SĐT của HTX chỉ dành cho Admin gọi HTX, không công khai cho khách (chủ repo yêu cầu). Cần hỗ trợ ngoài đơn thì dùng Khiếu nại / CSKH như trước.
 63. **Xác nhận cả lô chia hàng theo thứ tự đặt và dừng ở đơn đầu tiên không đủ hàng,** để đơn đặt sau không được ưu tiên hơn đơn đặt sớm. Muốn giao cho một đơn cụ thể thì xác nhận theo từng đơn.
 64. **Sản lượng HTX nhập khi xác nhận cả lô chỉ dùng để chia đơn và ghi lại.** App không trừ tồn kho hay suất đặt trước theo số này; phần dư không lưu thành tồn kho.
 65. **Ngày thu hoạch, ghi chú và ảnh là thông tin HTX tự khai,** sàn không kiểm chứng. Ngày thu hoạch không được sau hôm nay theo đồng hồ demo; ngày trong quá khứ thì không giới hạn.
@@ -1491,7 +1499,7 @@ Ngoài các ca trên còn có test cho:
 67. **"Full màn hình trên cả web" hiểu là dùng hết bề rộng cửa sổ trình duyệt,** không phải chế độ toàn màn hình của trình duyệt (phím F11).
 68. **Mỗi HTX có đúng 2 SĐT liên hệ,** cả 2 đều bắt buộc. Nhận số di động 10 số và số cố định 11 số bắt đầu bằng 02; chưa nhận đầu số 1800 / 1900.
 69. **HTX đổi SĐT liên hệ không cần Admin duyệt,** khác các thông tin hồ sơ khác (tên, vùng, người đại diện, giới thiệu), để khách luôn gọi được số đang dùng. Mỗi lần đổi có ghi nhật ký thao tác.
-70. **SĐT liên hệ của HTX là thông tin công khai** cho khách và Admin. Cơ quan QLNN không cần số này nên màn QLNN không hiện.
+70. **SĐT liên hệ của HTX chỉ Admin (mọi nhóm quyền) và chính HTX xem được.** Khách và Cơ quan QLNN không xem được.
 
 ## Vấn đề chờ nhóm chốt
 
