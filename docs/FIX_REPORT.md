@@ -33,6 +33,115 @@ npm test         # unit test vitest: src/domain, dữ liệu mẫu, quy ước g
 
 ---
 
+## Sau Giai đoạn 6 – Địa chỉ theo GPS (Google Maps) và đăng nhập bằng Google
+
+**Yêu cầu của chủ repo:** thêm địa chỉ theo GPS; đăng nhập được bằng Gmail. Chủ repo đã chọn:
+- **Địa chỉ:** dùng Google Maps để điền.
+- **Đăng nhập:** Google thật; chưa cấu hình thì dùng bản mô phỏng.
+
+### Địa chỉ theo GPS
+
+- **Nút "Dùng vị trí hiện tại (GPS)"** trong form thêm / sửa địa chỉ (`src/screens/customer/GpsAddressButton.tsx`):
+  1. Lấy vị trí của máy và làm tròn khoảng 11 m.
+  2. Nếu vị trí ngoài khung Hà Nội thì báo ngay, không gọi Google.
+  3. Gọi `/api/geocode`.
+  4. Điền sẵn số nhà, ngõ, đường. Chọn phường nếu khớp danh sách giao hàng (bỏ dấu, bỏ chữ "Phường", bỏ "(mẫu)").
+  5. Hiện địa chỉ Google tìm được, sai số, và link "Xem trên Google Maps".
+  6. Khách kiểm tra, sửa rồi mới lưu.
+- **App không lưu toạ độ.** Địa chỉ lưu như địa chỉ nhập tay.
+- **`api/geocode.ts`** (hàm Vercel): khoá Google Maps chỉ nằm ở server (`GOOGLE_MAPS_API_KEY`), trình duyệt không thấy.
+  - Chỉ nhận toạ độ trong khung Hà Nội.
+  - Đã nối Upstash thì giới hạn số lượt tra mỗi ngày (`GEOCODE_DAILY_LIMIT`, mặc định 300).
+  - CDN của Vercel giữ kết quả 1 ngày theo toạ độ; cùng chỗ thì không gọi lại Google.
+- **Báo lỗi rõ:**
+  - chưa cho phép vị trí;
+  - máy không định vị được;
+  - ngoài Hà Nội;
+  - chưa có khoá Google Maps;
+  - Google từ chối (khoá sai, chưa bật Geocoding API hoặc thanh toán);
+  - hết lượt.
+
+  Mọi trường hợp đều nhập tay được.
+- **Ghi chú L14:** Giai đoạn 2 đã bỏ nút GPS cũ vì nút đó điền một địa chỉ bịa sẵn. Nút mới lấy vị trí thật, theo yêu cầu của chủ repo.
+
+### Đăng nhập bằng Google
+
+- **Có Client ID (`VITE_GOOGLE_CLIENT_ID`):**
+  - Màn đăng nhập hiện nút "Đăng nhập bằng Google" chính chủ của Google (Google Identity Services).
+  - Google trả về ID token. `api/auth/google.ts` hỏi Google (tokeninfo) để kiểm tra chữ ký và hạn của token, rồi kiểm tra token cấp cho đúng Client ID, đúng nơi phát hành, email đã xác minh.
+  - Đúng thì trả về mã đã băm (SHA-256 của mã tài khoản Google), tên và email đã che (vd. `ho•••@gmail.com`).
+- **Chưa có Client ID, không tải được thư viện Google, hoặc mở trên claude.ai:** nút "Tiếp tục với Gmail" gắn nhãn Mô phỏng. Khách nhập Gmail và tên hiển thị; không kết nối Google, không cần mật khẩu.
+- **Lần đầu đăng nhập** tạo tài khoản khách hàng không có SĐT; SĐT người nhận nhập ở địa chỉ giao hàng. Lần sau vào đúng tài khoản đó. Tài khoản bị khoá thì báo như đăng nhập bằng SĐT.
+- **Dữ liệu demo chỉ lưu mã đã băm, tên và email đã che;** không lưu email đầy đủ hay mã Google gốc.
+  - Tài khoản Google không hiện trong danh sách "Tài khoản demo" ở màn đăng nhập.
+  - Tab Tài khoản ghi "Đăng nhập bằng Google · ho•••@gmail.com".
+  - Bảng tài khoản của Admin ghi tương tự.
+- **Sửa thêm:** tìm tài khoản theo SĐT rỗng không còn khớp nhầm tài khoản Google (test đã bắt được lỗi này).
+
+### Cài trên Google Cloud và Vercel (chủ repo làm, một lần)
+
+**A. Google Maps để tra địa chỉ**
+
+1. Vào [console.cloud.google.com](https://console.cloud.google.com), tạo dự án, vd. "dacsan-lao-cai".
+2. Bật **Billing** (thanh toán) cho dự án. Google Maps yêu cầu bước này; có mức dùng miễn phí hằng tháng.
+3. **APIs & Services → Library**, bật **Geocoding API**.
+4. **APIs & Services → Credentials → Create credentials → API key**.
+   - Mở khoá vừa tạo → **API restrictions → Restrict key** → chỉ chọn Geocoding API.
+   - **Application restrictions** để None, vì khoá chạy ở máy chủ Vercel, địa chỉ IP không cố định.
+5. Đặt hạn mức để không phát sinh phí ngoài ý muốn: **Geocoding API → Quotas**, giới hạn số yêu cầu mỗi ngày (vd. 300).
+6. Vercel → project → **Settings → Environment Variables**, thêm `GOOGLE_MAPS_API_KEY` = khoá vừa tạo. **Không** thêm tiền tố `VITE_`, để khoá không lộ ra trình duyệt.
+
+**B. Đăng nhập bằng Google**
+
+1. Cùng dự án, mở **Google Auth Platform** (OAuth consent screen).
+   - Chọn **External**, điền tên app và email hỗ trợ.
+   - Ở **Audience** bấm **Publish app**. App chỉ xin tên và email nên không cần Google duyệt.
+   - Nếu để chế độ Testing, chỉ các email trong danh sách Test users đăng nhập được.
+2. **Clients → Create client → Web application**.
+   - Mục **Authorized JavaScript origins** thêm `https://dacsan-vung-mien.vercel.app`, và `http://localhost:3000` nếu chạy thử trên máy.
+   - Không cần Redirect URI.
+3. Chép Client ID, có dạng `….apps.googleusercontent.com`. Client ID là thông tin công khai.
+4. Vercel → **Environment Variables**, thêm `VITE_GOOGLE_CLIENT_ID` = Client ID.
+
+**Sau khi thêm biến:** vào **Deployments → Redeploy** (biến `VITE_` được gắn vào lúc build). Kiểm tra:
+- màn đăng nhập hiện nút của Google thay cho "Tiếp tục với Gmail (Mô phỏng)";
+- form địa chỉ bấm GPS thì điền được địa chỉ.
+
+Chạy thử trên máy: chép `.env.example` thành `.env.local` (file này không được commit), điền hai biến trên rồi `npm run dev`.
+
+### Giới hạn
+
+- **Nút đăng nhập của Google cao 40px** (kích thước cố định của Google), thấp hơn quy ước 44px của app. Không chỉnh được vì nút do Google vẽ.
+- **Link xem trước của Vercel** (mỗi PR một tên miền) không đăng nhập Google được, trừ khi thêm tên miền đó vào Authorized JavaScript origins. Bản chính `dacsan-vung-mien.vercel.app` chạy bình thường.
+- **Danh sách phường giao hàng mẫu mới có 8 phường.** Google trả phường khác thì khách tự chọn.
+- **Dữ liệu demo vẫn dùng chung, không có đăng nhập phía server** (xem mục API). Đăng nhập Google ở đây để chứng minh luồng; người khác mở demo vẫn xem được tên và email đã che. Địa chỉ lưu từ GPS là địa chỉ thật nên cũng xem được như địa chỉ nhập tay.
+- **Bản trên claude.ai không có API:** GPS báo chưa có chức năng tra địa chỉ, đăng nhập Google chạy bản mô phỏng.
+
+### Kiểm thử
+
+- **Lint, test, build:** lint không lỗi; 19 file, 155 test đạt; build thành công. Phần chung 495 kB (gzip 145 kB), tăng khoảng 11 kB.
+- **Test mới cho `/api/geocode`:**
+  - kiểm tra phương thức, toạ độ, khung Hà Nội, khoá trước khi gọi Google;
+  - đọc kết quả Google, khoá không lọt ra kết quả;
+  - các trạng thái lỗi của Google, giới hạn lượt mỗi ngày.
+- **Test mới cho `/api/auth/google`:**
+  - token đúng; sai Client ID, sai nơi phát hành, hết hạn, email chưa xác minh;
+  - thiếu cấu hình;
+  - không trả email đầy đủ hay mã gốc.
+- **Test mới cho nghiệp vụ:**
+  - tạo / dùng lại / khoá tài khoản Google;
+  - khớp phường (không khớp nhầm "Thanh Xuân Bắc" với "Thanh Xuân").
+- **Build bằng `vercel build`:** có hàm `api/geocode` và `api/auth/google`. Chạy thử hàm đã build với Google giả lập: 503 khi chưa cấu hình, 200 khi đúng; kết quả tra địa chỉ có cache CDN.
+- **Playwright, ở 320px và 390px, chặn mọi request ra ngoài:**
+  - GPS: Google trả địa chỉ thì điền "18 Ngõ 42 Lê Văn Lương", chọn đúng Phường Thanh Xuân, lưu được, địa chỉ lưu không có toạ độ.
+  - GPS: máy chủ chưa có khoá thì báo rõ; vị trí TP. Hồ Chí Minh thì báo ngoài Hà Nội, không gọi API; từ chối quyền vị trí thì báo cách bật.
+  - Gmail mô phỏng: email sai thì báo; tạo tài khoản; tab Tài khoản ghi Google (mô phỏng) kèm email che; không lưu email đầy đủ; không hiện trong danh sách demo; đăng nhập lại vào đúng tài khoản.
+  - Google thật (bản build có Client ID, thư viện Google giả lập): nút nhận đúng Client ID và chế độ popup; token được gửi lên máy chủ xác minh; vào app; token sai thì báo lỗi.
+  - 0 lỗi axe, 0 vùng bấm dưới 44px, 0 chữ dưới 12px, không lỗi JS.
+- **Chạy lại các kịch bản cũ:** kiểm tra giao diện toàn app, Luồng 1, Luồng 2, chọn số lượng, liên kết ngân hàng, giỏ hàng, địa chỉ, mã ưu đãi đều đạt.
+
+---
+
 ## Sau Giai đoạn 6 – Nhận diện "sang" cho toàn app
 
 **Yêu cầu của chủ repo:** giao diện còn đơn giản quá, cần đặc sắc và sang hơn.
@@ -1056,6 +1165,10 @@ Ngoài các ca trên còn có test cho:
 53. **Ô số lượng ở trang chi tiết là số muốn thêm,** không phải tổng trong giỏ. Trong giỏ đã có thì thêm cộng dồn; vượt số còn lại thì báo lỗi như trước.
 54. **Liên kết ngân hàng chỉ dùng cho tài khoản nhận hoàn tiền đơn COD của khách.** Tài khoản nhận chi trả của HTX vẫn chỉ hiện dạng che, chưa có luồng liên kết.
 55. **Tên chủ tài khoản lưu dạng viết hoa, không dấu,** theo cách ngân hàng Việt Nam thường in.
+56. **Toạ độ GPS không lưu,** chỉ dùng để tra địa chỉ. Gửi tới Google Maps qua máy chủ của app, đã làm tròn khoảng 11 m.
+57. **Khung Hà Nội cho GPS là khung toạ độ gần đúng** (vĩ độ 20,53–21,39; kinh độ 105,28–106,03), rộng hơn ranh giới thật một chút. Google trả về tỉnh khác thì vẫn báo ngoài Hà Nội.
+58. **Chỉ khách hàng đăng nhập được bằng Google.** Tài khoản HTX, Admin, QLNN vẫn do Admin cấp và đăng nhập bằng SĐT.
+59. **Tài khoản Google mô phỏng và Google thật là hai tài khoản khác nhau,** kể cả khi cùng email.
 
 ## Vấn đề chờ nhóm chốt
 

@@ -1,5 +1,6 @@
 import { useUi } from '../../app/UiContext';
 import { rootSetAdminGroup } from '../../domain/account';
+import { loginIdentityLabel } from '../../domain/auth';
 import { ACCOUNT_ROLE_LABEL, ADMIN_GROUP_LABEL, type AdminSubGroup } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
 
@@ -32,7 +33,7 @@ export function AdminAccountsTab() {
             {state.users.map((u) => (
               <tr key={u.id}>
                 <td className="px-3 py-2">{u.name}</td>
-                <td className="px-3 py-2 font-mono">{u.phone}</td>
+                <td className="px-3 py-2 font-mono">{loginIdentityLabel(u)}</td>
                 <td className="px-3 py-2">{ACCOUNT_ROLE_LABEL[u.role]}</td>
                 <td className="px-3 py-2">
                   {u.role === 'admin' && u.adminGroup && u.adminGroup !== 'root' && u.id !== adminActor.userId ? (

@@ -5,5 +5,5 @@
   "compilerOptions": {
     "types": []
   },
-  "include": ["*.ts"]
+  "include": ["**/*.ts"]
 }

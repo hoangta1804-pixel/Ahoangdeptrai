@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useUi } from '../../app/UiContext';
 import { DangerButton, Field, Input, PrimaryButton, SecondaryButton, Select } from '../../components/form';
 import { opsCreateAccount, opsSetAccountLocked, type NewAccountInput } from '../../domain/account';
+import { loginIdentityLabel } from '../../domain/auth';
 import { PHONE_RULE } from '../../domain/phone';
 import { ACCOUNT_ROLE_LABEL, ADMIN_GROUP_LABEL, type AdminSubGroup, type UserAccount } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
@@ -113,7 +114,7 @@ function LockRow({ user: u }: { user: UserAccount }) {
   return (
     <tr>
       <td className="px-3 py-2">{u.name}</td>
-      <td className="px-3 py-2 font-mono">{u.phone}</td>
+      <td className="px-3 py-2 font-mono">{loginIdentityLabel(u)}</td>
       <td className="px-3 py-2">{u.role === 'admin' && u.adminGroup ? `Admin – ${ADMIN_GROUP_LABEL[u.adminGroup]}` : ACCOUNT_ROLE_LABEL[u.role]}</td>
       <td className="px-3 py-2">{u.status === 'active' ? 'Đang hoạt động' : 'Đang khoá'}</td>
       <td className="px-3 py-2">
