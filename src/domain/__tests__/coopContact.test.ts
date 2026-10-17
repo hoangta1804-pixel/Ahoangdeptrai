@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { coopPhonesOf, coopSetPhones, formatContactPhone, isValidContactPhone, listCoopContacts, normalizeContactPhone } from '../coopContact';
+import { coopAddressOf, coopPhonesOf, coopSetAddress, coopSetPhones, formatContactPhone, isSampleAddress, isValidContactPhone, listCoopContacts, normalizeContactPhone, sampleCoopAddress } from '../coopContact';
 import { ADMIN_CSKH, ADMIN_FIN, ADMIN_OPS, ADMIN_QA, ADMIN_ROOT, COOP_X, CUSTOMER, makeState, REGULATOR, T0 } from './fixtures';
 
 describe('SĐT liên hệ của HTX', () => {
@@ -60,5 +60,33 @@ describe('SĐT liên hệ của HTX', () => {
     expect(own.ok && own.value.map((c) => c.coopId)).toEqual(['coop-x']);
     expect(listCoopContacts(s, CUSTOMER)).toEqual({ ok: false, error: 'SĐT của HTX chỉ dành cho Admin liên hệ HTX.' });
     expect(listCoopContacts(s, REGULATOR).ok).toBe(false);
+  });
+
+  it('HTX lưu địa chỉ: kiểm độ dài, gọn khoảng trắng, có nhật ký; HTX khác và khách không lưu được', () => {
+    const s = makeState();
+    expect(coopAddressOf(s.coops[0])).toBe('');
+    expect(coopSetAddress(s, COOP_X, '   ', T0)).toMatchObject({ ok: false, error: 'Vui lòng nhập địa chỉ.' });
+    expect(coopSetAddress(s, COOP_X, 'xã A', T0)).toMatchObject({ ok: false });
+    expect(coopSetAddress(s, COOP_X, 'x'.repeat(201), T0)).toMatchObject({ ok: false });
+    expect(coopSetAddress(s, CUSTOMER, 'Thôn 1, xã A, tỉnh Lào Cai', T0)).toMatchObject({ ok: false });
+    const r = coopSetAddress(s, COOP_X, '  Thôn 1,   xã A, tỉnh Lào Cai ', T0);
+    if (!r.ok) throw new Error(r.error);
+    expect(coopAddressOf(r.value.coops[0])).toBe('Thôn 1, xã A, tỉnh Lào Cai');
+    expect(r.value.coops[1].storeAddress).toBeUndefined();
+    expect(r.value.auditLogs[0]).toMatchObject({ action: 'Cập nhật địa chỉ HTX', target: 'HTX X' });
+    // Lưu lại đúng địa chỉ cũ: không ghi gì.
+    const same = coopSetAddress(r.value, COOP_X, 'Thôn 1, xã A, tỉnh Lào Cai', T0);
+    expect(same.ok && same.value).toBe(r.value);
+    // Danh bạ của Admin có địa chỉ.
+    const listed = listCoopContacts(r.value, ADMIN_OPS);
+    expect(listed.ok && listed.value[0].address).toBe('Thôn 1, xã A, tỉnh Lào Cai');
+  });
+
+  it('HTX mẫu chưa lưu địa chỉ thì có địa chỉ mẫu theo vùng, ghi rõ là mẫu', () => {
+    const a = coopAddressOf({ id: 'coop-bacha', region: 'Bắc Hà' });
+    expect(a).toBe(sampleCoopAddress('Bắc Hà'));
+    expect(isSampleAddress(a)).toBe(true);
+    expect(a).toContain('địa chỉ mẫu');
+    expect(isSampleAddress('Thôn 1, xã A')).toBe(false);
   });
 });

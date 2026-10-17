@@ -13,6 +13,7 @@ import { formatMoney } from '../../domain/pricing';
 import { isSamplePrice, regionsOf, remainingFor } from '../../domain/state';
 import { matchesSearch } from '../../domain/text';
 import { CATEGORY_LABEL, type Category, type Product } from '../../domain/types';
+import { groupFamilies, listedFamilyOf, priceRange } from '../../domain/variants';
 import { useStore } from '../../store/AppDataContext';
 import { useCartActions } from './useCartActions';
 
@@ -41,10 +42,14 @@ export function ExploreTab() {
   const regions = useMemo(() => [...new Set(listed.flatMap(regionsOf))].sort((a, b) => a.localeCompare(b, 'vi')), [listed]);
   const categories = useMemo(() => (Object.keys(CATEGORY_LABEL) as Category[]).filter((c) => listed.some((p) => p.category === c)), [listed]);
 
-  const visible = listed
-    .filter((p) => region === ALL || regionsOf(p).includes(region))
-    .filter((p) => category === ALL || p.category === category)
-    .filter((p) => matchesSearch(query, [p.name, p.region, state.coops.find((c) => c.id === p.coopId)?.name]));
+  // Mỗi sản phẩm một thẻ, các quy cách (hộp 300 g, 500 g…) gộp vào thẻ đó (domain/variants.ts).
+  const visible = groupFamilies(
+    listed
+      .filter((p) => region === ALL || regionsOf(p).includes(region))
+      .filter((p) => category === ALL || p.category === category)
+      .filter((p) => matchesSearch(query, [p.name, p.region, p.unit, state.coops.find((c) => c.id === p.coopId)?.name])),
+  ).map((family) => family.find((p) => isOrderableIn(state, p) && remainingFor(state, p) > 0) ?? family[0]);
+  const familyCount = groupFamilies(listed).length;
 
   const filtering = query.trim() !== '' || region !== ALL || category !== ALL;
   const clearFilters = () => {
@@ -54,7 +59,7 @@ export function ExploreTab() {
   };
 
   const coopCount = new Set(listed.map((p) => p.coopId)).size;
-  const preorders = listed.filter((p) => p.kind === 'preorder' && isOrderableIn(state, p) && remainingFor(state, p) > 0);
+  const preorders = groupFamilies(listed.filter((p) => p.kind === 'preorder' && isOrderableIn(state, p) && remainingFor(state, p) > 0)).map((f) => f[0]);
   const showcase = listed.slice(0, 3);
 
   const chip = (active: boolean) =>
@@ -87,7 +92,7 @@ export function ExploreTab() {
           <p className="max-w-md text-sm leading-relaxed text-forest-100 md:text-base">Hàng mua sẵn và nông sản theo mùa, đặt trước để giữ suất.</p>
           <dl className="flex max-w-md divide-x divide-champagne-400/30 rounded-2xl border border-champagne-400/30 bg-forest-950/60 backdrop-blur-sm">
             {[
-              [String(listed.length), 'sản phẩm'],
+              [String(familyCount), 'sản phẩm'],
               [String(coopCount), 'HTX'],
               ['Hà Nội', 'nơi giao'],
             ].map(([value, label]) => (
@@ -239,15 +244,20 @@ export function ExploreTab() {
 /**
  * Thẻ sản phẩm: khung ảnh hình vòm viền vàng, tên chữ có chân căn giữa, giá và nút thêm vào giỏ.
  * Đã có trong giỏ thì thẻ hiện − / số / + để tăng giảm tại chỗ. Dùng lại ở "Có thể bạn cũng thích" của Đơn mua.
+ * Sản phẩm có nhiều quy cách: thẻ hiện các quy cách và giá "từ …"; nút + mở trang chi tiết để chọn quy cách.
  */
 export function ProductCard({ product: p }: { product: Product }) {
   const { state } = useStore();
   const { openModal } = useUi();
   const { add, cart, update, remove } = useCartActions();
+  const family = listedFamilyOf(state, p);
+  const variants = family.length > 0 ? family : [p];
+  const multi = variants.length > 1;
   const remaining = remainingFor(state, p);
-  const soldOut = remaining <= 0 || !isOrderableIn(state, p);
+  const soldOut = multi ? variants.every((v) => remainingFor(state, v) <= 0 || !isOrderableIn(state, v)) : remaining <= 0 || !isOrderableIn(state, p);
   const coop = state.coops.find((c) => c.id === p.coopId);
-  const inCart = soldOut ? undefined : cart.find((l) => l.productId === p.id);
+  const inCart = soldOut || multi ? undefined : cart.find((l) => l.productId === p.id);
+  const range = priceRange(variants);
 
   return (
     <article className="group flex flex-col rounded-[28px] bg-white p-2 shadow-[0_1px_2px_rgb(0,0,0,0.04),0_14px_34px_rgb(31,77,58,0.08)] ring-1 ring-champagne-200/80 transition hover:shadow-[0_1px_2px_rgb(0,0,0,0.04),0_18px_40px_rgb(31,77,58,0.14)]">
@@ -269,6 +279,7 @@ export function ProductCard({ product: p }: { product: Product }) {
           <span className="w-full truncate text-xs font-semibold uppercase tracking-[0.14em] text-champagne-700">{p.region}</span>
           <h3 className="line-clamp-2 font-display text-[1.05rem] font-semibold leading-snug text-ink">{p.name}</h3>
           <span className="w-full truncate text-xs text-muted">{coop?.name}</span>
+          {multi && <VariantChips variants={variants} />}
           {p.kind === 'preorder' && (
             <div className="mt-1 w-full text-left">
               <PreorderProgress product={p} compact />
@@ -279,17 +290,20 @@ export function ProductCard({ product: p }: { product: Product }) {
       <div className={`mt-1 space-y-2 border-t border-champagne-200/80 pt-2 pb-0.5 ${inCart ? 'px-0' : 'px-0.5 min-[360px]:px-1.5'}`}>
         <div className="flex min-h-11 items-center justify-between gap-1 min-[360px]:gap-2">
           <div className="min-w-0">
-            <span className="block font-display text-sm font-semibold tabular-nums text-forest-900 min-[390px]:text-lg">{formatMoney(p.price)}</span>
+            <span className={`block whitespace-nowrap font-display font-semibold tabular-nums text-forest-900 ${multi ? 'text-sm min-[390px]:text-base' : 'text-sm min-[390px]:text-lg'}`}>
+              {multi && range.min !== range.max && <span className="font-sans text-xs font-normal text-muted">từ </span>}
+              {formatMoney(multi ? range.min : p.price)}
+            </span>
             <span className="block truncate text-xs text-muted">
-              /{p.unit}
+              {multi ? `${variants.length} quy cách` : `/${p.unit}`}
               {isSamplePrice(p) && <span className="font-semibold text-champagne-800"> · giá mẫu</span>}
             </span>
           </div>
           {!inCart && (
             <button
               disabled={soldOut}
-              onClick={() => add(p.id, 1)}
-              aria-label={`Thêm ${p.name} vào giỏ`}
+              onClick={() => (multi ? openModal({ type: 'product_detail', productId: p.id }) : add(p.id, 1))}
+              aria-label={multi ? `Chọn quy cách ${p.name}` : `Thêm ${p.name} vào giỏ`}
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-forest-900 text-champagne-200 ring-1 ring-champagne-400/60 transition hover:bg-forest-700 disabled:bg-stone-300 disabled:text-stone-600 disabled:ring-0"
             >
               <Plus size={18} />
@@ -299,5 +313,20 @@ export function ProductCard({ product: p }: { product: Product }) {
         {inCart && <QuantityStepper value={inCart.quantity} max={remaining} onChange={(quantity) => update(p.id, { quantity })} onRemove={() => remove(p.id)} itemName={p.name} compact />}
       </div>
     </article>
+  );
+}
+
+/** Các quy cách của sản phẩm trên thẻ (tối đa 3, còn lại ghi "+N"). */
+function VariantChips({ variants }: { variants: Product[] }) {
+  const shown = variants.slice(0, 3);
+  return (
+    <ul aria-label="Quy cách" className="mt-0.5 flex w-full flex-wrap justify-center gap-1">
+      {shown.map((v) => (
+        <li key={v.id} className="rounded-full border border-champagne-300 bg-champagne-50 px-2 py-0.5 text-xs font-semibold text-champagne-900">
+          {v.unit}
+        </li>
+      ))}
+      {variants.length > shown.length && <li className="px-1 py-0.5 text-xs font-semibold text-champagne-900">+{variants.length - shown.length}</li>}
+    </ul>
   );
 }

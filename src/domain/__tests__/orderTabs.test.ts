@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { placeCheckout } from '../checkout';
-import { itemsAwaitingReview, ORDER_TABS, ordersAwaitingReview, ordersInTab, refundSummary, reorderToCart, suggestedProducts, tabCounts } from '../orderTabs';
+import { filterOrders, isOrderFilterActive, itemsAwaitingReview, NO_ORDER_FILTER, ORDER_TABS, PAYMENT_FILTERS, ordersAwaitingReview, ordersInTab, refundSummary, reorderToCart, suggestedProducts, tabCounts } from '../orderTabs';
 import { ORDER_STATUSES, type DemoState, type OrderStatus, type RefundRecord, type Review } from '../types';
 import { CUSTOMER, keyX, keyXPre, keyY, line, makeState, placeInput, T0 } from './fixtures';
 
@@ -95,5 +95,35 @@ describe('Tab "Đơn mua" của khách', () => {
       return r.state;
     })();
     expect(suggestedProducts(one, 'cust-1', 1).map((p) => p.id)).toEqual(['x-pre']);
+  });
+});
+
+describe('Lọc đơn của HTX', () => {
+  const orders = [
+    { id: 'DH-A1', kind: 'ready', paymentStatus: 'paid', items: [{ name: 'Mứt mận tam hoa' }] },
+    { id: 'DH-B2', kind: 'preorder', paymentStatus: 'deposit_paid', items: [{ name: 'Mận tam hoa tươi' }] },
+    { id: 'DH-C3', kind: 'ready', paymentStatus: 'refunded', items: [{ name: 'Gạo Séng Cù' }] },
+    { id: 'DH-D4', kind: 'ready', paymentStatus: 'cod_unpaid', items: [{ name: 'Phở hồng' }] },
+    { id: 'DH-E5', kind: 'preorder', paymentStatus: 'refund_pending', items: [{ name: 'Cốm Tú Lệ' }] },
+  ] as never as Parameters<typeof filterOrders>[0];
+  const ids = (f: Partial<typeof NO_ORDER_FILTER>) => filterOrders(orders, { ...NO_ORDER_FILTER, ...f }).map((o) => o.id);
+
+  it('mỗi tình trạng thanh toán thuộc tối đa một nhóm lọc', () => {
+    const all = PAYMENT_FILTERS.flatMap((p) => p.statuses ?? []);
+    expect(new Set(all).size).toBe(all.length);
+  });
+
+  it('lọc theo loại đơn, thanh toán, tìm không dấu; kết hợp được', () => {
+    expect(ids({})).toHaveLength(5);
+    expect(isOrderFilterActive(NO_ORDER_FILTER)).toBe(false);
+    expect(ids({ kind: 'preorder' })).toEqual(['DH-B2', 'DH-E5']);
+    expect(ids({ payment: 'paid' })).toEqual(['DH-A1']);
+    expect(ids({ payment: 'refunded' })).toEqual(['DH-C3']);
+    expect(ids({ payment: 'refunding' })).toEqual(['DH-E5']);
+    expect(ids({ payment: 'unpaid' })).toEqual(['DH-D4']);
+    expect(ids({ query: 'man tam hoa' })).toEqual(['DH-A1', 'DH-B2']);
+    expect(ids({ query: 'dh-c3' })).toEqual(['DH-C3']);
+    expect(ids({ kind: 'preorder', query: 'mận' })).toEqual(['DH-B2']);
+    expect(isOrderFilterActive({ ...NO_ORDER_FILTER, query: ' x ' })).toBe(true);
   });
 });

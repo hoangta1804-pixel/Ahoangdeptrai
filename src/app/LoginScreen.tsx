@@ -32,11 +32,11 @@ const initialsOf = (name: string) => {
 
 /**
  * Đăng nhập demo (mục 5.9): SĐT + OTP mô phỏng (luôn là 123456), có danh sách tài khoản demo để bấm nhanh.
- * Khách hàng mới đăng ký được bằng SĐT + OTP. Tài khoản HTX, Admin, QLNN do Admin cấp.
+ * Khách hàng mới đăng ký được bằng SĐT + OTP. HTX mới nộp hồ sơ đăng ký, được duyệt thì có tài khoản; Admin, QLNN do Admin cấp.
  */
 export function LoginScreen() {
   const { state, run } = useStore();
-  const { login, showToast } = useUi();
+  const { login, showToast, openModal } = useUi();
   const [step, setStep] = useState<Step>('phone');
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
@@ -218,6 +218,18 @@ export function LoginScreen() {
               {error}
             </p>
           )}
+        </section>
+
+        {/* Quy trình phê duyệt HTX: HTX mới nộp hồ sơ ở đây, Admin – Chất lượng duyệt rồi cấp tài khoản. */}
+        <section aria-labelledby="htx-dang-ky" className="space-y-3 rounded-[28px] border border-champagne-200 bg-champagne-50/70 p-5">
+          <h2 id="htx-dang-ky" className="font-display text-xl font-semibold text-ink">
+            HTX muốn bán hàng trên sàn?
+          </h2>
+          <p className="text-sm text-stone-600">Nộp hồ sơ đăng ký HTX. Admin – Chất lượng tiếp nhận, thẩm định và duyệt, rồi cấp tài khoản đăng nhập bằng SĐT người đại diện.</p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <PrimaryButton onClick={() => openModal({ type: 'coop_apply' })}>Đăng ký HTX</PrimaryButton>
+            <SecondaryButton onClick={() => openModal({ type: 'coop_apply_status' })}>Tra cứu hồ sơ HTX</SecondaryButton>
+          </div>
         </section>
 
         <section className="space-y-3" aria-labelledby="tai-khoan-demo">

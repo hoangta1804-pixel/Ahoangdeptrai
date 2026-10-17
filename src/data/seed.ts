@@ -1,7 +1,8 @@
 /**
  * Dữ liệu mẫu ban đầu (Giai đoạn 5, mục 9).
  *
- * - Danh mục là 9 sản phẩm trong danh sách của nhóm. Mỗi sản phẩm có `sample` để trang chi tiết hiện
+ * - Danh mục là 9 sản phẩm trong danh sách của nhóm (mứt mận và gạo có thêm 1 quy cách mẫu: hộp 500 g, túi 5 kg,
+ *   giá cùng mức đ/kg với quy cách gốc). Mỗi sản phẩm có `sample` để trang chi tiết hiện
  *   nhãn "Dữ liệu mẫu – chờ HTX xác nhận", khoảng giá nhóm khảo sát, và ghi chú hồ sơ nếu bảng có ghi.
  * - Giá mẫu chọn trong khoảng giá bán lẻ Hà Nội nhóm khảo sát; Cốm Tú Lệ và Bưởi Đại Minh chưa có giá nên ghi "giá mẫu".
  * - Không gắn mã chứng nhận. Chỉ Bưởi Đại Minh ghi OCOP, kèm "theo hồ sơ nhóm, chờ xác minh".
@@ -14,7 +15,7 @@
  * - Đơn mẫu được tạo qua chính các hàm trong src/domain để dữ liệu luôn nhất quán.
  */
 import { groupKey, placeCheckout } from '../domain/checkout';
-import { SAMPLE_COOP_PHONES } from '../domain/coopContact';
+import { SAMPLE_COOP_PHONES, sampleCoopAddress } from '../domain/coopContact';
 import { carrierSimulate, coopConfirm, coopHandover, customerConfirmReceived } from '../domain/orders';
 import { DEFAULT_PARAMS } from '../domain/params';
 import { applyGatewayResult } from '../domain/payment';
@@ -72,8 +73,23 @@ function products(now: Date): Product[] {
       region: 'Bắc Hà',
       unit: 'hộp 300 g',
       price: 135_000,
-      description: 'Mứt, ô mai làm từ mận tam hoa, hộp 300 g. Thành phần và hạn dùng chờ HTX xác nhận.',
+      description: 'Mứt, ô mai làm từ mận tam hoa. Thành phần và hạn dùng chờ HTX xác nhận.',
       stockOnHand: 20,
+      expressApproved: false,
+      sample: { surveyedPrice: '350.000–550.000đ/kg' },
+    },
+    {
+      ...ready,
+      id: 'prod-mutman-500',
+      variantOf: 'prod-mutman',
+      coopId: 'coop-bacha',
+      name: 'Mứt / ô mai mận tam hoa',
+      category: 'processed',
+      region: 'Bắc Hà',
+      unit: 'hộp 500 g',
+      price: 225_000,
+      description: 'Mứt, ô mai làm từ mận tam hoa. Thành phần và hạn dùng chờ HTX xác nhận.',
+      stockOnHand: 10,
       expressApproved: false,
       sample: { surveyedPrice: '350.000–550.000đ/kg' },
     },
@@ -100,8 +116,23 @@ function products(now: Date): Product[] {
       region: 'Mường Khương, Bát Xát',
       unit: 'túi 2 kg',
       price: 120_000,
-      description: 'Gạo Séng Cù, túi 2 kg. Vụ thu hoạch và ngày đóng gói chờ HTX xác nhận.',
+      description: 'Gạo Séng Cù. Vụ thu hoạch và ngày đóng gói chờ HTX xác nhận.',
       stockOnHand: 40,
+      expressApproved: true,
+      sample: { surveyedPrice: '45.000–70.000đ/kg' },
+    },
+    {
+      ...ready,
+      id: 'prod-gao-5kg',
+      variantOf: 'prod-gao',
+      coopId: 'coop-muongkhuong',
+      name: 'Gạo Séng Cù',
+      category: 'dry',
+      region: 'Mường Khương, Bát Xát',
+      unit: 'túi 5 kg',
+      price: 280_000,
+      description: 'Gạo Séng Cù. Vụ thu hoạch và ngày đóng gói chờ HTX xác nhận.',
+      stockOnHand: 15,
       expressApproved: true,
       sample: { surveyedPrice: '45.000–70.000đ/kg' },
     },
@@ -202,13 +233,13 @@ function baseState(now: Date): DemoState {
       { id: 'cust-2', name: 'Khách hàng mẫu 2', phone: '0900000002' },
     ],
     coops: [
-      { id: 'coop-bacha', name: 'HTX mẫu Bắc Hà', region: 'Bắc Hà', phones: [...SAMPLE_COOP_PHONES['coop-bacha']], payoutAccountMasked: '**** 0101', status: 'active', profileStatus: 'approved' },
-      { id: 'coop-muongkhuong', name: 'HTX mẫu Mường Khương', region: 'Mường Khương', phones: [...SAMPLE_COOP_PHONES['coop-muongkhuong']], payoutAccountMasked: '**** 0102', status: 'active', profileStatus: 'approved' },
-      { id: 'coop-suoigiang', name: 'HTX mẫu Suối Giàng', region: 'Suối Giàng', phones: [...SAMPLE_COOP_PHONES['coop-suoigiang']], payoutAccountMasked: '**** 0103', status: 'active', profileStatus: 'approved' },
-      { id: 'coop-sapa', name: 'HTX mẫu Sa Pa', region: 'Sa Pa', phones: [...SAMPLE_COOP_PHONES['coop-sapa']], payoutAccountMasked: '**** 0104', status: 'active', profileStatus: 'approved' },
-      { id: 'coop-baoha', name: 'HTX mẫu Bảo Hà', region: 'Bảo Hà', phones: [...SAMPLE_COOP_PHONES['coop-baoha']], payoutAccountMasked: '**** 0105', status: 'active', profileStatus: 'approved' },
-      { id: 'coop-tule', name: 'HTX mẫu Tú Lệ', region: 'Tú Lệ', phones: [...SAMPLE_COOP_PHONES['coop-tule']], payoutAccountMasked: '**** 0106', status: 'active', profileStatus: 'approved' },
-      { id: 'coop-thacba', name: 'HTX mẫu Thác Bà', region: 'hồ Thác Bà', phones: [...SAMPLE_COOP_PHONES['coop-thacba']], payoutAccountMasked: '**** 0107', status: 'active', profileStatus: 'approved' },
+      { id: 'coop-bacha', name: 'HTX mẫu Bắc Hà', region: 'Bắc Hà', phones: [...SAMPLE_COOP_PHONES['coop-bacha']], storeAddress: sampleCoopAddress('Bắc Hà'), payoutAccountMasked: '**** 0101', status: 'active', profileStatus: 'approved' },
+      { id: 'coop-muongkhuong', name: 'HTX mẫu Mường Khương', region: 'Mường Khương', phones: [...SAMPLE_COOP_PHONES['coop-muongkhuong']], storeAddress: sampleCoopAddress('Mường Khương'), payoutAccountMasked: '**** 0102', status: 'active', profileStatus: 'approved' },
+      { id: 'coop-suoigiang', name: 'HTX mẫu Suối Giàng', region: 'Suối Giàng', phones: [...SAMPLE_COOP_PHONES['coop-suoigiang']], storeAddress: sampleCoopAddress('Suối Giàng'), payoutAccountMasked: '**** 0103', status: 'active', profileStatus: 'approved' },
+      { id: 'coop-sapa', name: 'HTX mẫu Sa Pa', region: 'Sa Pa', phones: [...SAMPLE_COOP_PHONES['coop-sapa']], storeAddress: sampleCoopAddress('Sa Pa'), payoutAccountMasked: '**** 0104', status: 'active', profileStatus: 'approved' },
+      { id: 'coop-baoha', name: 'HTX mẫu Bảo Hà', region: 'Bảo Hà', phones: [...SAMPLE_COOP_PHONES['coop-baoha']], storeAddress: sampleCoopAddress('Bảo Hà'), payoutAccountMasked: '**** 0105', status: 'active', profileStatus: 'approved' },
+      { id: 'coop-tule', name: 'HTX mẫu Tú Lệ', region: 'Tú Lệ', phones: [...SAMPLE_COOP_PHONES['coop-tule']], storeAddress: sampleCoopAddress('Tú Lệ'), payoutAccountMasked: '**** 0106', status: 'active', profileStatus: 'approved' },
+      { id: 'coop-thacba', name: 'HTX mẫu Thác Bà', region: 'hồ Thác Bà', phones: [...SAMPLE_COOP_PHONES['coop-thacba']], storeAddress: sampleCoopAddress('hồ Thác Bà'), payoutAccountMasked: '**** 0107', status: 'active', profileStatus: 'approved' },
     ],
     products: products(now),
     productChanges: [],
@@ -250,6 +281,9 @@ function baseState(now: Date): DemoState {
     lowStockAlerts: {},
     orderMessages: [],
     harvests: [],
+    directMessages: [],
+    chatReads: {},
+    coopApplications: [],
   };
 }
 

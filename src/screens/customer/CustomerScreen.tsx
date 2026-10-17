@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useUi } from '../../app/UiContext';
+import { ChatFab } from '../../components/ChatInbox';
 import { ListBoundary } from '../../components/ListBoundary';
 import { useStore } from '../../store/AppDataContext';
 import { AccountTab } from './AccountTab';
@@ -21,6 +22,7 @@ export function CustomerScreen() {
         {customerTab === 'season' && <SeasonTab />}
         {customerTab === 'account' && <AccountTab />}
       </ListBoundary>
+      <ChatFab />
       <CustomerBottomNav />
     </div>
   );

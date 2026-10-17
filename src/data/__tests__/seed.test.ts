@@ -15,7 +15,7 @@ const byId = (id: string) => seed.products.find((p) => p.id === id)!;
 
 describe('Danh mục mẫu của nhóm (mục 9.3)', () => {
   it('đúng 9 sản phẩm trong bảng, đúng loại đơn và nhóm hàng', () => {
-    const rows = seed.products.map((p) => [p.name, p.kind, p.category]);
+    const rows = seed.products.filter((p) => !p.variantOf).map((p) => [p.name, p.kind, p.category]);
     expect(rows).toEqual([
       ['Chè Shan tuyết', 'ready', 'dry'],
       ['Thảo quả khô', 'ready', 'dry'],
@@ -29,14 +29,29 @@ describe('Danh mục mẫu của nhóm (mục 9.3)', () => {
     ]);
   });
 
+  it('quy cách mẫu: mứt mận thêm hộp 500 g, gạo thêm túi 5 kg; cùng tên, HTX, nhóm hàng, loại đơn với sản phẩm gốc', () => {
+    const variants = seed.products.filter((p) => p.variantOf);
+    expect(variants.map((p) => [p.variantOf, p.unit])).toEqual([
+      ['prod-mutman', 'hộp 500 g'],
+      ['prod-gao', 'túi 5 kg'],
+    ]);
+    for (const v of variants) {
+      const base = byId(v.variantOf!);
+      expect(base.variantOf, v.id).toBeUndefined();
+      for (const k of ['name', 'coopId', 'category', 'kind', 'region', 'description'] as const) expect(v[k], `${v.id}.${k}`).toEqual(base[k]);
+    }
+  });
+
   it('giá mẫu nằm trong khoảng giá bán lẻ Hà Nội nhóm khảo sát (quy về đ/kg hoặc đ/lít)', () => {
     const ranges: [string, number, number, number][] = [
       // [mã, số kg hoặc lít mỗi đơn vị bán, giá thấp, giá cao]
       ['prod-che', 0.1, 400_000, 1_500_000],
       ['prod-thaoqua', 0.2, 250_000, 450_000],
       ['prod-mutman', 0.3, 350_000, 550_000],
+      ['prod-mutman-500', 0.5, 350_000, 550_000],
       ['prod-matong', 0.5, 250_000, 450_000],
       ['prod-gao', 2, 45_000, 70_000],
+      ['prod-gao-5kg', 5, 45_000, 70_000],
       ['prod-phohong', 0.5, 120_000, 140_000],
       ['prod-man', 3, 50_000, 90_000],
     ];

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Bell, ChevronRight, ClipboardCheck, LogOut, MapPin, MessageSquareWarning, Package, ShoppingBag, Sprout, Star, Truck, UserRound, type LucideIcon } from 'lucide-react';
+import { Bell, ChevronRight, ClipboardCheck, LogOut, MapPin, MessageCircle, MessageSquareWarning, Package, ShoppingBag, Sprout, Star, Truck, UserRound, type LucideIcon } from 'lucide-react';
 import { useUi } from '../../app/UiContext';
 import { PAGE_X } from '../../app/layout';
 import { BrocadeBand } from '../../components/Brand';
@@ -9,6 +9,8 @@ import { Field, Input, PrimaryButton, SecondaryButton } from '../../components/f
 import { updateCustomerProfile } from '../../domain/account';
 import { listOrdersFor } from '../../domain/access';
 import { loginIdentityLabel } from '../../domain/auth';
+import { totalUnread } from '../../domain/coopChat';
+import { isTicketOpen } from '../../domain/complaint';
 import { ordersAwaitingReview, tabCounts, type OrderTabKey } from '../../domain/orderTabs';
 import { useStore } from '../../store/AppDataContext';
 import { BankLinkSection } from './BankLinkSection';
@@ -212,18 +214,29 @@ function Utilities({ addressCount }: { addressCount: number }) {
   const { customerActor, user, openModal } = useUi();
   const cartCount = (state.carts[customerActor.id!] ?? []).reduce((s, l) => s + l.quantity, 0);
   const unread = user ? state.notifications.filter((n) => n.userId === user.id && !n.read).length : 0;
+  const chats = totalUnread(state, customerActor);
+  const mine = state.tickets.filter((t) => t.customerId === customerActor.id);
+  const tickets = mine.length;
+  const openTickets = mine.filter(isTicketOpen).length;
   const items: { label: string; sub: string; icon: LucideIcon; count?: number; open: () => void }[] = [
     { label: 'Sổ địa chỉ', sub: `${addressCount}/10 địa chỉ`, icon: MapPin, open: () => openModal({ type: 'address_book' }) },
     { label: 'Giỏ hàng', sub: cartCount > 0 ? `${cartCount} sản phẩm` : 'Đang trống', icon: ShoppingBag, count: cartCount, open: () => openModal({ type: 'cart' }) },
     { label: 'Thông báo', sub: unread > 0 ? `${unread} chưa đọc` : 'Đã đọc hết', icon: Bell, count: unread, open: () => openModal({ type: 'notifications' }) },
-    { label: 'Khiếu nại', sub: 'Gửi CSKH', icon: MessageSquareWarning, open: () => openModal({ type: 'complaint' }) },
+    { label: 'Tin nhắn', sub: chats > 0 ? `${chats} tin chưa đọc` : 'Hỏi HTX', icon: MessageCircle, count: chats, open: () => openModal({ type: 'chat' }) },
+    {
+      label: 'Khiếu nại',
+      sub: openTickets > 0 ? `${openTickets} đang xử lý` : tickets > 0 ? `${tickets} khiếu nại theo đơn` : 'Gửi CSKH',
+      icon: MessageSquareWarning,
+      count: openTickets,
+      open: () => openModal({ type: 'complaints' }),
+    },
   ];
   return (
     <section aria-labelledby="tien-ich" className="space-y-2 rounded-3xl border border-champagne-200 bg-white p-4 shadow-xs">
       <h3 id="tien-ich" className="font-display text-lg font-semibold text-ink">
         Tiện ích của tôi
       </h3>
-      <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-2">
+      <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-2">
         {items.map((it) => {
           const Icon = it.icon;
           return (

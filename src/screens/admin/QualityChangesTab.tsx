@@ -53,6 +53,7 @@ function SubjectCell({ req }: { req: ProductChangeRequest }) {
   return (
     <Td className="min-w-44">
       <strong className="block">{p?.name}</strong>
+      {p && <span className="block text-stone-600">Quy cách: {p.unit}</span>}
       <span className="text-stone-600">{coop?.name}</span>
     </Td>
   );
@@ -66,7 +67,9 @@ function describe(c: ProductChangeRequest, state: DemoState): string {
     case 'preorder':
       return `${c.preorder?.totalSlots} suất, giao ${formatDateKey(c.preorder!.deliveryFrom)} – ${formatDateKey(c.preorder!.deliveryTo)}`;
     case 'new_product':
-      return `${p?.unit}, ${formatMoney(p?.price ?? 0)}, vùng ${p?.region}. ${p?.description ?? ''}`;
+      return p?.variantOf
+        ? `Quy cách mới "${p.unit}" của sản phẩm đang có, ${formatMoney(p.price)}. Tên, mô tả, vùng giữ như sản phẩm gốc.`
+        : `${p?.unit}, ${formatMoney(p?.price ?? 0)}, vùng ${p?.region}. ${p?.description ?? ''}`;
     case 'content':
       return `Tên "${c.content?.name}", quy cách "${c.content?.unit}", vùng "${c.content?.region}". ${c.content?.description ?? ''}`;
     case 'express':

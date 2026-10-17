@@ -4,7 +4,7 @@
  * Thông báo được sinh bằng cách so dữ liệu trước và sau mỗi thao tác (deriveNotifications), nên mọi đường thay đổi
  * (người dùng bấm, tác vụ theo giờ, cổng thanh toán mô phỏng) đều sinh thông báo giống nhau.
  * Các sự kiện: đổi trạng thái đơn, kết quả duyệt, ticket, tồn thấp (tối đa 1 lần/ngày/sản phẩm), mời đánh giá,
- * tin nhắn / cuộc gọi trong đơn giữa khách và HTX, HTX xác nhận thu hoạch.
+ * tin nhắn / cuộc gọi trong đơn giữa khách và HTX, tin nhắn chung (nút chat nổi), HTX xác nhận thu hoạch.
  */
 import { generateId } from './ids';
 import { formatMoney } from './pricing';
@@ -126,6 +126,37 @@ export function deriveNotifications(prev: DemoState, next: DemoState, at: Date):
     }
   }
 
+  // Tin nhắn chung (nút chat nổi) → bên còn lại.
+  const prevDirect = prev.directMessages ?? [];
+  const nextDirect = next.directMessages ?? [];
+  if (prevDirect !== nextDirect) {
+    const known = new Set(prevDirect.map((m) => m.id));
+    for (const m of nextDirect) {
+      if (known.has(m.id)) continue;
+      const about = m.productLabel ? ` · hỏi về ${m.productLabel}` : '';
+      if (m.sender === 'customer') {
+        drafts.push({ userIds: usersOfCoop(next, m.coopId), title: `Tin nhắn mới từ ${m.senderName}`, body: `${m.text.slice(0, 100)}${about}`.slice(0, 160), link: { type: 'chat', id: m.customerId } });
+      } else {
+        drafts.push({ userIds: usersOfCustomer(next, m.customerId), title: `Tin nhắn mới từ ${m.senderName}`, body: m.text.slice(0, 100), link: { type: 'chat', id: m.coopId } });
+      }
+    }
+  }
+
+  // Hồ sơ đăng ký HTX: hồ sơ mới / nộp lại → Admin – Chất lượng; được duyệt → tài khoản HTX mới.
+  const prevApps = prev.coopApplications ?? [];
+  const nextApps = next.coopApplications ?? [];
+  if (prevApps !== nextApps) {
+    for (const a of nextApps) {
+      const before = prevApps.find((x) => x.id === a.id);
+      if (before?.status === a.status) continue;
+      if (a.status === 'submitted') {
+        drafts.push({ userIds: adminsOf(next, 'quality'), title: `${before ? 'HTX bổ sung hồ sơ' : 'Hồ sơ đăng ký HTX mới'} ${a.id}`, body: `${a.coopName} · vùng ${a.region}` });
+      } else if (a.status === 'approved' && a.coopId) {
+        drafts.push({ userIds: usersOfCoop(next, a.coopId), title: 'Hồ sơ đăng ký HTX đã được duyệt', body: `Chào mừng ${a.coopName}. Thêm sản phẩm ở mục Sản phẩm; sản phẩm mới chờ Admin – Chất lượng duyệt.` });
+      }
+    }
+  }
+
   // Nhắc thanh toán ở phút PAR-20.
   for (const tx of next.transactions) {
     const before = prev.transactions.find((t) => t.id === tx.id);
@@ -155,6 +186,8 @@ export function deriveNotifications(prev: DemoState, next: DemoState, at: Date):
         drafts.push({ userIds: [...usersOfCustomer(next, t.customerId), ...usersOfCoop(next, t.coopId)], title: `Khiếu nại ${t.id}: ${TICKET_STATUS_LABEL[t.status]}`, body: last.note ?? '', link });
       } else if (last.actor.kind === 'coop') {
         drafts.push({ userIds: [...usersOfCustomer(next, t.customerId), ...adminsOf(next, 'cskh')], title: `HTX phản hồi khiếu nại ${t.id}`, body: last.note ?? '', link });
+      } else if (last.kind === 'request_coop') {
+        drafts.push({ userIds: usersOfCoop(next, t.coopId), title: `CSKH đề nghị HTX phản hồi khiếu nại ${t.id}`, body: last.note ?? `Đơn ${t.orderId}`, link });
       }
     }
   }

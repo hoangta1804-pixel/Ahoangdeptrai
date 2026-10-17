@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useUi } from '../../app/UiContext';
 import { PAGE_X } from '../../app/layout';
+import { ChatInbox } from '../../components/ChatInbox';
 import { ListBoundary } from '../../components/ListBoundary';
+import { totalUnread } from '../../domain/coopChat';
 import { coopPhonesOf, formatContactPhone } from '../../domain/coopContact';
 import { useStore } from '../../store/AppDataContext';
 import { CoopOrdersTab } from './CoopOrdersTab';
@@ -12,9 +14,10 @@ import { CoopSalesTab } from './CoopSalesTab';
 import { CoopTicketsTab } from './CoopTicketsTab';
 import { CoopWalletTab } from './CoopWalletTab';
 
-type CoopTab = 'orders' | 'products' | 'sales' | 'tickets' | 'reviews' | 'wallet' | 'profile';
+type CoopTab = 'orders' | 'messages' | 'products' | 'sales' | 'tickets' | 'reviews' | 'wallet' | 'profile';
 const TABS: { key: CoopTab; label: string }[] = [
   { key: 'orders', label: 'Đơn hàng' },
+  { key: 'messages', label: 'Tin nhắn' },
   { key: 'products', label: 'Sản phẩm' },
   { key: 'sales', label: 'Bán chạy' },
   { key: 'tickets', label: 'Khiếu nại' },
@@ -26,10 +29,15 @@ const TABS: { key: CoopTab; label: string }[] = [
 /** Kênh HTX. Điện thoại: thẻ HTX và lưới mục ở trên. Máy tính: thẻ HTX và danh sách mục ở cột trái, nội dung chiếm phần còn lại. */
 export function CoopScreen() {
   const { state } = useStore();
-  const { coopId } = useUi();
+  const { coopId, coopActor } = useUi();
   const [tab, setTab] = useState<CoopTab>('orders');
   const coop = state.coops.find((c) => c.id === coopId);
   const pendingConfirm = state.orders.filter((o) => o.coopId === coopId && o.status === 'awaiting_confirmation').length;
+  const unreadChats = totalUnread(state, coopActor);
+  const badges: Partial<Record<CoopTab, { count: number; label: string }>> = {
+    orders: { count: pendingConfirm, label: 'đơn chờ xác nhận' },
+    messages: { count: unreadChats, label: 'tin nhắn chưa đọc' },
+  };
 
   return (
     <div className={`flex flex-1 flex-col gap-4 py-4 lg:flex-row lg:gap-6 ${PAGE_X}`}>
@@ -54,11 +62,11 @@ export function CoopScreen() {
               className={`relative min-h-11 whitespace-nowrap rounded-xl px-1 lg:flex lg:items-center lg:justify-between lg:px-3 lg:text-left ${tab === t.key ? 'bg-white font-bold text-ink shadow-xs' : 'text-stone-700 lg:hover:bg-white/60'}`}
             >
               {t.label}
-              {/* Số đơn chờ xác nhận: chấm ở góc tab để chữ không bị xuống dòng khi chia 4 cột. */}
-              {t.key === 'orders' && pendingConfirm > 0 && (
+              {/* Số đơn chờ xác nhận, tin chưa đọc: chấm ở góc tab để chữ không bị xuống dòng khi chia 4 cột. */}
+              {(badges[t.key]?.count ?? 0) > 0 && (
                 <span className="absolute -top-1 -right-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-champagne-600 px-1 text-xs font-bold text-white lg:static">
-                  {pendingConfirm}
-                  <span className="sr-only"> đơn chờ xác nhận</span>
+                  {badges[t.key]!.count}
+                  <span className="sr-only"> {badges[t.key]!.label}</span>
                 </span>
               )}
             </button>
@@ -69,6 +77,7 @@ export function CoopScreen() {
       <div className="min-w-0 flex-1">
         <ListBoundary key={tab} label="mục này" resetKey={state}>
           {tab === 'orders' && <CoopOrdersTab />}
+          {tab === 'messages' && <ChatInbox side="coop" />}
           {tab === 'products' && <CoopProductsTab />}
           {tab === 'sales' && <CoopSalesTab />}
           {tab === 'tickets' && <CoopTicketsTab />}

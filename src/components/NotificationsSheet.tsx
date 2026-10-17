@@ -22,6 +22,10 @@ export function NotificationsSheet({ onClose }: { onClose: () => void }) {
 
   const open = (n: AppNotification) => {
     if (!n.link || !user) return;
+    if (n.link.type === 'chat') {
+      if (user.role === 'customer' || user.role === 'coop') openModal({ type: 'chat', withId: n.link.id });
+      return;
+    }
     const orderId = n.link.type === 'order' ? n.link.id : n.link.type === 'ticket' ? state.tickets.find((t) => t.id === n.link!.id)?.orderId : undefined;
     if (!orderId) return;
     if (user.role === 'customer') openModal({ type: 'order_detail', orderId });

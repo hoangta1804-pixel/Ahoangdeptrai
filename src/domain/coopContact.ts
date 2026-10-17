@@ -1,5 +1,6 @@
 /**
- * Số điện thoại liên hệ của HTX (chủ repo yêu cầu: mỗi cửa hàng HTX có 2 số, để Admin gọi cho HTX).
+ * Số điện thoại và địa chỉ liên hệ của HTX (chủ repo yêu cầu: mỗi cửa hàng HTX có 2 số, để Admin gọi cho HTX;
+ * góp ý kiểm thử: thêm SĐT, địa chỉ vào hồ sơ HTX). Địa chỉ theo cùng quy tắc với SĐT.
  * - Chỉ Admin (mọi nhóm quyền) và chính HTX xem được. Không công khai cho khách: không hiện ở trang sản phẩm hay trong đơn.
  *   QLNN cũng không xem (listCoopContacts kiểm quyền ngay trong hàm, mục 5.9).
  * - HTX tự cập nhật ở mục Hồ sơ, lưu ngay (không chờ Admin duyệt như hồ sơ), có ghi nhật ký thao tác.
@@ -15,6 +16,8 @@ export interface CoopContact {
   representative?: string;
   status: Coop['status'];
   phones: string[];
+  /** Địa chỉ cửa hàng / nơi sản xuất; rỗng nếu HTX chưa cập nhật. */
+  address: string;
 }
 
 /** Mỗi HTX có đúng 2 số. */
@@ -33,6 +36,22 @@ export const SAMPLE_COOP_PHONES: Record<string, readonly [string, string]> = {
   'coop-tule': ['0900000461', '0900000462'],
   'coop-thacba': ['0900000471', '0900000472'],
 };
+
+/** Ghi cuối địa chỉ mẫu của 7 HTX mẫu: chỉ có vùng, không có số nhà, thôn bản. */
+export const SAMPLE_ADDRESS_NOTE = '(địa chỉ mẫu – chờ HTX cập nhật)';
+
+/** Địa chỉ mẫu của HTX mẫu: lấy theo vùng, ghi rõ là mẫu. */
+export const sampleCoopAddress = (region: string): string => `Vùng ${region}, tỉnh Lào Cai ${SAMPLE_ADDRESS_NOTE}`;
+
+export const isSampleAddress = (address: string): boolean => address.endsWith(SAMPLE_ADDRESS_NOTE);
+
+export const ADDRESS_MIN_LENGTH = 10;
+export const ADDRESS_MAX_LENGTH = 200;
+
+/** Địa chỉ của HTX: địa chỉ HTX đã lưu; HTX mẫu chưa lưu thì địa chỉ mẫu theo vùng; không có thì rỗng. */
+export function coopAddressOf(coop: Pick<Coop, 'id' | 'region' | 'storeAddress'>): string {
+  return coop.storeAddress ?? (SAMPLE_COOP_PHONES[coop.id] ? sampleCoopAddress(coop.region) : '');
+}
 
 /** Số mẫu của bản demo (để ghi rõ cho người gọi). */
 export const isSamplePhone = (phone: string): boolean => /^0900000\d{3}$/.test(phone);
@@ -80,9 +99,23 @@ export function coopSetPhones(state: DemoState, actor: Actor, phones: string[], 
   return ok(audit(next, actor, 'Cập nhật SĐT liên hệ', coop.name, at, normalized.map(formatContactPhone).join(' · ')));
 }
 
-/** Danh bạ SĐT HTX: Admin xem mọi HTX, HTX chỉ xem của mình; khách và QLNN không xem được. */
+/** HTX lưu địa chỉ cửa hàng / nơi sản xuất. Lưu ngay, có nhật ký; chỉ Admin và HTX xem được. */
+export function coopSetAddress(state: DemoState, actor: Actor, address: string, at: Date): Result<DemoState> {
+  if (actor.kind !== 'coop' || !actor.id) return fail('Chỉ HTX cập nhật được địa chỉ của mình.');
+  const coop = state.coops.find((c) => c.id === actor.id);
+  if (!coop) return fail('Không tìm thấy HTX.');
+  const value = address.trim().replace(/\s+/g, ' ');
+  if (!value) return fail('Vui lòng nhập địa chỉ.');
+  if (value.length < ADDRESS_MIN_LENGTH) return fail(`Địa chỉ cần ít nhất ${ADDRESS_MIN_LENGTH} ký tự (thôn / tổ, xã / phường, tỉnh).`);
+  if (value.length > ADDRESS_MAX_LENGTH) return fail(`Địa chỉ tối đa ${ADDRESS_MAX_LENGTH} ký tự.`);
+  if (value === coop.storeAddress) return ok(state);
+  const next = { ...state, coops: state.coops.map((c) => (c.id === coop.id ? { ...c, storeAddress: value } : c)) };
+  return ok(audit(next, actor, 'Cập nhật địa chỉ HTX', coop.name, at, value));
+}
+
+/** Danh bạ SĐT, địa chỉ HTX: Admin xem mọi HTX, HTX chỉ xem của mình; khách và QLNN không xem được. */
 export function listCoopContacts(state: DemoState, actor: Actor): Result<CoopContact[]> {
   if (actor.kind !== 'admin' && actor.kind !== 'coop') return fail('SĐT của HTX chỉ dành cho Admin liên hệ HTX.');
   const coops = actor.kind === 'admin' ? state.coops : state.coops.filter((c) => c.id === actor.id);
-  return ok(coops.map((c) => ({ coopId: c.id, name: c.name, region: c.region, representative: c.representative, status: c.status, phones: coopPhonesOf(c) })));
+  return ok(coops.map((c) => ({ coopId: c.id, name: c.name, region: c.region, representative: c.representative, status: c.status, phones: coopPhonesOf(c), address: coopAddressOf(c) })));
 }

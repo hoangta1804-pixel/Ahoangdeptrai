@@ -12,6 +12,8 @@ import { deliveryWindow, isOrderableIn } from '../../domain/cart';
 import { computeDeposit, formatMoney } from '../../domain/pricing';
 import { isSamplePrice, remainingFor } from '../../domain/state';
 import { useStore } from '../../store/AppDataContext';
+import { VariantPicker } from '../../components/VariantPicker';
+import { groupFamilies } from '../../domain/variants';
 
 /** Tab Vụ mùa: danh sách hàng đặt trước (chuyển từ bản index.html cũ). */
 export function SeasonTab() {
@@ -19,8 +21,10 @@ export function SeasonTab() {
   const { openModal } = useUi();
   // Số suất muốn đặt của từng sản phẩm (mặc định 1).
   const [quantities, setQuantities] = useState<Record<string, number>>({});
+  // Quy cách đang chọn của từng sản phẩm có nhiều quy cách (theo mã nhóm).
+  const [selected, setSelected] = useState<Record<string, string>>({});
   const params = state.params;
-  const preorders = state.products.filter((p) => p.kind === 'preorder' && p.status === 'active');
+  const families = groupFamilies(state.products.filter((p) => p.kind === 'preorder' && p.status === 'active'));
 
   return (
     <div className={`space-y-8 pt-4 pb-8 md:pt-6 ${PAGE_X}`}>
@@ -39,20 +43,22 @@ export function SeasonTab() {
         <BrocadeBand className="absolute inset-x-0 bottom-0" />
       </section>
 
-      <SectionHeading eyebrow="Vụ mùa" title="Đang nhận đặt trước" action={<span className="pb-1 text-xs text-muted">{preorders.length} sản phẩm</span>} />
+      <SectionHeading eyebrow="Vụ mùa" title="Đang nhận đặt trước" action={<span className="pb-1 text-xs text-muted">{families.length} sản phẩm</span>} />
 
-      {preorders.length === 0 ? (
+      {families.length === 0 ? (
         <EmptyState>Hiện chưa có sản phẩm nào mở đặt trước.</EmptyState>
       ) : (
         <div className="space-y-4 md:grid md:grid-cols-2 md:gap-5 md:space-y-0 lg:grid-cols-3 2xl:grid-cols-4">
-          {preorders.map((p) => {
+          {families.map((family) => {
+            const key = family[0].variantOf ?? family[0].id;
+            const p = family.find((v) => v.id === selected[key]) ?? family.find((v) => isOrderableIn(state, v) && remainingFor(state, v) > 0) ?? family[0];
             const coop = state.coops.find((c) => c.id === p.coopId);
             const remaining = remainingFor(state, p);
             const win = deliveryWindow(p, now(), params);
             const blocked = !isOrderableIn(state, p) ? 'Chưa mở đặt trước' : remaining <= 0 ? 'Hết suất' : !win ? 'Đã hết thời gian nhận đặt trước' : null;
             const quantity = Math.min(quantities[p.id] ?? 1, Math.max(1, remaining));
             return (
-              <article key={p.id} className="overflow-hidden rounded-[28px] bg-white p-2 shadow-[0_1px_2px_rgb(0,0,0,0.04),0_14px_34px_rgb(31,77,58,0.08)] ring-1 ring-champagne-200/80">
+              <article key={key} className="overflow-hidden rounded-[28px] bg-white p-2 shadow-[0_1px_2px_rgb(0,0,0,0.04),0_14px_34px_rgb(31,77,58,0.08)] ring-1 ring-champagne-200/80">
                 <button
                   type="button"
                   onClick={() => openModal({ type: 'product_detail', productId: p.id })}
@@ -77,6 +83,7 @@ export function SeasonTab() {
                       </span>
                     </p>
                   </div>
+                  {family.length > 1 && <VariantPicker variants={family} selected={p.id} onSelect={(id) => setSelected((m) => ({ ...m, [key]: id }))} />}
                   <PreorderProgress product={p} />
                   {!blocked && (
                     <div className="flex items-center justify-between gap-3">

@@ -16,10 +16,15 @@ import { useUi } from './UiContext';
 const CheckoutSheet = lazy(() => import('../screens/customer/CheckoutSheet').then((m) => ({ default: m.CheckoutSheet })));
 const OrderDetailSheet = lazy(() => import('../screens/customer/OrderDetailSheet').then((m) => ({ default: m.OrderDetailSheet })));
 const ComplaintSheet = lazy(() => import('../screens/customer/ComplaintSheet').then((m) => ({ default: m.ComplaintSheet })));
+const ComplaintsSheet = lazy(() => import('../screens/customer/ComplaintsSheet').then((m) => ({ default: m.ComplaintsSheet })));
 const ReviewSheet = lazy(() => import('../screens/customer/ReviewSheet').then((m) => ({ default: m.ReviewSheet })));
 const CoopOrderSheet = lazy(() => import('../screens/coop/CoopOrderSheet').then((m) => ({ default: m.CoopOrderSheet })));
 const CoopHarvestSheet = lazy(() => import('../screens/coop/CoopHarvestSheet').then((m) => ({ default: m.CoopHarvestSheet })));
 const CoopProductFormSheet = lazy(() => import('../screens/coop/CoopProductFormSheet').then((m) => ({ default: m.CoopProductFormSheet })));
+const CoopApplySheet = lazy(() => import('../screens/coopApply/CoopApplySheet').then((m) => ({ default: m.CoopApplySheet })));
+const CoopApplyStatusSheet = lazy(() => import('../screens/coopApply/CoopApplyStatusSheet').then((m) => ({ default: m.CoopApplyStatusSheet })));
+const ChatSheet = lazy(() => import('../components/ChatSheet').then((m) => ({ default: m.ChatSheet })));
+const CoopVariantFormSheet = lazy(() => import('../screens/coop/CoopVariantFormSheet').then((m) => ({ default: m.CoopVariantFormSheet })));
 
 /** Hiển thị đúng một sheet đang mở. Sheet nhận mã bản ghi và đọc dữ liệu mới nhất từ store. */
 export function ModalHost() {
@@ -67,17 +72,27 @@ function ModalContent() {
       return <AddressFormSheet key={modal.addressId ?? 'new'} addressId={modal.addressId} returnTo={modal.returnTo} onClose={closeModal} />;
     case 'complaint':
       return <ComplaintSheet orderId={modal.orderId} onClose={closeModal} />;
+    case 'complaints':
+      return <ComplaintsSheet onClose={closeModal} />;
     case 'coop_order':
       return <CoopOrderSheet key={modal.orderId} orderId={modal.orderId} onClose={closeModal} />;
     case 'coop_harvest':
       return <CoopHarvestSheet key={modal.productId} productId={modal.productId} onClose={() => (modal.returnTo ? openModal(modal.returnTo) : closeModal())} />;
+    case 'coop_apply':
+      return <CoopApplySheet key={modal.applicationId ?? 'new'} applicationId={modal.applicationId} onClose={closeModal} />;
+    case 'coop_apply_status':
+      return <CoopApplyStatusSheet key={modal.phone ?? 'lookup'} phone={modal.phone} onClose={closeModal} />;
     case 'demo_panel':
       return <DemoPanel onClose={closeModal} />;
     case 'review':
       return <ReviewSheet key={`${modal.orderId}-${modal.productId}`} orderId={modal.orderId} productId={modal.productId} onClose={closeModal} />;
     case 'coop_product_form':
       return <CoopProductFormSheet key={modal.productId ?? 'new'} productId={modal.productId} onClose={closeModal} />;
+    case 'coop_variant_form':
+      return <CoopVariantFormSheet key={modal.productId} productId={modal.productId} onClose={closeModal} />;
     case 'notifications':
       return <NotificationsSheet onClose={closeModal} />;
+    case 'chat':
+      return <ChatSheet key={`${modal.withId ?? ''}-${modal.productId ?? ''}`} withId={modal.withId} productId={modal.productId} onClose={closeModal} />;
   }
 }

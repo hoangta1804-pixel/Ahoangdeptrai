@@ -7,7 +7,9 @@
 import { addToCart, isOrderableIn } from './cart';
 import { averageRating } from './reviews';
 import { findOrder, findProduct, remainingFor } from './state';
-import { fail, ok, PAYMENT_STATUS_LABEL, type Actor, type DemoState, type Order, type OrderItem, type OrderStatus, type Product, type RefundStatus, type Result } from './types';
+import { matchesSearch } from './text';
+import { familyKey } from './variants';
+import { fail, ok, PAYMENT_STATUS_LABEL, type Actor, type DemoState, type Order, type OrderItem, type OrderKind, type OrderStatus, type PaymentStatus, type Product, type RefundStatus, type Result } from './types';
 
 export type OrderTabKey = 'all' | 'payment' | 'confirm' | 'harvest' | 'pickup' | 'shipping' | 'delivered' | 'returns' | 'cancelled';
 
@@ -39,6 +41,38 @@ export function ordersInTab<T extends Pick<Order, 'status'>>(orders: T[], key: O
 
 export function tabCounts(orders: Pick<Order, 'status'>[]): Record<OrderTabKey, number> {
   return Object.fromEntries(ORDER_TABS.map((t) => [t.key, ordersInTab(orders, t.key).length])) as Record<OrderTabKey, number>;
+}
+
+// ---------- Bộ lọc thêm cho danh sách đơn của HTX ----------
+
+export type PaymentFilterKey = 'all' | 'paid' | 'deposit' | 'unpaid' | 'refunding' | 'refunded';
+
+/** Nhóm tình trạng thanh toán để HTX lọc (góp ý kiểm thử: "Đã thanh toán", "Đã hoàn tiền"). */
+export const PAYMENT_FILTERS: { key: PaymentFilterKey; label: string; statuses?: PaymentStatus[] }[] = [
+  { key: 'all', label: 'Mọi thanh toán' },
+  { key: 'paid', label: 'Đã thanh toán', statuses: ['paid'] },
+  { key: 'deposit', label: 'Đã cọc – còn lại', statuses: ['deposit_paid'] },
+  { key: 'unpaid', label: 'Chưa thanh toán', statuses: ['cod_unpaid', 'awaiting_payment'] },
+  { key: 'refunding', label: 'Đang hoàn tiền', statuses: ['refund_pending', 'refunding'] },
+  { key: 'refunded', label: 'Đã hoàn tiền', statuses: ['refunded'] },
+];
+
+export interface OrderFilter {
+  kind: OrderKind | 'all';
+  payment: PaymentFilterKey;
+  /** Tìm theo mã đơn hoặc tên sản phẩm, không phân biệt hoa thường và dấu (mọi từ đều phải khớp). */
+  query: string;
+}
+
+export const NO_ORDER_FILTER: OrderFilter = { kind: 'all', payment: 'all', query: '' };
+
+export const isOrderFilterActive = (f: OrderFilter): boolean => f.kind !== 'all' || f.payment !== 'all' || f.query.trim() !== '';
+
+export function filterOrders<T extends Pick<Order, 'id' | 'kind' | 'paymentStatus' | 'items'>>(orders: T[], f: OrderFilter): T[] {
+  const statuses = PAYMENT_FILTERS.find((p) => p.key === f.payment)?.statuses;
+  return orders.filter(
+    (o) => (f.kind === 'all' || o.kind === f.kind) && (!statuses || statuses.includes(o.paymentStatus)) && matchesSearch(f.query, [o.id, ...o.items.map((i) => i.name)]),
+  );
 }
 
 /** Sản phẩm của đơn Đã giao mà khách chưa đánh giá. */
@@ -120,5 +154,8 @@ export function suggestedProducts(state: DemoState, customerId: string, limit: n
   const pool = fresh.length > 0 ? fresh : orderable;
   // Tính điểm mỗi sản phẩm một lần trước khi sắp xếp.
   const score = new Map(pool.map((p) => [p.id, averageRating(state, p.id).average ?? 0]));
-  return [...pool].sort((a, b) => score.get(b.id)! - score.get(a.id)! || a.name.localeCompare(b.name, 'vi')).slice(0, limit);
+  const sorted = [...pool].sort((a, b) => score.get(b.id)! - score.get(a.id)! || a.name.localeCompare(b.name, 'vi') || a.price - b.price);
+  // Mỗi sản phẩm một thẻ: các quy cách khác của cùng sản phẩm đã có trên thẻ đó.
+  const seen = new Set<string>();
+  return sorted.filter((p) => !seen.has(familyKey(p)) && !!seen.add(familyKey(p))).slice(0, limit);
 }

@@ -1,17 +1,19 @@
 import { useState } from 'react';
-import { BadgeCheck, FileBadge, Share2 } from 'lucide-react';
+import { BadgeCheck, FileBadge, MessageCircle, Share2 } from 'lucide-react';
 import { useUi } from '../../app/UiContext';
 import { Ornament } from '../../components/Brand';
 import { BottomSheet, SheetColumns } from '../../components/BottomSheet';
 import { PreorderProgress } from '../../components/PreorderProgress';
 import { QuantityStepper } from '../../components/QuantityStepper';
 import { Stars } from '../../components/Stars';
+import { VariantPicker } from '../../components/VariantPicker';
 import { averageRating, publicReviews } from '../../domain/reviews';
 import { ProductImage } from '../../components/ProductImage';
 import { deliveryWindow, isOrderableIn } from '../../domain/cart';
 import { computeDeposit, formatMoney } from '../../domain/pricing';
 import { findProduct, formatDateKey, isSamplePrice, remainingFor } from '../../domain/state';
 import { CATEGORY_LABEL, ORDER_KIND_LABEL } from '../../domain/types';
+import { listedFamilyOf } from '../../domain/variants';
 import { useStore } from '../../store/AppDataContext';
 import { useCartActions } from './useCartActions';
 
@@ -20,8 +22,11 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
   const { openModal, showToast } = useUi();
   const { add, cart } = useCartActions();
   const [quantity, setQuantity] = useState(1);
-  const product = findProduct(state, productId);
+  // Quy cách đang chọn: mở từ thẻ nào thì chọn sẵn quy cách đó.
+  const [variantId, setVariantId] = useState(productId);
+  const product = findProduct(state, variantId) ?? findProduct(state, productId);
   if (!product) return null;
+  const family = listedFamilyOf(state, product);
 
   const params = state.params;
   const coop = state.coops.find((c) => c.id === product.coopId);
@@ -36,8 +41,10 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
         : null;
   const qty = Math.min(quantity, Math.max(1, remaining));
   const inCart = cart.find((l) => l.productId === product.id)?.quantity ?? 0;
-  const rating = averageRating(state, product.id);
-  const reviews = publicReviews(state, product.id);
+  // Đánh giá tính chung các quy cách của sản phẩm.
+  const reviewed = family.length > 1 ? family : [product];
+  const reviews = reviewed.flatMap((v) => publicReviews(state, v.id).map((r) => ({ ...r, unit: v.unit }))).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const rating = reviewed.length > 1 ? combinedRating(reviewed.map((v) => averageRating(state, v.id))) : averageRating(state, product.id);
 
   // Chia sẻ link sản phẩm (FR-TKSP-05): dùng chia sẻ của thiết bị nếu có, không thì sao chép link.
   const share = async () => {
@@ -137,6 +144,16 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
                 </button>
               </span>
             </div>
+            {family.length > 1 && (
+              <VariantPicker
+                variants={family}
+                selected={product.id}
+                onSelect={(id) => {
+                  setVariantId(id);
+                  setQuantity(1);
+                }}
+              />
+            )}
             <p className="flex items-center gap-2 text-sm text-stone-700">
               {rating.average !== null ? (
                 <>
@@ -146,6 +163,13 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
                 'Chưa có đánh giá'
               )}
             </p>
+            <button
+              type="button"
+              onClick={() => openModal({ type: 'chat', withId: product.coopId, productId: product.id })}
+              className="flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-champagne-300 bg-white px-4 text-sm font-bold text-forest-900 hover:border-champagne-500 hover:bg-champagne-50"
+            >
+              <MessageCircle size={17} aria-hidden="true" /> Hỏi {coop?.name ?? 'HTX'} về sản phẩm này
+            </button>
           </>
         }
         right={
@@ -227,7 +251,10 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
                   <div key={r.id} className="space-y-1 rounded-xl bg-stone-50 p-2.5 text-sm">
                     <p className="flex items-center gap-2">
                       <Stars value={r.stars} /> <span className="font-semibold">{r.reviewerName}</span>
-                      <span className="text-xs text-muted">· đơn {r.orderRef}</span>
+                      <span className="text-xs text-muted">
+                        · đơn {r.orderRef}
+                        {reviewed.length > 1 && ` · ${r.unit}`}
+                      </span>
                     </p>
                     {r.comment && <p className="text-stone-700">{r.comment}</p>}
                     {r.photos.length > 0 && (
@@ -247,4 +274,11 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
       />
     </BottomSheet>
   );
+}
+
+/** Điểm trung bình gộp nhiều quy cách, theo số đánh giá của từng quy cách. */
+function combinedRating(parts: { average: number | null; count: number }[]): { average: number | null; count: number } {
+  const count = parts.reduce((n, p) => n + p.count, 0);
+  if (count === 0) return { average: null, count: 0 };
+  return { average: Math.round((parts.reduce((s, p) => s + (p.average ?? 0) * p.count, 0) / count) * 10) / 10, count };
 }

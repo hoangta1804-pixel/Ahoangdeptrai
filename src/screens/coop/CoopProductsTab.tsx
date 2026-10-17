@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AlertTriangle, Plus } from 'lucide-react';
+import { AlertTriangle, Layers, Plus } from 'lucide-react';
 import { useUi } from '../../app/UiContext';
 import { EmptyState } from '../../components/EmptyState';
 import { Field, Input, PrimaryButton, SecondaryButton } from '../../components/form';
@@ -10,16 +10,18 @@ import { coopRequestCertification, coopRequestExpress, coopRequestPreorder, coop
 import { formatDateKey, remainingFor } from '../../domain/state';
 import { heldQuantity, isLowStock, reservedSlots } from '../../domain/stock';
 import { CATEGORY_LABEL, ORDER_KIND_LABEL, PRODUCT_CHANGE_LABEL, PRODUCT_STATUS_LABEL, type Product } from '../../domain/types';
+import { familyOf, groupFamilies, MAX_VARIANTS } from '../../domain/variants';
 import { useStore } from '../../store/AppDataContext';
 
 /**
  * Sản phẩm của HTX (FR-SP-07, FR-SP-09, L12).
  * Tồn kho có hiệu lực ngay; đổi giá và báo thu hoạch phải chờ Admin – Chất lượng duyệt (trong lúc chờ vẫn bán giá cũ).
+ * Mỗi quy cách (hộp 300 g, 500 g…) là một thẻ riêng, các quy cách của cùng sản phẩm đứng liền nhau.
  */
 export function CoopProductsTab() {
   const { state } = useStore();
   const { coopId, openModal } = useUi();
-  const mine = state.products.filter((p) => p.coopId === coopId);
+  const mine = groupFamilies(state.products.filter((p) => p.coopId === coopId)).flat();
   return (
     <div className="space-y-3">
       <PrimaryButton className="flex w-full items-center justify-center gap-2 lg:w-auto lg:px-6" onClick={() => openModal({ type: 'coop_product_form' })}>
@@ -51,6 +53,7 @@ function ProductCard({ product: p }: { product: Product }) {
   const held = heldQuantity(p.id, state.orders);
   const available = remainingFor(state, p);
   const threshold = p.lowStockThreshold ?? state.params.lowStockThreshold;
+  const family = familyOf(state, p).filter((v) => v.status !== 'rejected');
 
   const act = (op: Parameters<typeof run>[0], ok: string) => {
     const r = run(op);
@@ -71,6 +74,16 @@ function ProductCard({ product: p }: { product: Product }) {
           </p>
         </div>
       </div>
+      {family.length > 1 && (
+        <p className="flex flex-wrap items-center gap-1 text-xs">
+          <span className="font-semibold text-stone-700">Quy cách:</span>
+          {family.map((v) => (
+            <span key={v.id} className={`rounded-full px-2 py-0.5 font-semibold ${v.id === p.id ? 'bg-forest-900 text-champagne-100' : 'border border-champagne-300 bg-champagne-50 text-champagne-900'}`}>
+              {v.unit}
+            </span>
+          ))}
+        </p>
+      )}
 
       <div className="flex flex-wrap gap-2">
         <SecondaryButton onClick={() => openModal({ type: 'coop_product_form', productId: p.id })}>Sửa nội dung</SecondaryButton>
@@ -85,6 +98,11 @@ function ProductCard({ product: p }: { product: Product }) {
           </SecondaryButton>
         )}
         <SecondaryButton onClick={() => setCert({ ...cert, open: !cert.open })}>Khai chứng nhận</SecondaryButton>
+        {p.status !== 'rejected' && family.length < MAX_VARIANTS && (
+          <SecondaryButton className="flex items-center gap-1.5" onClick={() => openModal({ type: 'coop_variant_form', productId: p.id })}>
+            <Layers size={15} aria-hidden="true" /> Thêm quy cách
+          </SecondaryButton>
+        )}
       </div>
 
       {cert.open && (
