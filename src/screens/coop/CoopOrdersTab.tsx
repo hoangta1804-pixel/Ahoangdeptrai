@@ -9,7 +9,19 @@ import { SwipeTabs } from '../../components/SwipeTabs';
 import { listOrdersFor } from '../../domain/access';
 import { fullyHarvested, ordersAwaitingHarvest, quantityIn } from '../../domain/harvest';
 import { needsReadyContact, unreadCount } from '../../domain/orderContact';
-import { filterOrders, isOrderFilterActive, NO_ORDER_FILTER, ORDER_TABS, ordersInTab, PAYMENT_FILTERS, tabCounts, tabOf, type OrderFilter, type OrderTabKey, type PaymentFilterKey } from '../../domain/orderTabs';
+import {
+  filterOrders,
+  isOrderFilterActive,
+  NO_ORDER_FILTER,
+  ORDER_TABS,
+  ordersInTab,
+  PAYMENT_FILTERS,
+  tabCounts,
+  tabOf,
+  type OrderFilter,
+  type OrderTabKey,
+  type PaymentFilterKey,
+} from '../../domain/orderTabs';
 import { formatMoney } from '../../domain/pricing';
 import { formatDateKey } from '../../domain/state';
 import { ORDER_KIND_LABEL, type Order, type OrderKind } from '../../domain/types';
@@ -91,7 +103,11 @@ function FilterBar({ filter, onChange, onClear, shown, total }: { filter: OrderF
           </Select>
         </label>
         {active && (
-          <button type="button" onClick={onClear} className="col-span-2 flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-stone-300 px-3 text-sm font-semibold text-stone-700 hover:bg-stone-50 xl:col-span-1">
+          <button
+            type="button"
+            onClick={onClear}
+            className="col-span-2 flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-stone-300 px-3 text-sm font-semibold text-stone-700 hover:bg-stone-50 xl:col-span-1"
+          >
             <X size={15} aria-hidden="true" /> Xoá lọc
           </button>
         )}
@@ -111,7 +127,11 @@ function OrdersPanel({ tab, orders, filtered, onClear }: { tab: OrderTabKey; ord
       <div className="space-y-3 pt-4">
         <EmptyState>{filtered ? `Không có đơn nào khớp bộ lọc ở mục "${tabOf(tab).label}".` : tab === 'all' ? 'Chưa có đơn nào.' : `Chưa có đơn nào ở mục "${tabOf(tab).label}".`}</EmptyState>
         {filtered && (
-          <button type="button" onClick={onClear} className="mx-auto flex min-h-11 items-center rounded-full border border-champagne-300 bg-white px-4 text-sm font-semibold text-forest-900 hover:bg-champagne-50">
+          <button
+            type="button"
+            onClick={onClear}
+            className="mx-auto flex min-h-11 items-center rounded-full border border-champagne-300 bg-white px-4 text-sm font-semibold text-forest-900 hover:bg-champagne-50"
+          >
             Xoá lọc
           </button>
         )}

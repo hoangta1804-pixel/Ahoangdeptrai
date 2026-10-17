@@ -47,7 +47,9 @@ export function CoopVariantFormSheet({ productId, onClose }: { productId: string
       }
     >
       <section className="space-y-1.5 rounded-2xl border border-stone-200 bg-stone-50 p-3 text-sm">
-        <h4 className="font-bold text-ink">Quy cách đang có ({family.length}/{MAX_VARIANTS})</h4>
+        <h4 className="font-bold text-ink">
+          Quy cách đang có ({family.length}/{MAX_VARIANTS})
+        </h4>
         <ul className="space-y-1">
           {family.map((v) => (
             <li key={v.id} className="flex flex-wrap justify-between gap-2">
@@ -72,7 +74,8 @@ export function CoopVariantFormSheet({ productId, onClose }: { productId: string
       </div>
       {preorder && product.preorder && (
         <p className="text-sm text-stone-600">
-          Quy cách đặt trước dùng chung khoảng ngày giao {formatDateKey(product.preorder.deliveryFrom)} – {formatDateKey(product.preorder.deliveryTo)} của sản phẩm.
+          Quy cách đặt trước lấy khoảng ngày giao {formatDateKey(product.preorder.deliveryFrom)} – {formatDateKey(product.preorder.deliveryTo)} của sản phẩm; sau đó báo thu hoạch riêng ở thẻ của từng
+          quy cách.
         </p>
       )}
       {error && (

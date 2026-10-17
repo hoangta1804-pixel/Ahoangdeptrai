@@ -14,7 +14,10 @@ import { ProductImage } from './ProductImage';
 const time = (iso: string) => new Date(iso).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
 
 const initialsOf = (name: string) => {
-  const words = name.replace(/^HTX( mẫu)?\s+/i, '').trim().split(/\s+/);
+  const words = name
+    .replace(/^HTX( mẫu)?\s+/i, '')
+    .trim()
+    .split(/\s+/);
   return ((words[0]?.[0] ?? '') + (words.length > 1 ? (words[words.length - 1][0] ?? '') : '')).toUpperCase();
 };
 
@@ -44,14 +47,7 @@ export function ChatInbox({ side, initialWithId, productId }: { side: ChatSide; 
           <ConversationList side={side} list={list} selected={withId} onSelect={(id) => setWithId(id)} />
         </div>
         {withId ? (
-          <Thread
-            key={withId}
-            side={side}
-            withId={withId}
-            productId={asking}
-            onClearProduct={() => setAsking(undefined)}
-            onBack={() => setWithId(null)}
-          />
+          <Thread key={withId} side={side} withId={withId} productId={asking} onClearProduct={() => setAsking(undefined)} onBack={() => setWithId(null)} />
         ) : (
           <div className="hidden @3xl:block">
             <EmptyState>{list.length > 0 ? 'Chọn một cuộc trò chuyện ở bên trái.' : side === 'customer' ? 'Chọn HTX để bắt đầu nhắn tin.' : 'Chưa có khách nào nhắn tin.'}</EmptyState>
@@ -110,7 +106,10 @@ function ConversationList({ side, list, selected, onSelect }: { side: ChatSide; 
                   aria-label={`${c.title}${c.unread > 0 ? `, ${c.unread} tin chưa đọc` : ''}`}
                   className={`flex w-full items-center gap-3 rounded-2xl border p-2.5 text-left transition-colors ${active ? 'border-forest-700 bg-forest-50' : 'border-stone-200 bg-white hover:border-champagne-400'}`}
                 >
-                  <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-forest-900 font-display text-sm font-semibold text-champagne-200 ring-1 ring-champagne-400/60">
+                  <span
+                    aria-hidden="true"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-forest-900 font-display text-sm font-semibold text-champagne-200 ring-1 ring-champagne-400/60"
+                  >
                     {initialsOf(c.title)}
                   </span>
                   <span className="min-w-0 flex-1">
@@ -165,9 +164,7 @@ function Thread({ side, withId, productId, onClearProduct, onBack }: { side: Cha
   }, [items.length]);
 
   const send = () => {
-    const r = target
-      ? run((s, at) => sendOrderMessage(s, target, actor, text, at))
-      : run((s, at) => sendDirectMessage(s, actor, withId, text, at, asking?.id));
+    const r = target ? run((s, at) => sendOrderMessage(s, target, actor, text, at)) : run((s, at) => sendDirectMessage(s, actor, withId, text, at, asking?.id));
     if (!r.ok) return showToast(r.error);
     setText('');
     if (!target && asking) onClearProduct();
@@ -177,18 +174,31 @@ function Thread({ side, withId, productId, onClearProduct, onBack }: { side: Cha
   return (
     <section aria-labelledby={titleId} className="flex min-w-0 flex-col gap-3 rounded-3xl border border-champagne-200 bg-white p-3 @3xl:p-4">
       <div className="flex items-center gap-2">
-        <button type="button" onClick={onBack} aria-label="Quay lại danh sách tin nhắn" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-stone-700 hover:bg-stone-100 @3xl:hidden">
+        <button
+          type="button"
+          onClick={onBack}
+          aria-label="Quay lại danh sách tin nhắn"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-stone-700 hover:bg-stone-100 @3xl:hidden"
+        >
           <ArrowLeft size={20} aria-hidden="true" />
         </button>
         <div className="min-w-0">
           <h4 id={titleId} className="truncate font-display text-lg font-semibold text-ink">
             {title}
           </h4>
-          <p className="truncate text-xs text-muted">{side === 'customer' ? `Vùng ${coop?.region ?? '—'} · HTX trả lời trong giờ làm việc` : `${ordersBetween(state, customerId, coopId).length} đơn với HTX`}</p>
+          <p className="truncate text-xs text-muted">
+            {side === 'customer' ? `Vùng ${coop?.region ?? '—'} · HTX trả lời trong giờ làm việc` : `${ordersBetween(state, customerId, coopId).length} đơn với HTX`}
+          </p>
         </div>
       </div>
 
-      <div ref={listRef} role="log" aria-label={`Tin nhắn với ${title}`} aria-live="polite" className="max-h-[50dvh] min-h-40 space-y-2 overflow-y-auto overscroll-contain rounded-2xl bg-champagne-50/60 p-2.5">
+      <div
+        ref={listRef}
+        role="log"
+        aria-label={`Tin nhắn với ${title}`}
+        aria-live="polite"
+        className="max-h-[50dvh] min-h-40 space-y-2 overflow-y-auto overscroll-contain rounded-2xl bg-champagne-50/60 p-2.5"
+      >
         {items.length === 0 && <p className="py-6 text-center text-sm text-muted">{side === 'customer' ? `Chưa có tin nhắn. Hỏi ${title} về sản phẩm, mùa vụ hay đơn hàng.` : 'Chưa có tin nhắn.'}</p>}
         {items.map((m) => {
           const tag = m.orderId ? (

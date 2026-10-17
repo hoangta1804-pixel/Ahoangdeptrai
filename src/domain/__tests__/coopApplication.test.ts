@@ -17,7 +17,7 @@ import { deriveNotifications } from '../notifications';
 import type { DemoState, Result } from '../types';
 import { ADMIN_OPS, ADMIN_QA, makeState, T0 } from './fixtures';
 
-const must = <T,>(r: Result<T>): T => {
+const must = <T>(r: Result<T>): T => {
   if (!r.ok) throw new Error(r.error);
   return r.value;
 };
@@ -76,7 +76,15 @@ describe('Quy trình phê duyệt HTX mới', () => {
     const app = s.coopApplications![0];
     expect(app.status).toBe('approved');
     const coop = s.coops.find((c) => c.id === app.coopId)!;
-    expect(coop).toMatchObject({ name: 'HTX mẫu Mới', region: 'Bát Xát', status: 'active', profileStatus: 'approved', payoutAccountMasked: '**** 5678', phones: ['0900000511', '0900000512'], storeAddress: INPUT.address });
+    expect(coop).toMatchObject({
+      name: 'HTX mẫu Mới',
+      region: 'Bát Xát',
+      status: 'active',
+      profileStatus: 'approved',
+      payoutAccountMasked: '**** 5678',
+      phones: ['0900000511', '0900000512'],
+      storeAddress: INPUT.address,
+    });
     const user = must(requestOtp(s, '0900000501'));
     expect(user).toMatchObject({ role: 'coop', coopId: coop.id, id: app.userId });
     expect(keys(s, id)).toEqual(['submitted:done', 'accepted:done', 'review:done', 'decided:done', 'activated:done']);

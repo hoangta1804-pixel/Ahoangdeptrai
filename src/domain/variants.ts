@@ -47,7 +47,7 @@ export function priceRange(variants: Pick<Product, 'price'>[]): { min: number; m
 export interface NewVariantInput {
   unit: string;
   price: number;
-  /** Mua sẵn: tồn kho. Đặt trước: số suất (dùng chung khoảng ngày giao của sản phẩm gốc). */
+  /** Mua sẵn: tồn kho. Đặt trước: số suất (khoảng ngày giao lấy theo sản phẩm lúc thêm). */
   quantity: number;
 }
 
@@ -84,7 +84,15 @@ export function coopAddVariant(state: DemoState, actor: Actor, productId: string
     preorder: base.kind === 'preorder' ? { ...base.preorder!, totalSlots: input.quantity, open: true } : undefined,
     status: 'pending',
   };
-  const req: ProductChangeRequest = { id: generateId('CR'), productId: product.id, coopId: product.coopId, type: 'new_product', note: `Quy cách mới của "${root.name}"`, status: 'pending', createdAt: iso(at) };
+  const req: ProductChangeRequest = {
+    id: generateId('CR'),
+    productId: product.id,
+    coopId: product.coopId,
+    type: 'new_product',
+    note: `Quy cách mới của "${root.name}"`,
+    status: 'pending',
+    createdAt: iso(at),
+  };
   const next = { ...state, products: [...state.products, product], productChanges: [req, ...state.productChanges] };
   return ok({ state: audit(next, actor, 'Thêm quy cách, gửi duyệt', `${root.name} – ${unit}`, at), product });
 }

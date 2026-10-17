@@ -164,7 +164,15 @@ function TicketDetail({ ticket: t }: { ticket: Ticket }) {
           Đơn {t.orderId} · {order?.coopName} · {COMPLAINT_REASON_LABEL[t.reason]}
           {t.requestRefund ? ' · yêu cầu trả hàng – hoàn tiền' : ''}
         </p>
-        {order && <p className="text-stone-600">Sản phẩm: {order.items.filter((i) => t.productIds.includes(i.productId)).map((i) => `${i.name} (${i.unit}) × ${i.quantity}`).join(', ')}</p>}
+        {order && (
+          <p className="text-stone-600">
+            Sản phẩm:{' '}
+            {order.items
+              .filter((i) => t.productIds.includes(i.productId))
+              .map((i) => `${i.name} (${i.unit}) × ${i.quantity}`)
+              .join(', ')}
+          </p>
+        )}
         {t.description && <p className="rounded-lg bg-stone-50 p-2">"{t.description}"</p>}
         {t.photos.length > 0 && (
           <div className="flex gap-1">

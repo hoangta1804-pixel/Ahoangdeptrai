@@ -54,7 +54,11 @@ export function ComplaintsSheet({ onClose }: { onClose: () => void }) {
                   <span className="flex items-center gap-2">
                     {order && <OrderStatusBadge status={order.status} />}
                     {order && (
-                      <button type="button" onClick={() => openModal({ type: 'order_detail', orderId })} className="min-h-11 rounded-full border border-champagne-300 bg-white px-3 text-sm font-semibold text-forest-900 hover:bg-champagne-100">
+                      <button
+                        type="button"
+                        onClick={() => openModal({ type: 'order_detail', orderId })}
+                        className="min-h-11 rounded-full border border-champagne-300 bg-white px-3 text-sm font-semibold text-forest-900 hover:bg-champagne-100"
+                      >
                         Xem đơn
                       </button>
                     )}

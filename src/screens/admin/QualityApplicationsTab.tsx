@@ -180,7 +180,9 @@ function ApplicationDetail({ application: a }: { application: CoopApplication })
         </div>
 
         <fieldset className="space-y-1.5 rounded-2xl border border-stone-200 p-3" disabled={!reviewing}>
-          <legend className="px-1 font-bold text-ink">Thẩm định ({APPLICATION_CHECKS.filter((c) => a.checks[c.key]).length}/{APPLICATION_CHECKS.length})</legend>
+          <legend className="px-1 font-bold text-ink">
+            Thẩm định ({APPLICATION_CHECKS.filter((c) => a.checks[c.key]).length}/{APPLICATION_CHECKS.length})
+          </legend>
           {!reviewing && a.status === 'submitted' && <p className="text-xs text-muted">Tiếp nhận hồ sơ để bắt đầu thẩm định.</p>}
           {APPLICATION_CHECKS.map((c) => (
             <label key={c.key} className="flex min-h-11 items-center gap-2.5">
@@ -197,9 +199,18 @@ function ApplicationDetail({ application: a }: { application: CoopApplication })
 
         {(a.status === 'submitted' || reviewing) && (
           <div className="space-y-2">
-            {reviewing && <Input aria-label="Ghi chú cho HTX" placeholder="Ghi chú: nội dung cần bổ sung / lý do từ chối (bắt buộc), ghi chú khi duyệt (không bắt buộc)" value={note} onChange={(e) => setNote(e.target.value)} />}
+            {reviewing && (
+              <Input
+                aria-label="Ghi chú cho HTX"
+                placeholder="Ghi chú: nội dung cần bổ sung / lý do từ chối (bắt buộc), ghi chú khi duyệt (không bắt buộc)"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+              />
+            )}
             <div className="flex flex-wrap gap-2">
-              {a.status === 'submitted' && <PrimaryButton onClick={() => act((s, t) => qualityAcceptApplication(s, adminActor, a.id, t), 'Đã tiếp nhận hồ sơ. Bắt đầu thẩm định.')}>Tiếp nhận hồ sơ</PrimaryButton>}
+              {a.status === 'submitted' && (
+                <PrimaryButton onClick={() => act((s, t) => qualityAcceptApplication(s, adminActor, a.id, t), 'Đã tiếp nhận hồ sơ. Bắt đầu thẩm định.')}>Tiếp nhận hồ sơ</PrimaryButton>
+              )}
               {reviewing && (
                 <>
                   <PrimaryButton disabled={!passed} onClick={() => act((s, t) => qualityDecideApplication(s, adminActor, a.id, true, note, t), 'Đã duyệt. Đã tạo HTX và tài khoản đăng nhập.')}>

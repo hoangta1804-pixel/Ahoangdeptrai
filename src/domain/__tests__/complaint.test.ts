@@ -9,7 +9,7 @@ import { addMs, HOUR_MS } from '../state';
 import type { DemoState, Result, Ticket } from '../types';
 import { ADMIN_CSKH, ADMIN_FIN, ADMIN_OPS, COOP_X, CUSTOMER, keyX, line, makeState, placeInput, T0 } from './fixtures';
 
-const must = <T,>(r: Result<T>): T => {
+const must = <T>(r: Result<T>): T => {
   if (!r.ok) throw new Error(r.error);
   return r.value;
 };
@@ -88,7 +88,10 @@ describe('Quy trình xử lý khiếu nại', () => {
       tickets: s.tickets.map((t) => ({
         ...t,
         status: 'processing' as const,
-        history: [{ at: t.createdAt, actor: CUSTOMER, action: 'Khách gửi khiếu nại' }, { at: t.createdAt, actor: ADMIN_CSKH, action: 'Đổi trạng thái: processing' }],
+        history: [
+          { at: t.createdAt, actor: CUSTOMER, action: 'Khách gửi khiếu nại' },
+          { at: t.createdAt, actor: ADMIN_CSKH, action: 'Đổi trạng thái: processing' },
+        ],
       })),
     };
     expect(states(legacy, ticket)).toEqual(['submitted:done', 'accepted:done', 'coop:current', 'concluded:current', 'closed:upcoming']);

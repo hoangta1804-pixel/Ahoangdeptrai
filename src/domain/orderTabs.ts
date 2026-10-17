@@ -9,7 +9,21 @@ import { averageRating } from './reviews';
 import { findOrder, findProduct, remainingFor } from './state';
 import { matchesSearch } from './text';
 import { familyKey } from './variants';
-import { fail, ok, PAYMENT_STATUS_LABEL, type Actor, type DemoState, type Order, type OrderItem, type OrderKind, type OrderStatus, type PaymentStatus, type Product, type RefundStatus, type Result } from './types';
+import {
+  fail,
+  ok,
+  PAYMENT_STATUS_LABEL,
+  type Actor,
+  type DemoState,
+  type Order,
+  type OrderItem,
+  type OrderKind,
+  type OrderStatus,
+  type PaymentStatus,
+  type Product,
+  type RefundStatus,
+  type Result,
+} from './types';
 
 export type OrderTabKey = 'all' | 'payment' | 'confirm' | 'harvest' | 'pickup' | 'shipping' | 'delivered' | 'returns' | 'cancelled';
 
@@ -70,9 +84,7 @@ export const isOrderFilterActive = (f: OrderFilter): boolean => f.kind !== 'all'
 
 export function filterOrders<T extends Pick<Order, 'id' | 'kind' | 'paymentStatus' | 'items'>>(orders: T[], f: OrderFilter): T[] {
   const statuses = PAYMENT_FILTERS.find((p) => p.key === f.payment)?.statuses;
-  return orders.filter(
-    (o) => (f.kind === 'all' || o.kind === f.kind) && (!statuses || statuses.includes(o.paymentStatus)) && matchesSearch(f.query, [o.id, ...o.items.map((i) => i.name)]),
-  );
+  return orders.filter((o) => (f.kind === 'all' || o.kind === f.kind) && (!statuses || statuses.includes(o.paymentStatus)) && matchesSearch(f.query, [o.id, ...o.items.map((i) => i.name)]));
 }
 
 /** Sản phẩm của đơn Đã giao mà khách chưa đánh giá. */

@@ -115,7 +115,11 @@ export function StatsPanel() {
           <DataTable caption="Đơn theo trạng thái" head={['Trạng thái', 'Số đơn']} rows={p.byStatus.map((x) => [ORDER_STATUS_LABEL[x.status], String(x.orders)])} />
           <DataTable caption="Theo HTX" head={['HTX', 'Số đơn', 'Tiền hàng']} rows={p.byCoop.map((b) => [b.label, String(b.orders), formatMoney(b.goods)])} />
           <DataTable caption="Theo vùng" head={['Vùng', 'Số đơn', 'Tiền hàng']} rows={p.byRegion.map((b) => [b.label, String(b.orders), formatMoney(b.goods)])} />
-          <DataTable caption="Khiếu nại theo lý do" head={['Lý do', 'Khiếu nại', 'Đang mở']} rows={p.ticketsByReason.map((x) => [COMPLAINT_REASON_LABEL[x.reason], String(x.tickets), String(x.open)])} />
+          <DataTable
+            caption="Khiếu nại theo lý do"
+            head={['Lý do', 'Khiếu nại', 'Đang mở']}
+            rows={p.ticketsByReason.map((x) => [COMPLAINT_REASON_LABEL[x.reason], String(x.tickets), String(x.open)])}
+          />
           <div className="md:col-span-2">
             <DataTable caption="Theo ngày" head={['Ngày', 'Số đơn', 'Tiền hàng']} rows={p.daily.filter((d) => d.orders > 0).map((d) => [d.label, String(d.orders), formatMoney(d.goods)])} />
           </div>

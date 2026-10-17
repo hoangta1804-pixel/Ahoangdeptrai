@@ -1661,13 +1661,22 @@ Ngoài các ca trên còn có test cho:
 66. **Mỗi lần xác nhận lưu tối đa 2 ảnh đã thu nhỏ,** để dữ liệu dùng chung không quá nặng.
 67. **"Full màn hình trên cả web" hiểu là dùng hết bề rộng cửa sổ trình duyệt,** không phải chế độ toàn màn hình của trình duyệt (phím F11).
 68. **Mỗi HTX có đúng 2 SĐT liên hệ,** cả 2 đều bắt buộc. Nhận số di động 10 số và số cố định 11 số bắt đầu bằng 02; chưa nhận đầu số 1800 / 1900.
-69. **HTX đổi SĐT liên hệ không cần Admin duyệt,** khác các thông tin hồ sơ khác (tên, vùng, người đại diện, giới thiệu), để khách luôn gọi được số đang dùng. Mỗi lần đổi có ghi nhật ký thao tác.
+69. **HTX đổi SĐT liên hệ không cần Admin duyệt,** khác các thông tin hồ sơ khác (tên, vùng, người đại diện, giới thiệu), để Admin luôn gọi được số đang dùng. Mỗi lần đổi có ghi nhật ký thao tác.
 70. **SĐT liên hệ của HTX chỉ Admin (mọi nhóm quyền) và chính HTX xem được.** Khách và Cơ quan QLNN không xem được.
 71. **Tab đơn theo kiểu ứng dụng mua sắm gộp trạng thái SRS:** "Chờ lấy hàng" gồm Đã xác nhận và Đang chuẩn bị; "Trả hàng" gồm 3 trạng thái trả hàng. Nhãn trạng thái trên từng thẻ đơn vẫn theo SRS.
 72. **"Mua lại" chỉ đưa sản phẩm vào giỏ, không đặt hàng ngay.** Giá theo giá hiện tại; hàng đặt trước lấy ngày giao sớm nhất còn chọn được, khách đổi ngày trong giỏ.
 73. **"Có thể bạn cũng thích" không cá nhân hoá theo hành vi:** chỉ bỏ sản phẩm khách đã mua và xếp theo điểm đánh giá. Khách đã mua hết thì gợi ý lại mọi sản phẩm đang bán.
 74. **Biểu tượng "Đánh giá" mở tab Đã giao,** nơi đơn chờ đánh giá có nút Đánh giá. Đơn nhiều sản phẩm thì nút mở sản phẩm đầu tiên chưa đánh giá; các sản phẩm còn lại đánh giá trong chi tiết đơn.
 75. **Đơn mua nằm trong Tài khoản, không có tab riêng ở thanh dưới.** Bấm biểu tượng trạng thái chỉ đổi tab của danh sách ngay bên dưới; trang chỉ cuộn khi danh sách đang khuất.
+76. **Mỗi quy cách bán là một sản phẩm riêng nối về sản phẩm gốc** (giá, tồn kho / số suất, duyệt, đánh giá riêng). Tên, mô tả, nhóm hàng, vùng dùng chung cả nhóm; quy cách mới duyệt như sản phẩm mới; tối đa 6 quy cách mỗi sản phẩm.
+77. **Quy cách mẫu:** mứt mận hộp 500 g (225.000đ) và gạo Séng Cù túi 5 kg (280.000đ), giá cùng mức đ/kg với quy cách gốc, tồn kho mẫu. Chờ HTX xác nhận như các dữ liệu mẫu khác.
+78. **Địa chỉ HTX theo cùng quy tắc với SĐT:** chỉ Admin và chính HTX xem, HTX lưu ngay không chờ duyệt, có nhật ký. HTX mẫu có địa chỉ mẫu theo vùng, không có số nhà, thôn bản.
+79. **Nhắn tin riêng là chức năng thật trong bản demo, không phải mô phỏng** (lưu trong dữ liệu dùng chung). Chỉ nhắn chữ, chưa gửi ảnh. HTX chỉ nhắn được cho khách đã nhắn cho HTX hoặc đã đặt đơn của HTX.
+80. **Cuộc trò chuyện với một HTX gộp cả tin trong các đơn;** đọc ở hộp tin nhắn thì các đơn đó cũng tính là đã đọc. Phần trao đổi trong chi tiết đơn vẫn chỉ hiện tin của đơn đó.
+81. **CSKH phải tiếp nhận ticket trước khi kết luận** (trước đây kết luận thẳng được). Đóng ticket được khi khoản hoàn còn đang xử lý; Admin – Tài chính hoàn tiếp như trước, khách vẫn thấy bước Hoàn tiền.
+82. **HTX mới do Admin – Chất lượng duyệt và hệ thống tự cấp tài khoản HTX** (không cần Admin – Vận hành cấp riêng). Ảnh giấy tờ chỉ để Admin xem; xác minh với cơ quan cấp là mô phỏng. Số tài khoản nhận chi trả chỉ lưu dạng che. Tra cứu hồ sơ bằng SĐT người đại diện + OTP mô phỏng.
+83. **Biểu đồ Tổng quan:** tiền hàng không tính đơn chưa thanh toán xong, đã huỷ, trả hàng; "Tất cả" vẽ tối đa 90 ngày ở biểu đồ theo ngày; vùng của đơn lấy theo sản phẩm đầu tiên trong đơn (như bảng Theo vùng trước đây).
+84. **Danh sách HTX thay Danh bạ HTX** ở mọi nhóm quyền Admin; nút gọi SĐT HTX giữ nguyên.
 
 ## Vấn đề chờ nhóm chốt
 

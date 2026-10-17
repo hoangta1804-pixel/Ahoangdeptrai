@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { coopAddressOf, coopPhonesOf, coopSetAddress, coopSetPhones, formatContactPhone, isSampleAddress, isValidContactPhone, listCoopContacts, normalizeContactPhone, sampleCoopAddress } from '../coopContact';
+import {
+  coopAddressOf,
+  coopPhonesOf,
+  coopSetAddress,
+  coopSetPhones,
+  formatContactPhone,
+  isSampleAddress,
+  isValidContactPhone,
+  listCoopContacts,
+  normalizeContactPhone,
+  sampleCoopAddress,
+} from '../coopContact';
 import { ADMIN_CSKH, ADMIN_FIN, ADMIN_OPS, ADMIN_QA, ADMIN_ROOT, COOP_X, CUSTOMER, makeState, REGULATOR, T0 } from './fixtures';
 
 describe('SĐT liên hệ của HTX', () => {

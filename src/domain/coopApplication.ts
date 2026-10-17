@@ -187,7 +187,12 @@ export function qualityAcceptApplication(state: DemoState, actor: Actor, id: str
   const r = forQuality(state, actor, id);
   if (!r.ok) return r;
   if (r.value.status !== 'submitted') return fail('Hồ sơ không ở bước chờ tiếp nhận.');
-  const app: CoopApplication = { ...r.value, status: 'reviewing', updatedAt: iso(at), history: [...r.value.history, { at: iso(at), actor, action: 'Admin – Chất lượng tiếp nhận, bắt đầu thẩm định' }] };
+  const app: CoopApplication = {
+    ...r.value,
+    status: 'reviewing',
+    updatedAt: iso(at),
+    history: [...r.value.history, { at: iso(at), actor, action: 'Admin – Chất lượng tiếp nhận, bắt đầu thẩm định' }],
+  };
   return ok(audit(replace(state, app), actor, 'Tiếp nhận hồ sơ HTX', app.coopName, at, app.id));
 }
 
@@ -208,7 +213,13 @@ export function qualityRequestInfo(state: DemoState, actor: Actor, id: string, n
   if (!r.ok) return r;
   if (r.value.status !== 'reviewing') return fail('Chỉ yêu cầu bổ sung khi hồ sơ đang thẩm định.');
   if (!note.trim()) return fail('Vui lòng ghi nội dung cần bổ sung.');
-  const app: CoopApplication = { ...r.value, status: 'needs_info', reviewNote: note.trim(), updatedAt: iso(at), history: [...r.value.history, { at: iso(at), actor, action: 'Yêu cầu HTX bổ sung hồ sơ', note: note.trim() }] };
+  const app: CoopApplication = {
+    ...r.value,
+    status: 'needs_info',
+    reviewNote: note.trim(),
+    updatedAt: iso(at),
+    history: [...r.value.history, { at: iso(at), actor, action: 'Yêu cầu HTX bổ sung hồ sơ', note: note.trim() }],
+  };
   return ok(audit(replace(state, app), actor, 'Yêu cầu bổ sung hồ sơ HTX', app.coopName, at, note.trim()));
 }
 
@@ -220,7 +231,13 @@ export function qualityDecideApplication(state: DemoState, actor: Actor, id: str
   if (app0.status !== 'reviewing') return fail('Chỉ kết luận hồ sơ đang thẩm định.');
   if (!approve) {
     if (!note.trim()) return fail('Từ chối hồ sơ phải ghi lý do.');
-    const app: CoopApplication = { ...app0, status: 'rejected', reviewNote: note.trim(), updatedAt: iso(at), history: [...app0.history, { at: iso(at), actor, action: 'Từ chối hồ sơ', note: note.trim() }] };
+    const app: CoopApplication = {
+      ...app0,
+      status: 'rejected',
+      reviewNote: note.trim(),
+      updatedAt: iso(at),
+      history: [...app0.history, { at: iso(at), actor, action: 'Từ chối hồ sơ', note: note.trim() }],
+    };
     return ok(audit(replace(state, app), actor, 'Từ chối hồ sơ HTX', app.coopName, at, note.trim()));
   }
   if (!allChecksPassed(app0)) return fail('Cần đạt đủ 4 mục thẩm định trước khi duyệt.');

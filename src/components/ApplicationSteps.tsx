@@ -38,7 +38,9 @@ export function ApplicationSteps({ application }: { application: CoopApplication
             {s.state === 'failed' && <X size={15} strokeWidth={2.5} />}
           </span>
           <div className="min-w-0 pt-0.5">
-            <p className={`text-sm ${s.state === 'current' ? 'font-bold text-forest-900' : s.state === 'failed' ? 'font-bold text-rose-800' : s.state === 'done' ? 'font-semibold text-ink' : 'text-muted'}`}>
+            <p
+              className={`text-sm ${s.state === 'current' ? 'font-bold text-forest-900' : s.state === 'failed' ? 'font-bold text-rose-800' : s.state === 'done' ? 'font-semibold text-ink' : 'text-muted'}`}
+            >
               {s.title}
               <span className="sr-only"> – {STATE_TEXT[s.state]}</span>
             </p>

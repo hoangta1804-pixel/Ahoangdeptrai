@@ -7,7 +7,7 @@ import { addMs, MINUTE_MS } from '../state';
 import type { DemoState, Result } from '../types';
 import { ADMIN_OPS, COOP_X, COOP_Y, CUSTOMER, keyX, line, makeState, placeInput, REGULATOR, T0 } from './fixtures';
 
-const must = <T,>(r: Result<T>): T => {
+const must = <T>(r: Result<T>): T => {
   if (!r.ok) throw new Error(r.error);
   return r.value;
 };

@@ -37,20 +37,20 @@ export function coopDirectory(state: DemoState, actor: Actor): Result<CoopDirect
   const contacts = listCoopContacts(state, actor);
   if (!contacts.ok) return contacts;
   const rows = state.coops.map((coop) => {
-      const products = state.products.filter((p) => p.coopId === coop.id);
-      const ids = new Set(products.map((p) => p.id));
-      const orders = state.orders.filter((o) => o.coopId === coop.id);
-      const reviews = state.reviews.filter((r) => ids.has(r.productId) && r.status === 'visible');
-      return {
-        coop,
-        contact: contacts.value.find((x) => x.coopId === coop.id)!,
-        active: groupFamilies(products.filter((p) => p.status === 'active')).flat(),
-        others: groupFamilies(products.filter((p) => p.status !== 'active')).flat(),
-        orders: orders.length,
-        deliveredGoodsValue: orders.filter((o) => o.status === 'delivered').reduce((s, o) => s + o.pricing.itemsTotal, 0),
-        rating: reviews.length ? { average: Math.round((reviews.reduce((s, r) => s + r.stars, 0) / reviews.length) * 10) / 10, count: reviews.length } : { average: null, count: 0 },
-        openTickets: state.tickets.filter((t) => t.coopId === coop.id && isTicketOpen(t)).length,
-      };
+    const products = state.products.filter((p) => p.coopId === coop.id);
+    const ids = new Set(products.map((p) => p.id));
+    const orders = state.orders.filter((o) => o.coopId === coop.id);
+    const reviews = state.reviews.filter((r) => ids.has(r.productId) && r.status === 'visible');
+    return {
+      coop,
+      contact: contacts.value.find((x) => x.coopId === coop.id)!,
+      active: groupFamilies(products.filter((p) => p.status === 'active')).flat(),
+      others: groupFamilies(products.filter((p) => p.status !== 'active')).flat(),
+      orders: orders.length,
+      deliveredGoodsValue: orders.filter((o) => o.status === 'delivered').reduce((s, o) => s + o.pricing.itemsTotal, 0),
+      rating: reviews.length ? { average: Math.round((reviews.reduce((s, r) => s + r.stars, 0) / reviews.length) * 10) / 10, count: reviews.length } : { average: null, count: 0 },
+      openTickets: state.tickets.filter((t) => t.coopId === coop.id && isTicketOpen(t)).length,
+    };
   });
   return ok(rows);
 }

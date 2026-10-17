@@ -1,6 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { placeCheckout } from '../checkout';
-import { filterOrders, isOrderFilterActive, itemsAwaitingReview, NO_ORDER_FILTER, ORDER_TABS, PAYMENT_FILTERS, ordersAwaitingReview, ordersInTab, refundSummary, reorderToCart, suggestedProducts, tabCounts } from '../orderTabs';
+import {
+  filterOrders,
+  isOrderFilterActive,
+  itemsAwaitingReview,
+  NO_ORDER_FILTER,
+  ORDER_TABS,
+  PAYMENT_FILTERS,
+  ordersAwaitingReview,
+  ordersInTab,
+  refundSummary,
+  reorderToCart,
+  suggestedProducts,
+  tabCounts,
+} from '../orderTabs';
 import { ORDER_STATUSES, type DemoState, type OrderStatus, type RefundRecord, type Review } from '../types';
 import { CUSTOMER, keyX, keyXPre, keyY, line, makeState, placeInput, T0 } from './fixtures';
 

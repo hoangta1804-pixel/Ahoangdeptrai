@@ -135,7 +135,12 @@ export function deriveNotifications(prev: DemoState, next: DemoState, at: Date):
       if (known.has(m.id)) continue;
       const about = m.productLabel ? ` · hỏi về ${m.productLabel}` : '';
       if (m.sender === 'customer') {
-        drafts.push({ userIds: usersOfCoop(next, m.coopId), title: `Tin nhắn mới từ ${m.senderName}`, body: `${m.text.slice(0, 100)}${about}`.slice(0, 160), link: { type: 'chat', id: m.customerId } });
+        drafts.push({
+          userIds: usersOfCoop(next, m.coopId),
+          title: `Tin nhắn mới từ ${m.senderName}`,
+          body: `${m.text.slice(0, 100)}${about}`.slice(0, 160),
+          link: { type: 'chat', id: m.customerId },
+        });
       } else {
         drafts.push({ userIds: usersOfCustomer(next, m.customerId), title: `Tin nhắn mới từ ${m.senderName}`, body: m.text.slice(0, 100), link: { type: 'chat', id: m.coopId } });
       }
@@ -152,7 +157,11 @@ export function deriveNotifications(prev: DemoState, next: DemoState, at: Date):
       if (a.status === 'submitted') {
         drafts.push({ userIds: adminsOf(next, 'quality'), title: `${before ? 'HTX bổ sung hồ sơ' : 'Hồ sơ đăng ký HTX mới'} ${a.id}`, body: `${a.coopName} · vùng ${a.region}` });
       } else if (a.status === 'approved' && a.coopId) {
-        drafts.push({ userIds: usersOfCoop(next, a.coopId), title: 'Hồ sơ đăng ký HTX đã được duyệt', body: `Chào mừng ${a.coopName}. Thêm sản phẩm ở mục Sản phẩm; sản phẩm mới chờ Admin – Chất lượng duyệt.` });
+        drafts.push({
+          userIds: usersOfCoop(next, a.coopId),
+          title: 'Hồ sơ đăng ký HTX đã được duyệt',
+          body: `Chào mừng ${a.coopName}. Thêm sản phẩm ở mục Sản phẩm; sản phẩm mới chờ Admin – Chất lượng duyệt.`,
+        });
       }
     }
   }
