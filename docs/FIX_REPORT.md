@@ -33,6 +33,173 @@ npm test         # unit test vitest: src/domain, dữ liệu mẫu, quy ước g
 
 ---
 
+## Sau Giai đoạn 6 – Sửa theo file góp ý kiểm thử "Test demo chức năng"
+
+**Yêu cầu của chủ repo:** sửa các lỗi trong file góp ý kiểm thử (3 trang: HTX, khách hàng, Admin).
+
+| Trang | Góp ý | Đã làm |
+|---|---|---|
+| HTX | Thiếu danh sách tình trạng đơn (Đã huỷ, Đã hoàn tiền, Đã thanh toán, Đơn preorder). Đề xuất: lọc, vuốt sang phải để đổi danh sách | Danh sách đơn của HTX có 9 tab vuốt ngang như "Đơn mua" của khách, thêm lọc loại đơn, lọc thanh toán và ô tìm |
+| HTX | Thêm quy cách bán hàng (vd. hộp mứt 300 g, 500 g), hiện các quy cách ở ngoài mục sản phẩm | HTX thêm quy cách cho sản phẩm; thẻ sản phẩm hiện các quy cách và giá "từ …"; trang chi tiết có ô chọn quy cách |
+| HTX | Thêm SĐT, địa chỉ vào hồ sơ HTX | SĐT đã có (2 số). Thêm địa chỉ cửa hàng / nơi sản xuất, cùng quy tắc với SĐT |
+| Khách | Thêm danh sách tình trạng đơn hàng (tab vuốt) | Đã có từ lần trước ("Đơn mua" trong Tài khoản), giữ nguyên |
+| Khách | Tab riêng nhắn tin với HTX, nút chat nổi ở góc dưới | Nút chat nổi ở góc dưới mọi màn của khách; hộp tin nhắn theo từng HTX; HTX có mục Tin nhắn |
+| Khách | Khiếu nại hiển thị theo đơn | Khiếu nại hiện trong chi tiết đơn (các bước xử lý), trên thẻ đơn, và trong mục "Khiếu nại theo đơn" |
+| Admin | Thiếu quy trình phê duyệt HTX | HTX nộp hồ sơ đăng ký ở màn đăng nhập; Admin – Chất lượng tiếp nhận, thẩm định 4 mục, duyệt / yêu cầu bổ sung / từ chối; duyệt thì tạo HTX và tài khoản |
+| Admin | Thiếu quy trình xử lý khiếu nại | Ticket đi theo các bước tiếp nhận → HTX phản hồi → kết luận → hoàn tiền → đóng; lọc theo bước, ghi bước cần làm tiếp |
+| Admin | Danh sách HTX; danh sách sản phẩm đang bán của từng HTX | Mục "Danh sách HTX" (thay Danh bạ HTX) ở mọi nhóm quyền Admin: tìm, lọc, chi tiết HTX và sản phẩm đang bán |
+| Admin | Tổng quan thêm biểu đồ | 5 biểu đồ: số đơn / tiền hàng theo ngày, đơn theo trạng thái, theo HTX, theo vùng, khiếu nại theo lý do (QLNN cũng thấy) |
+
+### HTX: danh sách đơn theo tình trạng
+
+- 9 tab giống "Đơn mua" của khách: Tất cả · Chờ thanh toán · Chờ xác nhận · Chờ thu hoạch · Chờ lấy hàng · Đang giao · Đã giao · Trả hàng · Đã huỷ.
+  - Vuốt trái / phải trên danh sách để sang tab bên cạnh. Máy tính: bấm tab hoặc phím mũi tên.
+  - Hàng tab dính dưới thanh trên cùng khi cuộn.
+- Bộ lọc ở trên hàng tab, áp cho mọi tab; số trên mỗi tab đếm theo bộ lọc:
+  - loại đơn: Mua sẵn / Đặt trước;
+  - thanh toán: Đã thanh toán, Đã cọc – còn lại, Chưa thanh toán (COD chưa thu, chờ trả online), Đang hoàn tiền (chờ hoặc đang hoàn), Đã hoàn tiền;
+  - tìm theo mã đơn hoặc tên sản phẩm, không phân biệt dấu.
+- Thẻ đơn ghi thêm quy cách của từng sản phẩm và giờ đặt.
+- Mã nguồn: `filterOrders`, `PAYMENT_FILTERS` trong `src/domain/orderTabs.ts`; `CoopOrdersTab.tsx` dùng lại `SwipeTabs`.
+
+### Quy cách bán hàng
+
+- **Mỗi quy cách là một sản phẩm riêng** (giá, tồn kho hoặc số suất, trạng thái riêng), nối về sản phẩm gốc bằng `variantOf`. Vì vậy giỏ, đơn, giữ hàng, duyệt giá, đánh giá dùng nguyên logic đang có.
+- **HTX:** nút "Thêm quy cách" ở thẻ sản phẩm.
+  - HTX nhập quy cách (vd. hộp 500 g), giá, tồn kho (hàng đặt trước: số suất, dùng chung khoảng ngày giao của sản phẩm).
+  - Quy cách mới chờ Admin – Chất lượng duyệt như sản phẩm mới; màn duyệt ghi rõ "Quy cách mới".
+  - Không trùng quy cách đã có (không phân biệt hoa thường, dấu); tối đa 6 quy cách mỗi sản phẩm.
+  - Duyệt sửa tên, mô tả, nhóm hàng, vùng của một quy cách thì áp cho cả nhóm; quy cách giữ riêng.
+- **Khách:**
+  - mỗi sản phẩm một thẻ; thẻ hiện các quy cách và giá "từ …";
+  - nút + mở trang chi tiết để chọn quy cách (sản phẩm một quy cách vẫn thêm thẳng vào giỏ);
+  - trang chi tiết có ô chọn quy cách, mỗi ô ghi giá và "hết hàng" nếu hết; đánh giá gộp các quy cách, ghi quy cách của từng đánh giá;
+  - giỏ, đơn, khiếu nại ghi quy cách của từng sản phẩm.
+- **Dữ liệu mẫu:** mứt mận thêm hộp 500 g (225.000đ), gạo Séng Cù thêm túi 5 kg (280.000đ). Giá mẫu cùng mức đ/kg với quy cách gốc, nằm trong khoảng giá nhóm khảo sát.
+- Bảng "Bán chạy" của HTX ghi kèm quy cách khi một sản phẩm có nhiều quy cách.
+- Mã nguồn: `src/domain/variants.ts`, `CoopVariantFormSheet.tsx`, `VariantPicker.tsx`.
+
+### Địa chỉ HTX
+
+- Mục Hồ sơ của HTX: "Liên hệ của HTX: 2 số điện thoại và địa chỉ", một nút lưu. Lưu ngay, không chờ duyệt, có ghi nhật ký.
+- Địa chỉ dài 10–200 ký tự. HTX mẫu có địa chỉ mẫu theo vùng, ghi rõ "(địa chỉ mẫu – chờ HTX cập nhật)".
+- Chỉ Admin và chính HTX xem được, như SĐT. Test giao diện chặn màn của khách, QLNN và khung app dùng tới SĐT, địa chỉ HTX.
+
+### Nhắn tin riêng với HTX
+
+- **Nút chat nổi** ở góc dưới bên phải mọi màn của khách, có số tin chưa đọc. Điện thoại: nằm trên thanh dưới; máy tính: góc phải, không chồng thanh dưới.
+- **Hộp tin nhắn theo từng HTX.**
+  - Mỗi HTX một cuộc trò chuyện, gộp cả tin nhắn chung và tin nhắn trong các đơn với HTX đó.
+  - Tin trong đơn ghi mã đơn, bấm mở đơn.
+  - Khi gửi, chọn gửi tin chung hoặc gửi vào một đơn đang mở.
+  - Máy tính: danh sách bên trái, cuộc trò chuyện bên phải, mở sẵn cuộc trò chuyện mới nhất. Điện thoại: danh sách trước, có nút quay lại.
+  - "Nhắn cho HTX khác": chọn HTX để bắt đầu.
+- **Hỏi HTX về sản phẩm:** nút "Hỏi … về sản phẩm này" ở trang chi tiết mở cuộc trò chuyện, gắn sẵn sản phẩm (tên, quy cách, giá) vào tin đầu.
+- **HTX:** mục "Tin nhắn" (có số chưa đọc) cùng giao diện. HTX chỉ nhắn được cho khách đã nhắn cho HTX hoặc đã đặt đơn của HTX.
+- Có thông báo cho bên kia; bấm thông báo mở đúng cuộc trò chuyện. Tài khoản của khách có thêm ô "Tin nhắn" trong Tiện ích.
+- Không hiện SĐT của hai bên. Dữ liệu dùng chung nên hai máy cùng thấy (app hỏi dữ liệu mới mỗi 10 giây).
+- Mã nguồn: `src/domain/coopChat.ts`, `ChatInbox.tsx`, `ChatSheet.tsx`.
+
+### Khiếu nại hiển thị theo đơn
+
+- **Chi tiết đơn:** mỗi khiếu nại của đơn là một thẻ gồm lý do, sản phẩm, ảnh và các bước xử lý (giờ từng bước, hạn tiếp nhận / kết luận, kết luận của CSKH, tiền hoàn). Đơn đang có khiếu nại chưa xong thì ẩn nút gửi khiếu nại mới.
+- **Thẻ đơn** trong Đơn mua ghi "Khiếu nại TK-…" kèm tình trạng.
+- **Tiện ích → Khiếu nại** mở "Khiếu nại theo đơn": nhóm theo đơn (mã đơn, HTX, sản phẩm, nút Xem đơn), đơn còn khiếu nại đang xử lý lên đầu; nút "Gửi khiếu nại mới".
+- Gửi khiếu nại xong thì mở chi tiết đơn để thấy khiếu nại vừa gửi (trước đây về danh sách đơn).
+- HTX cũng thấy các bước này ở mục Khiếu nại.
+
+### Quy trình xử lý khiếu nại (Admin – CSKH)
+
+- **Các bước:** 1. CSKH tiếp nhận → 2. HTX kiểm tra lô hàng, phản hồi, đề xuất → 3. CSKH kết luận (Đã xử lý – duyệt hoàn / không hoàn, hoặc Từ chối) → 4. Hoàn tiền (Admin – Tài chính) → 5. Đóng ticket.
+- **Làm đúng thứ tự** (kiểm trong hàm nghiệp vụ, không chỉ ẩn nút): phải tiếp nhận rồi mới kết luận, kết luận rồi mới đóng. Trước đây kết luận thẳng từ "Mới tiếp nhận" được.
+- **Màn CSKH:**
+  - sơ đồ quy trình và hạn SLA-01 ở đầu, số ticket quá hạn;
+  - lọc: Cần xử lý / Chờ tiếp nhận / Đang xử lý / Đã kết luận, chờ đóng / Đã đóng / Tất cả; ticket quá hạn lên đầu;
+  - bảng ghi hạn của bước hiện tại;
+  - chi tiết: "Bước tiếp theo", chỉ hiện nút của bước hiện tại, các bước của ticket ở cột phải, lịch sử thu gọn.
+- **"Đề nghị HTX phản hồi":** HTX nhận thông báo và thấy dòng nhắc trên ticket.
+- Lịch sử ticket ghi nhãn tiếng Việt (dữ liệu cũ ghi "Đổi trạng thái: processing" cũng hiện thành "Đang xử lý").
+
+### Quy trình phê duyệt HTX (Admin – Chất lượng)
+
+- **HTX nộp hồ sơ** ở màn đăng nhập (mục "HTX muốn bán hàng trên sàn?" → "Đăng ký HTX"):
+  - tên HTX, vùng, địa chỉ, người đại diện, SĐT người đại diện (để đăng nhập), 2 SĐT liên hệ, số tài khoản nhận chi trả (chỉ lưu 4 số cuối dạng che), sản phẩm dự kiến bán, giới thiệu;
+  - ảnh giấy chứng nhận đăng ký HTX (ghi "Mô phỏng": Admin xem ảnh, không đối chiếu với cơ quan cấp);
+  - xác nhận SĐT bằng OTP mô phỏng.
+- **Admin – Chất lượng**, mục mới "Duyệt HTX mới":
+  1. tiếp nhận hồ sơ;
+  2. thẩm định 4 mục (giấy tờ, vùng thuộc Lào Cai, đã gọi xác minh SĐT, sản phẩm phù hợp); có nút gọi SĐT liên hệ;
+  3. kết luận: **duyệt** (chỉ khi đạt đủ 4 mục), **yêu cầu bổ sung** (ghi cần bổ sung gì) hoặc **từ chối** (ghi lý do);
+  4. duyệt thì hệ thống tạo HTX (đang được bán, hồ sơ đã duyệt, có SĐT, địa chỉ, tài khoản chi trả dạng che) và tài khoản đăng nhập bằng SĐT người đại diện.
+- **HTX tra cứu hồ sơ** ("Tra cứu hồ sơ HTX", SĐT + OTP mô phỏng): xem các bước, nội dung cần bổ sung / lý do từ chối. Cần bổ sung thì sửa và nộp lại, hồ sơ quay về bước tiếp nhận.
+- Có thông báo: hồ sơ mới / nộp lại → Admin – Chất lượng; được duyệt → tài khoản HTX mới. Mọi bước ghi lịch sử hồ sơ và nhật ký thao tác.
+- Mã nguồn: `src/domain/coopApplication.ts`, `src/screens/coopApply/`, `QualityApplicationsTab.tsx`.
+
+### Danh sách HTX và sản phẩm đang bán của từng HTX
+
+- Mục "Danh sách HTX" ở mọi nhóm quyền Admin, thay "Danh bạ HTX" (vẫn có 2 nút gọi SĐT HTX).
+- Tìm theo tên HTX, vùng, người đại diện, tên sản phẩm; lọc: đang được bán / tạm khoá bán / hồ sơ chờ duyệt.
+- Mỗi HTX: tình trạng, vùng, số sản phẩm đang bán, số đơn, hàng đã giao, khiếu nại đang mở.
+- Chi tiết HTX (máy tính: cột phải):
+  - hồ sơ, 4 ô số liệu, SĐT và địa chỉ (chỉ Admin);
+  - **Sản phẩm đang bán**: ảnh, tên, quy cách, loại đơn, giá, số còn / suất còn, điểm đánh giá;
+  - sản phẩm ẩn / chờ duyệt / bị từ chối ở phần thu gọn.
+- Mã nguồn: `src/domain/coopDirectory.ts`, `AdminCoopsTab.tsx`.
+
+### Biểu đồ ở Tổng quan (Admin và Cơ quan QLNN)
+
+- Ô số liệu giữ nguyên (tình trạng hiện tại). Bên dưới là một hàng bộ lọc: **7 ngày / 30 ngày / Tất cả** và **Số đơn / Tiền hàng**, áp cho mọi biểu đồ và bảng bên dưới.
+- 5 biểu đồ:
+  1. số đơn hoặc tiền hàng theo ngày (biểu đồ cột);
+  2. đơn theo trạng thái;
+  3. theo HTX;
+  4. theo vùng;
+  5. khiếu nại theo lý do.
+- **Cách vẽ** theo hướng dẫn biểu đồ của dự án, không dùng thư viện:
+  - mỗi biểu đồ một chuỗi số liệu, một màu (màu cột đã kiểm bằng công cụ kiểm màu khi làm biểu đồ Bán chạy);
+  - cột / thanh mảnh, đầu bo, lưới nhạt;
+  - chỉ ghi số ở cột cao nhất và đầu thanh;
+  - rê chuột / chạm để xem đủ số; biểu đồ cột đi được bằng phím ← →, có đọc cho trình đọc màn hình.
+- Dạng bảng của mọi biểu đồ ở phần "Xem số liệu dạng bảng" cuối trang.
+- **Tiền hàng** không tính đơn chưa thanh toán xong, đã huỷ, trả hàng (như số liệu Bán chạy của HTX). "Tất cả" vẽ tối đa 90 ngày gần nhất ở biểu đồ theo ngày.
+- Không có dữ liệu cá nhân của khách, nên Cơ quan QLNN cũng thấy.
+- Mã nguồn: `periodStats` trong `src/domain/stats.ts`, `src/components/Charts.tsx`.
+
+### Kiểm thử
+
+- **Lint, test, build:**
+  - lint không lỗi;
+  - 29 file, 208 test đạt. Thêm test cho quy cách, nhắn tin, quy trình khiếu nại, phê duyệt HTX, lọc đơn HTX, địa chỉ HTX, số liệu biểu đồ;
+  - build thành công, không cảnh báo.
+- **Kịch bản mới (Playwright), chặn mọi request ra ngoài localhost:**
+  - phần khách + HTX: quy cách trên thẻ và trang chi tiết, hỏi HTX về sản phẩm, nút chat nổi, HTX đọc và trả lời, lọc đơn HTX, thêm quy cách (kể cả trùng), địa chỉ HTX;
+  - phần khiếu nại + Admin: khách gửi khiếu nại → thấy trong chi tiết đơn, thẻ đơn, "Khiếu nại theo đơn"; CSKH tiếp nhận → đề nghị HTX → HTX phản hồi → kết luận duyệt hoàn → đóng, khách thấy đủ các bước; HTX nộp hồ sơ ở màn đăng nhập (thiếu ảnh, sai OTP bị chặn) → Admin – Chất lượng tiếp nhận, thẩm định, duyệt → HTX mới đăng nhập được; Danh sách HTX; biểu đồ Tổng quan (rê chuột, phím mũi tên); QLNN thấy biểu đồ.
+- **Chế độ phát triển của React:** 23 lượt kịch bản (mới và cũ).
+  - 17 lượt đạt ngay.
+  - 6 lượt dừng vì bộ chọn trong kịch bản cũ không còn đúng với giao diện mới, không phải lỗi app:
+    - gạo và mứt có 2 quy cách nên nút + trên thẻ mở trang chọn quy cách;
+    - màn đăng nhập có thêm nút "Đăng ký HTX";
+    - gửi khiếu nại xong mở chi tiết đơn;
+    - tiêu đề mục liên hệ của HTX đổi tên.
+  - Sửa bộ chọn rồi chạy lại cả 6: đều đạt.
+  - 0 cảnh báo React.
+- **Bản build chính thức:** 14 lượt ở 320, 390, 1.280, 1.440 và 1.920px, khôi phục dữ liệu mẫu trước mỗi lượt. Tất cả đạt.
+  - Kết quả đo: 0 lỗi axe, 0 vùng bấm dưới 44px, 0 chữ dưới 12px, không tràn ngang.
+  - Console chỉ có lỗi 409 khi hai máy ghi cùng lúc (cơ chế đồng bộ tự chạy lại).
+- **Bảo mật SĐT / địa chỉ HTX:**
+  - khách không thấy SĐT HTX ở trang sản phẩm, chi tiết đơn hay hộp tin nhắn;
+  - QLNN không có mục Danh sách HTX;
+  - test giao diện chặn màn của khách, QLNN và khung app dùng tới SĐT, địa chỉ HTX.
+- **Sửa sau khi xem ảnh chụp:**
+  - ô lọc đơn của HTX trên điện thoại: 2 ô chọn đặt cạnh nhau;
+  - giá "từ …" trên thẻ nhiều quy cách: xuống dòng gọn ở màn dưới 390px;
+  - trục số đơn không ghi mốc lẻ 0,5;
+  - biểu đồ trạng thái chỉ vẽ trạng thái có đơn;
+  - hộp tin nhắn trên máy tính mở sẵn cuộc trò chuyện mới nhất.
+- Không chạy thử được bản trên Vercel: môi trường kiểm thử chặn tên miền vercel.app.
+
+---
+
 ## Sau Giai đoạn 6 – Kiểm tra lại toàn bộ, sửa lỗi tìm được
 
 **Yêu cầu của chủ repo:** chạy lại một lượt xem còn lỗi ở đâu không.
@@ -97,7 +264,7 @@ npm test         # unit test vitest: src/domain, dữ liệu mẫu, quy ước g
   - các biểu tượng trạng thái (như trước);
   - ngay bên dưới là danh sách đơn với 9 tab vuốt ngang (như trước).
 - **Bấm biểu tượng** (hoặc "Xem tất cả đơn", hoặc dòng nhắc đơn chờ thanh toán) là đổi tab của danh sách ngay tại chỗ, không chuyển màn. Danh sách đang khuất bên dưới thì trang cuộn tới.
-- **Đặt hàng xong, thanh toán xong, gửi khiếu nại xong** (trước đây chuyển sang tab Đơn hàng): nay mở Tài khoản ở tab "Tất cả" của danh sách đơn và cuộn tới danh sách.
+- **Đặt hàng xong, thanh toán xong, gửi khiếu nại xong** (trước đây chuyển sang tab Đơn hàng): nay mở Tài khoản ở tab "Tất cả" của danh sách đơn và cuộn tới danh sách. (Sau đó, gửi khiếu nại xong đổi thành mở chi tiết đơn, xem mục "Sửa theo file góp ý kiểm thử".)
 - **Thứ tự trên điện thoại:** thông tin cá nhân → Đơn mua (biểu tượng + danh sách) → Tiện ích của tôi → tài khoản ngân hàng nhận hoàn → Đăng xuất.
 - **Máy tính:** Đơn mua ở cột rộng bên trái; Tiện ích, ngân hàng, Đăng xuất ở cột phải. Danh sách đơn và gợi ý sản phẩm đổi số cột theo bề rộng phần chứa (container query của Tailwind), không theo bề rộng màn hình.
 - Nút "Khiếu nại" ở đầu danh sách đơn cũ bỏ đi, vì đã có trong Tiện ích của tôi.
