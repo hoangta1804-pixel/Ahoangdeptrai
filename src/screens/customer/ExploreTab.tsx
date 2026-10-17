@@ -290,7 +290,7 @@ export function ProductCard({ product: p }: { product: Product }) {
       <div className={`mt-1 space-y-2 border-t border-champagne-200/80 pt-2 pb-0.5 ${inCart ? 'px-0' : 'px-0.5 min-[360px]:px-1.5'}`}>
         <div className="flex min-h-11 items-center justify-between gap-1 min-[360px]:gap-2">
           <div className="min-w-0">
-            <span className={`block whitespace-nowrap font-display font-semibold tabular-nums text-forest-900 ${multi ? 'text-sm min-[390px]:text-base' : 'text-sm min-[390px]:text-lg'}`}>
+            <span className={`block font-display font-semibold tabular-nums text-forest-900 min-[390px]:whitespace-nowrap ${multi ? 'text-sm min-[390px]:text-base' : 'text-sm min-[390px]:text-lg'}`}>
               {multi && range.min !== range.max && <span className="font-sans text-xs font-normal text-muted">từ </span>}
               {formatMoney(multi ? range.min : p.price)}
             </span>
