@@ -3,8 +3,9 @@ import { useUi } from '../../app/UiContext';
 import { EmptyState, ErrorState } from '../../components/EmptyState';
 import { SecondaryButton, Textarea } from '../../components/form';
 import { listTicketsFor } from '../../domain/access';
-import { coopReplyTicket } from '../../domain/complaint';
-import { COMPLAINT_REASON_LABEL, TICKET_STATUS_LABEL, type Ticket } from '../../domain/types';
+import { coopReplyTicket, eventKind, eventLabel } from '../../domain/complaint';
+import { TicketProgress, TicketStatusBadge } from '../../components/TicketProgress';
+import { COMPLAINT_REASON_LABEL, type Ticket } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
 
 /** HTX chỉ xem và phản hồi ticket của HTX mình; không đóng, không từ chối hoàn tiền, không sửa nội dung (mục 5.8). */
@@ -30,13 +31,19 @@ function TicketCard({ ticket: t }: { ticket: Ticket }) {
   const [text, setText] = useState('');
   const [proposal, setProposal] = useState<'' | 'refund' | 'no_refund'>('');
   const closed = !['open', 'processing'].includes(t.status);
+  // CSKH đề nghị HTX phản hồi mà HTX chưa phản hồi sau đó.
+  const lastRequest = t.history
+    .map((h, i) => ({ h, i }))
+    .filter(({ h }) => eventKind(h) === 'request_coop')
+    .pop();
+  const requested = !closed && lastRequest && !t.history.slice(lastRequest.i).some((h) => eventKind(h) === 'coop_reply') ? lastRequest.h : undefined;
   return (
     <li className="space-y-2 rounded-2xl border border-stone-200 bg-white p-3.5 text-sm">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="font-mono font-bold">{t.id}</span>
         <span className="flex gap-1">
           {t.priority === 'high' && <span className="rounded-md bg-rose-100 px-2 py-0.5 text-xs font-bold text-rose-800">Ưu tiên Cao</span>}
-          <span className="rounded-md bg-stone-100 px-2 py-0.5 text-xs font-bold text-stone-800">{TICKET_STATUS_LABEL[t.status]}</span>
+          <TicketStatusBadge status={t.status} />
         </span>
       </div>
       <p>
@@ -51,14 +58,21 @@ function TicketCard({ ticket: t }: { ticket: Ticket }) {
           ))}
         </div>
       )}
-      <ul className="space-y-0.5 text-stone-600">
-        {t.history.slice(1).map((h, i) => (
-          <li key={i}>
-            {h.action}
-            {h.note ? `: ${h.note}` : ''} · {new Date(h.at).toLocaleString('vi-VN')}
-          </li>
-        ))}
-      </ul>
+      {requested && (
+        <p className="rounded-xl bg-champagne-100 px-3 py-2 font-semibold text-champagne-950">CSKH đề nghị HTX kiểm tra lô hàng và phản hồi{requested.note ? `: ${requested.note}` : '.'}</p>
+      )}
+      <TicketProgress ticket={t} />
+      <details>
+        <summary className="flex min-h-11 cursor-pointer items-center font-semibold text-stone-700">Lịch sử ({t.history.length})</summary>
+        <ul className="space-y-0.5 text-stone-600">
+          {t.history.slice(1).map((h, i) => (
+            <li key={i}>
+              {eventLabel(h)}
+              {h.note ? `: ${h.note}` : ''} · {new Date(h.at).toLocaleString('vi-VN')}
+            </li>
+          ))}
+        </ul>
+      </details>
       {!closed && (
         <div className="space-y-2">
           {t.requestRefund && (

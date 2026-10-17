@@ -1,6 +1,7 @@
 /**
  * Mô hình dữ liệu nghiệp vụ theo SRS. Mọi thay đổi dữ liệu đi qua các hàm trong src/domain.
  */
+import type { CoopApplication } from './coopApplication';
 import type { Params, ParamChange } from './params';
 import type { OrderPricing, PaymentMethod } from './pricing';
 import type { Voucher } from './voucher';
@@ -86,8 +87,10 @@ export interface Coop {
   description?: string;
   /** Tài khoản nhận chi trả đối soát, luôn hiện dạng che. */
   payoutAccountMasked: string;
-  /** 2 SĐT liên hệ của cửa hàng HTX để khách gọi (domain/coopContact.ts). Không bắt buộc để dữ liệu đã lưu từ bản trước vẫn đọc được. */
+  /** 2 SĐT liên hệ của cửa hàng HTX để Admin gọi (domain/coopContact.ts). Không bắt buộc để dữ liệu đã lưu từ bản trước vẫn đọc được. */
   phones?: string[];
+  /** Địa chỉ cửa hàng / nơi sản xuất (domain/coopContact.ts). Chỉ Admin và HTX xem, như SĐT. */
+  storeAddress?: string;
   /** Quyền bán (FR-TK-13): tạm khoá thì sản phẩm của HTX không đặt được. */
   status: 'active' | 'suspended';
   suspendReason?: string;
@@ -108,6 +111,8 @@ export interface PreorderConfig {
 export interface Product {
   id: string;
   coopId: string;
+  /** Quy cách thêm của một sản phẩm: mã sản phẩm gốc (domain/variants.ts). Sản phẩm gốc không có. */
+  variantOf?: string;
   name: string;
   category: Category;
   /** Vùng sản xuất, cùng một cấp cho mọi sản phẩm (dùng cho bộ lọc vùng). */
@@ -463,6 +468,20 @@ export interface OrderMessage {
   at: string;
 }
 
+/** Tin nhắn chung giữa khách và HTX, không thuộc đơn nào (domain/coopChat.ts). */
+export interface DirectMessage {
+  id: string;
+  customerId: string;
+  coopId: string;
+  sender: 'customer' | 'coop';
+  senderName: string;
+  text: string;
+  at: string;
+  /** Khách hỏi về một sản phẩm: mã và tên kèm quy cách lúc gửi. */
+  productId?: string;
+  productLabel?: string;
+}
+
 export interface Checkout {
   id: string;
   idempotencyKey: string;
@@ -566,11 +585,19 @@ export const TICKET_STATUS_LABEL: Record<TicketStatus, string> = {
   closed: 'Đóng',
 };
 
+/** Loại bước trong lịch sử ticket (quy trình xử lý khiếu nại, domain/complaint.ts). Dữ liệu cũ không có thì suy từ `action`. */
+export type TicketEventKind = 'submit' | 'accept' | 'coop_reply' | 'request_coop' | 'conclude' | 'close';
+
 export interface TicketEvent {
   at: string;
   actor: Actor;
   action: string;
   note?: string;
+  kind?: TicketEventKind;
+  /** Trạng thái sau bước này (tiếp nhận, kết luận, đóng). */
+  toStatus?: TicketStatus;
+  /** Bước kết luận: CSKH có duyệt hoàn tiền không. */
+  refundApproved?: boolean;
 }
 
 export interface Ticket {
@@ -667,7 +694,8 @@ export interface UserAccount {
   google?: GoogleIdentity;
 }
 
-export type NotificationLink = { type: 'order'; id: string } | { type: 'ticket'; id: string } | { type: 'product'; id: string };
+/** `chat`: cuộc trò chuyện với bên kia (khách: mã HTX; HTX: mã khách). */
+export type NotificationLink = { type: 'order'; id: string } | { type: 'ticket'; id: string } | { type: 'product'; id: string } | { type: 'chat'; id: string };
 
 /** Thông báo cho từng tài khoản (FR-CSKH-10). */
 export interface AppNotification {
@@ -755,4 +783,10 @@ export interface DemoState {
   orderMessages?: OrderMessage[];
   /** Các lần HTX xác nhận thu hoạch xong. Không bắt buộc, như orderMessages. */
   harvests?: HarvestRecord[];
+  /** Tin nhắn chung giữa khách và HTX (nút chat nổi). Không bắt buộc, như orderMessages. */
+  directMessages?: DirectMessage[];
+  /** Lần cuối mỗi bên mở cuộc trò chuyện, theo "mã khách|mã HTX" (để đếm tin chung chưa đọc). */
+  chatReads?: Record<string, { customer?: string; coop?: string }>;
+  /** Hồ sơ đăng ký HTX mới chờ / đã xử lý (domain/coopApplication.ts). Không bắt buộc, như orderMessages. */
+  coopApplications?: CoopApplication[];
 }

@@ -3,7 +3,7 @@ import { useUi } from '../../app/UiContext';
 import { BottomSheet } from '../../components/BottomSheet';
 import { Field, PrimaryButton, Select, Textarea } from '../../components/form';
 import { PhotoPicker } from '../../components/PhotoPicker';
-import { returnDeadline, submitComplaint } from '../../domain/complaint';
+import { isTicketOpen, returnDeadline, submitComplaint } from '../../domain/complaint';
 import { COMPLAINT_REASON_LABEL, type ComplaintReason } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
 
@@ -13,11 +13,11 @@ import { useStore } from '../../store/AppDataContext';
  */
 export function ComplaintSheet({ orderId, onClose }: { orderId?: string; onClose: () => void }) {
   const { state, run, now } = useStore();
-  const { customerActor, showToast, openOrders } = useUi();
+  const { customerActor, showToast, openModal } = useUi();
   const at = now();
   const eligible = state.orders.filter((o) => {
     const d = returnDeadline(o);
-    return o.customerId === customerActor.id && o.status === 'delivered' && d && at.getTime() <= d.getTime();
+    return o.customerId === customerActor.id && o.status === 'delivered' && d && at.getTime() <= d.getTime() && !state.tickets.some((t) => t.orderId === o.id && isTicketOpen(t));
   });
   const [selectedOrder, setSelectedOrder] = useState(orderId ?? '');
   const [productIds, setProductIds] = useState<string[]>([]);
@@ -39,8 +39,8 @@ export function ComplaintSheet({ orderId, onClose }: { orderId?: string; onClose
     );
     if (!r.ok) return showToast(r.error);
     showToast(`Đã gửi khiếu nại ${ticketId}. CSKH phản hồi tiếp nhận trong ${state.params.ticketAckHours} giờ làm việc.`);
-    onClose();
-    openOrders('all');
+    // Mở chi tiết đơn để thấy khiếu nại vừa gửi và các bước xử lý (khiếu nại hiện theo đơn).
+    openModal({ type: 'order_detail', orderId: selectedOrder });
   };
 
   return (
@@ -82,7 +82,7 @@ export function ComplaintSheet({ orderId, onClose }: { orderId?: string; onClose
                 checked={productIds.includes(i.productId)}
                 onChange={(e) => setProductIds((p) => (e.target.checked ? [...p, i.productId] : p.filter((x) => x !== i.productId)))}
               />
-              {i.name} × {i.quantity}
+              {i.name} ({i.unit}) × {i.quantity}
             </label>
           ))}
           {deadline && <p className="text-sm text-stone-600">Hạn gửi: {deadline.toLocaleString('vi-VN')} (RET-01, tính từ lúc Đã giao).</p>}

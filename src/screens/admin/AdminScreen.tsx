@@ -6,7 +6,7 @@ import { useStore } from '../../store/AppDataContext';
 import { ADMIN_GROUP_LABEL, type AdminSubGroup } from '../../domain/types';
 import { AdminAccountsTab } from './AdminAccountsTab';
 import { AdminAuditTab } from './AdminAuditTab';
-import { AdminCoopContactsTab } from './AdminCoopContactsTab';
+import { AdminCoopsTab } from './AdminCoopsTab';
 import { FinanceLedgerTab } from './FinanceLedgerTab';
 import { AdminOrdersTab } from './AdminOrdersTab';
 import { AdminOverviewTab } from './AdminOverviewTab';
@@ -20,13 +20,14 @@ import { SharedCatalogTab } from './SharedCatalogTab';
 import { VouchersTab } from './VouchersTab';
 import { FinanceRefundsTab } from './FinanceRefundsTab';
 import { FinanceSettlementTab } from './FinanceSettlementTab';
+import { QualityApplicationsTab } from './QualityApplicationsTab';
 import { QualityChangesTab } from './QualityChangesTab';
 
 type TabDef = { key: string; label: string; render: () => ReactNode };
 
 const OVERVIEW: TabDef = { key: 'overview', label: 'Tổng quan', render: () => <AdminOverviewTab /> };
-/** SĐT HTX để Admin gọi cho HTX: mọi nhóm quyền đều có. */
-const COOP_CONTACTS: TabDef = { key: 'coop-contacts', label: 'Danh bạ HTX', render: () => <AdminCoopContactsTab /> };
+/** Danh sách HTX (có SĐT, địa chỉ để Admin liên hệ HTX, sản phẩm đang bán của từng HTX): mọi nhóm quyền đều có. */
+const COOP_LIST: TabDef = { key: 'coop-list', label: 'Danh sách HTX', render: () => <AdminCoopsTab /> };
 
 /** Chức năng theo nhóm quyền (mục 8). Nhóm quyền lấy từ tài khoản đăng nhập. */
 const TABS: Record<AdminSubGroup, TabDef[]> = {
@@ -38,32 +39,33 @@ const TABS: Record<AdminSubGroup, TabDef[]> = {
     { key: 'params', label: 'Tham số', render: () => <AdminParamsTab /> },
     { key: 'catalog', label: 'Danh mục dùng chung', render: () => <SharedCatalogTab /> },
     { key: 'vouchers', label: 'Mã ưu đãi', render: () => <VouchersTab /> },
-    COOP_CONTACTS,
+    COOP_LIST,
   ],
   quality: [
     OVERVIEW,
+    { key: 'applications', label: 'Duyệt HTX mới', render: () => <QualityApplicationsTab /> },
     { key: 'changes', label: 'Duyệt sản phẩm & giá', render: () => <QualityChangesTab /> },
     { key: 'coops', label: 'Hồ sơ HTX & quyền bán', render: () => <QualityCoopsTab /> },
-    COOP_CONTACTS,
+    COOP_LIST,
   ],
   cskh: [
     OVERVIEW,
     { key: 'tickets', label: 'Ticket khiếu nại', render: () => <CskhTicketsTab /> },
     { key: 'reviews', label: 'Kiểm duyệt đánh giá', render: () => <CskhReviewsTab /> },
-    COOP_CONTACTS,
+    COOP_LIST,
   ],
   finance: [
     OVERVIEW,
     { key: 'refunds', label: 'Hoàn tiền', render: () => <FinanceRefundsTab /> },
     { key: 'settlement', label: 'Đối soát HTX', render: () => <FinanceSettlementTab /> },
     { key: 'ledger', label: 'Sổ giao dịch', render: () => <FinanceLedgerTab /> },
-    COOP_CONTACTS,
+    COOP_LIST,
   ],
   root: [
     OVERVIEW,
     { key: 'accounts', label: 'Phân quyền', render: () => <AdminAccountsTab /> },
     { key: 'audit', label: 'Nhật ký', render: () => <AdminAuditTab /> },
-    COOP_CONTACTS,
+    COOP_LIST,
   ],
 };
 

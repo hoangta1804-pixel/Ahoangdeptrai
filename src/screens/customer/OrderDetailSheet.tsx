@@ -8,7 +8,8 @@ import { deliveryWindow } from '../../domain/cart';
 import { customerChangeAddress, customerChangeDeliveryDate, customerEditGift } from '../../domain/orderEdits';
 import { OrderStatusBadge, PaymentStatusBadge } from '../../components/StatusBadge';
 import { getOrderFor } from '../../domain/access';
-import { returnDeadline } from '../../domain/complaint';
+import { isTicketOpen, returnDeadline, ticketsOfOrder } from '../../domain/complaint';
+import { CustomerTicketCard } from '../../components/TicketProgress';
 import { customerCancelMode } from '../../domain/orderStateMachine';
 import {
   codBlockReason,
@@ -48,7 +49,9 @@ export function OrderDetailSheet({ orderId, onClose }: { orderId: string; onClos
   const mode = customerCancelMode(order.status);
   const refunds = state.refunds.filter((r) => r.orderId === order.id);
   const deadline = returnDeadline(order);
-  const canComplain = order.status === 'delivered' && deadline && at.getTime() <= deadline.getTime();
+  // Khiếu nại hiện theo đơn (góp ý kiểm thử): đơn đã có khiếu nại đang xử lý thì không gửi thêm.
+  const tickets = ticketsOfOrder(state, order.id);
+  const canComplain = order.status === 'delivered' && deadline && at.getTime() <= deadline.getTime() && !tickets.some(isTicketOpen);
   const needRemaining = order.kind === 'preorder' && order.readyReportedAt && order.paymentStatus === 'deposit_paid' && order.paymentMethod === 'online' && order.status === 'awaiting_harvest';
 
   const act = (op: Parameters<typeof run>[0], success: string) => {
@@ -111,6 +114,10 @@ export function OrderDetailSheet({ orderId, onClose }: { orderId: string; onClos
             </section>
 
             <OrderJourney order={order} />
+
+            {tickets.map((t) => (
+              <CustomerTicketCard key={t.id} ticket={t} />
+            ))}
           </>
         }
         right={

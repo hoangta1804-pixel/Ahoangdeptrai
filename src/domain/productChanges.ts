@@ -7,6 +7,7 @@
 import { generateId } from './ids';
 import { audit, findProduct, iso } from './state';
 import { heldQuantity, validateStockUpdate } from './stock';
+import { familyKey } from './variants';
 import {
   fail,
   ok,
@@ -202,9 +203,16 @@ export function decideProductChange(state: DemoState, requestId: string, actor: 
     rejectReason: approve ? undefined : reason.trim(),
   };
   let next: DemoState = { ...state, productChanges: state.productChanges.map((c) => (c.id === requestId ? decided : c)) };
+  const target = findProduct(state, req.productId);
+  const family = target ? familyKey(target) : req.productId;
   next = {
     ...next,
     products: next.products.map((p) => {
+      // Tên, mô tả, nhóm hàng, vùng dùng chung mọi quy cách của sản phẩm (domain/variants.ts).
+      if (approve && req.type === 'content' && req.content && p.id !== req.productId && familyKey(p) === family) {
+        const { unit: _ownUnit, ...shared } = req.content;
+        return { ...p, ...shared };
+      }
       if (p.id !== req.productId) return p;
       if (!approve) return req.type === 'new_product' ? { ...p, status: 'rejected' as const } : p;
       switch (req.type) {
@@ -223,6 +231,5 @@ export function decideProductChange(state: DemoState, requestId: string, actor: 
       }
     }),
   };
-  const product = findProduct(state, req.productId);
-  return ok(audit(next, actor, approve ? 'Duyệt thay đổi sản phẩm' : 'Từ chối thay đổi sản phẩm', product?.name ?? req.productId, at, approve ? undefined : reason));
+  return ok(audit(next, actor, approve ? 'Duyệt thay đổi sản phẩm' : 'Từ chối thay đổi sản phẩm', target?.name ?? req.productId, at, approve ? undefined : reason));
 }

@@ -3,6 +3,8 @@ import { useUi } from '../../app/UiContext';
 import { EmptyState } from '../../components/EmptyState';
 import { OrderStatusBadge, PaymentStatusBadge } from '../../components/StatusBadge';
 import { SwipeTabs } from '../../components/SwipeTabs';
+import { TicketStatusBadge } from '../../components/TicketProgress';
+import { ticketsOfOrder } from '../../domain/complaint';
 import { unreadCount } from '../../domain/orderContact';
 import { itemsAwaitingReview, ORDER_TABS, ordersInTab, refundSummary, reorderToCart, suggestedProducts, tabOf, type OrderTabKey } from '../../domain/orderTabs';
 import { formatMoney } from '../../domain/pricing';
@@ -89,6 +91,7 @@ function OrderCard({ order: o }: { order: Order }) {
   const refund = refundSummary(state, o.id);
   const toReview = itemsAwaitingReview(state, o);
   const canRebuy = REBUY_STATUSES.includes(o.status);
+  const ticket = ticketsOfOrder(state, o.id)[0];
 
   const rebuy = () => {
     const r = run(
@@ -120,7 +123,7 @@ function OrderCard({ order: o }: { order: Order }) {
             <PaymentStatusBadge status={o.paymentStatus} />
           </div>
         </div>
-        <p className="font-display text-base font-semibold text-ink">{o.items.map((i) => `${i.name} × ${i.quantity}`).join(', ')}</p>
+        <p className="font-display text-base font-semibold text-ink">{o.items.map((i) => `${i.name} (${i.unit}) × ${i.quantity}`).join(', ')}</p>
         <div className="flex items-baseline justify-between border-t border-dashed border-champagne-300 pt-2 text-sm">
           <span className="text-stone-600">Tổng đơn</span>
           <span className="font-display text-lg font-semibold tabular-nums text-forest-900">{formatMoney(o.pricing.total)}</span>
@@ -136,6 +139,12 @@ function OrderCard({ order: o }: { order: Order }) {
         {tx && <p className="rounded-lg bg-champagne-100 px-2 py-1 text-sm font-semibold text-champagne-900">Chờ thanh toán {formatMoney(tx.amounts[o.id] ?? 0)}</p>}
         {o.cancelRequest?.status === 'pending' && <p className="text-sm text-champagne-800">Đã gửi yêu cầu huỷ, chờ HTX duyệt.</p>}
         {toReview.length > 0 && <p className="text-sm font-semibold text-champagne-800">Chờ bạn đánh giá {toReview.length} sản phẩm</p>}
+        {ticket && (
+          <p className="flex flex-wrap items-center gap-1.5 text-sm">
+            <span className="text-stone-600">Khiếu nại {ticket.id}:</span>
+            <TicketStatusBadge status={ticket.status} />
+          </p>
+        )}
         {unread > 0 && (
           <p className="inline-flex rounded-full bg-forest-900 px-3 py-1 text-xs font-bold text-champagne-100">
             {unread} tin mới từ {o.coopName}

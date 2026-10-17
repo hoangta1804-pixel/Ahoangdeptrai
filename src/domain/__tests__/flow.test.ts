@@ -99,7 +99,10 @@ describe('Luồng đơn, khiếu nại, hoàn tiền, đối soát', () => {
     const created = must(submitComplaint(state, CUSTOMER, { ...base, photos: ['data:'] }, addMs(T0, HOUR_MS)));
     expect(created.state.orders[0].status).toBe('return_refund');
     expect(cskhUpdateTicket(created.state, created.ticket.id, ADMIN_OPS, 'resolved', 'Đồng ý', T0).ok).toBe(false);
-    const resolved = must(cskhUpdateTicket(created.state, created.ticket.id, ADMIN_CSKH, 'resolved', 'Đồng ý hoàn 1 sản phẩm', T0, true));
+    // Quy trình: phải tiếp nhận rồi mới kết luận.
+    expect(cskhUpdateTicket(created.state, created.ticket.id, ADMIN_CSKH, 'resolved', 'Đồng ý', T0)).toEqual({ ok: false, error: 'Cần tiếp nhận ticket trước khi kết luận.' });
+    const accepted = must(cskhUpdateTicket(created.state, created.ticket.id, ADMIN_CSKH, 'processing', '', T0));
+    const resolved = must(cskhUpdateTicket(accepted, created.ticket.id, ADMIN_CSKH, 'resolved', 'Đồng ý hoàn 1 sản phẩm', T0, true));
     const refund = resolved.refunds.find((r) => r.source === 'return')!;
     expect(refund.amount).toBe(1_540_000);
     const started = must(startRefundProcessing(resolved, refund.id, ADMIN_FIN, T0));

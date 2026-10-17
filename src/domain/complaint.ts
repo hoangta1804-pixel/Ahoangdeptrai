@@ -6,23 +6,35 @@
  * - Ticket về hàng quá hạn, dị vật, QR bất thường, ảnh hưởng sức khoẻ tự gắn ưu tiên Cao.
  * - HTX chỉ xem và phản hồi ticket của HTX mình; không đóng, không từ chối hoàn tiền, không sửa nội dung.
  * - Chỉ Admin – CSKH đổi sang Đã xử lý / Từ chối / Đóng. Mọi thay đổi lưu lịch sử.
+ *
+ * Quy trình xử lý (góp ý kiểm thử: "thiếu quy trình xử lý khiếu nại"), mỗi bước chỉ làm được khi tới lượt:
+ *   1. Khách gửi (Mới tiếp nhận) → 2. CSKH tiếp nhận trong SLA-01 (Đang xử lý) → 3. HTX kiểm tra lô hàng, phản hồi và
+ *   đề xuất (CSKH có thể đề nghị HTX phản hồi) → 4. CSKH kết luận trong SLA-01: Đã xử lý (duyệt hoàn hoặc không) / Từ chối
+ *   → 5. Hoàn tiền (Admin – Tài chính, nếu duyệt hoàn) → 6. CSKH đóng ticket.
+ * Khách, HTX và CSKH cùng xem các bước này (ticketSteps), CSKH thấy thêm bước cần làm tiếp (nextTicketAction).
  */
 import { generateId } from './ids';
 import { addRefund } from './orders';
 import { refundableAmount } from './refund';
 import { transitionOrder } from './orderStateMachine';
 import { addMs, audit, findOrder, HOUR_MS, iso, replaceOrder } from './state';
+import { formatMoney } from './pricing';
 import {
+  COMPLAINT_REASON_LABEL,
   fail,
   goodsGroupOf,
   HIGH_PRIORITY_REASONS,
   ok,
+  PAYMENT_STATUS_LABEL,
+  TICKET_STATUS_LABEL,
   type Actor,
   type ComplaintReason,
   type DemoState,
   type Order,
   type Result,
   type Ticket,
+  type TicketEvent,
+  type TicketEventKind,
   type TicketStatus,
 } from './types';
 
@@ -80,7 +92,7 @@ export function submitComplaint(state: DemoState, actor: Actor, input: Complaint
     createdAt: iso(at),
     ackDueAt: iso(addMs(at, state.params.ticketAckHours * HOUR_MS)),
     resolveDueAt: iso(addMs(at, state.params.ticketResolveHours * HOUR_MS)),
-    history: [{ at: iso(at), actor, action: 'Khách gửi khiếu nại' }],
+    history: [{ at: iso(at), actor, action: 'Khách gửi khiếu nại', kind: 'submit' }],
   };
   let next: DemoState = { ...state, tickets: [ticket, ...state.tickets] };
   if (input.requestRefund) {
@@ -100,7 +112,7 @@ export function coopReplyTicket(state: DemoState, ticketId: string, actor: Actor
   if (['resolved', 'rejected', 'closed'].includes(ticket.status)) return fail('Ticket đã kết thúc.');
   if (proposal && !ticket.requestRefund) return fail('Ticket không có yêu cầu hoàn tiền để đề xuất.');
   const action = proposal ? `HTX phản hồi, đề xuất ${proposal === 'refund' ? 'hoàn tiền' : 'không hoàn tiền'}` : 'HTX phản hồi';
-  const updated: Ticket = { ...ticket, coopProposal: proposal ?? ticket.coopProposal, history: [...ticket.history, { at: iso(at), actor, action, note: text.trim() }] };
+  const updated: Ticket = { ...ticket, coopProposal: proposal ?? ticket.coopProposal, history: [...ticket.history, { at: iso(at), actor, action, note: text.trim(), kind: 'coop_reply' }] };
   const next = { ...state, tickets: state.tickets.map((t) => (t.id === ticketId ? updated : t)) };
   return ok(audit(next, actor, 'Phản hồi ticket', ticketId, at, text.trim()));
 }
@@ -113,7 +125,24 @@ export function returnRefundAmount(order: Order, productIds: string[]): number {
   return refundableAmount(order.amountPaidOnline + order.codCollected, approvedValue, order.pricing.total);
 }
 
-/** Admin – CSKH đổi trạng thái ticket (FR-CSKH-07..09). Kết luận Đã xử lý kèm duyệt hoàn thì tạo yêu cầu hoàn. */
+/** Bước CSKH được chuyển tới từ mỗi trạng thái (tiếp nhận rồi mới kết luận, kết luận rồi mới đóng). */
+export const TICKET_TRANSITIONS: Record<TicketStatus, TicketStatus[]> = {
+  open: ['processing'],
+  processing: ['resolved', 'rejected'],
+  resolved: ['closed'],
+  rejected: ['closed'],
+  closed: [],
+};
+
+const ACTION_OF: Record<TicketStatus, { kind: TicketEventKind; action: string }> = {
+  open: { kind: 'submit', action: 'Khách gửi khiếu nại' },
+  processing: { kind: 'accept', action: 'CSKH tiếp nhận' },
+  resolved: { kind: 'conclude', action: 'CSKH kết luận: Đã xử lý' },
+  rejected: { kind: 'conclude', action: 'CSKH kết luận: Từ chối' },
+  closed: { kind: 'close', action: 'CSKH đóng ticket' },
+};
+
+/** Admin – CSKH đổi trạng thái ticket (FR-CSKH-07..09) theo đúng thứ tự quy trình. Kết luận Đã xử lý kèm duyệt hoàn thì tạo yêu cầu hoàn. */
 export function cskhUpdateTicket(
   state: DemoState,
   ticketId: string,
@@ -127,21 +156,175 @@ export function cskhUpdateTicket(
   const ticket = state.tickets.find((t) => t.id === ticketId);
   if (!ticket) return fail('Không tìm thấy ticket.');
   if (ticket.status === 'closed') return fail('Ticket đã đóng.');
+  if (!TICKET_TRANSITIONS[ticket.status].includes(status)) {
+    return fail(
+      ticket.status === 'open'
+        ? 'Cần tiếp nhận ticket trước khi kết luận.'
+        : ticket.status === 'processing'
+          ? 'Ticket đang xử lý: kết luận Đã xử lý hoặc Từ chối.'
+          : 'Ticket đã kết luận: chỉ còn bước đóng ticket.',
+    );
+  }
   if ((status === 'rejected' || status === 'resolved') && !note.trim()) return fail('Vui lòng ghi kết luận.');
+  const approved = status === 'resolved' && refundApproved && ticket.requestRefund;
   const updated: Ticket = {
     ...ticket,
     status,
-    history: [...ticket.history, { at: iso(at), actor, action: `Đổi trạng thái: ${status}`, note: note.trim() || undefined }],
+    history: [
+      ...ticket.history,
+      {
+        at: iso(at),
+        actor,
+        action: status === 'resolved' && ticket.requestRefund ? `${ACTION_OF.resolved.action} – ${approved ? 'duyệt hoàn tiền' : 'không hoàn tiền'}` : ACTION_OF[status].action,
+        note: note.trim() || undefined,
+        kind: ACTION_OF[status].kind,
+        toStatus: status,
+        ...(status === 'resolved' ? { refundApproved: approved } : {}),
+      },
+    ],
   };
   let next: DemoState = { ...state, tickets: state.tickets.map((t) => (t.id === ticketId ? updated : t)) };
   const order = findOrder(next, ticket.orderId);
-  if (status === 'resolved' && refundApproved && ticket.requestRefund && order) {
+  if (approved && order) {
     if (next.refunds.some((r) => r.orderId === order.id && r.source === 'return')) return fail('Đơn đã có yêu cầu hoàn do trả hàng.');
     const amount = returnRefundAmount(order, ticket.productIds);
     next = addRefund(next, order, amount, 'return', `Trả hàng: ${note.trim()}`, at);
     next = replaceOrder(next, { ...order, paymentStatus: amount > 0 ? 'refund_pending' : order.paymentStatus });
   }
-  return ok(audit(next, actor, 'Cập nhật ticket', ticketId, at, `${status}${note ? `: ${note}` : ''}`));
+  return ok(audit(next, actor, 'Cập nhật ticket', ticketId, at, `${TICKET_STATUS_LABEL[status]}${note ? `: ${note}` : ''}`));
+}
+
+/** CSKH đề nghị HTX kiểm tra lô hàng và phản hồi (bước 3 của quy trình); HTX nhận thông báo. */
+export function cskhRequestCoopReply(state: DemoState, ticketId: string, actor: Actor, note: string, at: Date): Result<DemoState> {
+  if (actor.kind !== 'admin' || actor.adminGroup !== 'cskh') return fail('Chỉ Admin – CSKH được đề nghị HTX phản hồi.');
+  const ticket = state.tickets.find((t) => t.id === ticketId);
+  if (!ticket) return fail('Không tìm thấy ticket.');
+  if (ticket.status !== 'processing') return fail(ticket.status === 'open' ? 'Cần tiếp nhận ticket trước.' : 'Ticket đã kết luận.');
+  const updated: Ticket = { ...ticket, history: [...ticket.history, { at: iso(at), actor, action: 'CSKH đề nghị HTX phản hồi', note: note.trim() || undefined, kind: 'request_coop' }] };
+  return ok(audit({ ...state, tickets: state.tickets.map((t) => (t.id === ticketId ? updated : t)) }, actor, 'Đề nghị HTX phản hồi ticket', ticketId, at, note.trim() || undefined));
+}
+
+/** Loại bước của một dòng lịch sử; dữ liệu cũ (chưa có `kind`) thì suy từ người làm và nội dung. */
+export function eventKind(e: TicketEvent): TicketEventKind | undefined {
+  if (e.kind) return e.kind;
+  if (e.actor.kind === 'customer') return 'submit';
+  if (e.actor.kind === 'coop') return 'coop_reply';
+  const to = eventStatus(e);
+  if (to === 'processing') return 'accept';
+  if (to === 'resolved' || to === 'rejected') return 'conclude';
+  if (to === 'closed') return 'close';
+  return undefined;
+}
+
+/** Trạng thái sau một dòng lịch sử (dữ liệu cũ ghi "Đổi trạng thái: processing"). */
+function eventStatus(e: TicketEvent): TicketStatus | undefined {
+  if (e.toStatus) return e.toStatus;
+  const m = e.action.match(/^Đổi trạng thái: (\w+)$/);
+  return m && m[1] in TICKET_STATUS_LABEL ? (m[1] as TicketStatus) : undefined;
+}
+
+/** Nội dung dòng lịch sử để hiện (dữ liệu cũ ghi mã trạng thái tiếng Anh thì đổi sang nhãn). */
+export function eventLabel(e: TicketEvent): string {
+  const to = !e.toStatus ? eventStatus(e) : undefined;
+  return to ? `Đổi trạng thái: ${TICKET_STATUS_LABEL[to]}` : e.action;
+}
+
+export type TicketStepKey = 'submitted' | 'accepted' | 'coop' | 'concluded' | 'refund' | 'closed';
+
+export interface TicketStep {
+  key: TicketStepKey;
+  title: string;
+  state: 'done' | 'current' | 'upcoming' | 'skipped';
+  at?: string;
+  /** Hạn SLA-01 của bước (tiếp nhận, kết luận). */
+  due?: string;
+  overdue?: boolean;
+  detail?: string;
+}
+
+/** Các bước của quy trình xử lý một ticket, tính từ lịch sử ticket và khoản hoàn của đơn. */
+export function ticketSteps(state: DemoState, t: Ticket, now: Date): TicketStep[] {
+  const find = (k: TicketEventKind) => t.history.find((e) => eventKind(e) === k);
+  const accepted = find('accept') ?? (t.status !== 'open' ? t.history.find((e) => eventKind(e) !== 'submit') : undefined);
+  const coopReply = [...t.history].reverse().find((e) => eventKind(e) === 'coop_reply');
+  const requested = find('request_coop');
+  const conclusion = [...t.history].reverse().find((e) => eventKind(e) === 'conclude');
+  const concluded = ['resolved', 'rejected', 'closed'].includes(t.status) ? (conclusion ?? t.history[t.history.length - 1]) : undefined;
+  const closed = t.status === 'closed' ? (find('close') ?? t.history[t.history.length - 1]) : undefined;
+  const late = (due: string, done: boolean) => !done && now.getTime() > new Date(due).getTime();
+  const refund = state.refunds.find((r) => r.orderId === t.orderId && r.source === 'return');
+  // Dữ liệu cũ chưa ghi refundApproved: có khoản hoàn do trả hàng là đã duyệt hoàn.
+  const refundApproved = conclusion?.refundApproved ?? !!refund;
+
+  const steps: TicketStep[] = [
+    { key: 'submitted', title: 'Khách gửi khiếu nại', state: 'done', at: t.createdAt, detail: `${COMPLAINT_REASON_LABEL[t.reason]}${t.requestRefund ? ' · kèm yêu cầu trả hàng – hoàn tiền' : ''}` },
+    {
+      key: 'accepted',
+      title: 'CSKH tiếp nhận',
+      state: accepted ? 'done' : 'current',
+      at: accepted?.at,
+      due: t.ackDueAt,
+      overdue: late(t.ackDueAt, !!accepted),
+    },
+    {
+      key: 'coop',
+      title: 'HTX kiểm tra lô hàng, phản hồi',
+      state: coopReply ? 'done' : concluded ? 'skipped' : accepted ? 'current' : 'upcoming',
+      at: coopReply?.at,
+      detail: coopReply
+        ? `${coopReply.note ?? ''}${t.coopProposal ? ` · HTX đề xuất ${t.coopProposal === 'refund' ? 'hoàn tiền' : 'không hoàn tiền'}` : ''}`
+        : concluded
+          ? 'CSKH kết luận không cần HTX phản hồi'
+          : requested
+            ? 'CSKH đã đề nghị HTX phản hồi'
+            : undefined,
+    },
+    {
+      key: 'concluded',
+      title: 'CSKH kết luận',
+      state: concluded ? 'done' : accepted ? 'current' : 'upcoming',
+      at: concluded?.at,
+      due: t.resolveDueAt,
+      overdue: late(t.resolveDueAt, !!concluded),
+      detail: concluded
+        ? `${t.status === 'rejected' || (conclusion && eventStatus(conclusion) === 'rejected') ? 'Từ chối' : t.requestRefund ? (refundApproved ? 'Đã xử lý – duyệt hoàn tiền' : 'Đã xử lý – không hoàn tiền') : 'Đã xử lý'}${concluded.note ? `: ${concluded.note}` : ''}`
+        : undefined,
+    },
+  ];
+  if (t.requestRefund) {
+    steps.push({
+      key: 'refund',
+      title: 'Hoàn tiền',
+      state: refund ? (refund.status === 'refunded' ? 'done' : 'current') : concluded ? 'skipped' : 'upcoming',
+      at: refund?.completedAt ?? refund?.createdAt,
+      detail: refund ? `${formatMoney(refund.amount)} · ${PAYMENT_STATUS_LABEL[refund.status]}` : concluded ? 'Không hoàn tiền theo kết luận' : undefined,
+    });
+  }
+  steps.push({ key: 'closed', title: 'Đóng ticket', state: closed ? 'done' : concluded ? 'current' : 'upcoming', at: closed?.at });
+  return steps;
+}
+
+/** Việc CSKH cần làm tiếp với ticket (hiện ở màn xử lý). */
+export function nextTicketAction(state: DemoState, t: Ticket): string {
+  const refund = state.refunds.find((r) => r.orderId === t.orderId && r.source === 'return');
+  switch (t.status) {
+    case 'open':
+      return 'Tiếp nhận ticket trước hạn tiếp nhận (SLA-01).';
+    case 'processing':
+      return t.history.some((e) => eventKind(e) === 'coop_reply')
+        ? 'HTX đã phản hồi: xem đề xuất của HTX rồi kết luận Đã xử lý hoặc Từ chối.'
+        : 'Chờ HTX kiểm tra lô hàng và phản hồi (có thể đề nghị HTX phản hồi), rồi kết luận trước hạn.';
+    case 'resolved':
+    case 'rejected':
+      return refund && refund.status !== 'refunded'
+        ? `Khoản hoàn ${formatMoney(refund.amount)} đang ở bước "${PAYMENT_STATUS_LABEL[refund.status]}" (Admin – Tài chính). Đóng ticket khi đã báo kết quả cho khách.`
+        : 'Đã kết luận: đóng ticket khi đã báo kết quả cho khách.';
+    case 'closed':
+      return 'Ticket đã đóng.';
+  }
 }
 
 export const isTicketOpen = (t: Ticket): boolean => t.status === 'open' || t.status === 'processing';
+
+/** Ticket của một đơn, mới nhất trước. */
+export const ticketsOfOrder = (state: DemoState, orderId: string): Ticket[] => state.tickets.filter((t) => t.orderId === orderId).sort((a, b) => b.createdAt.localeCompare(a.createdAt));

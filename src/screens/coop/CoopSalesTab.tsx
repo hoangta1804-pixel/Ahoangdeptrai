@@ -1,6 +1,7 @@
 import { useId, useState } from 'react';
 import { useUi } from '../../app/UiContext';
 import { SectionHeading } from '../../components/Brand';
+import { Segmented } from '../../components/Charts';
 import { formatMoney } from '../../domain/pricing';
 import { coopBestSellers, SALES_METRIC_LABEL, SALES_RANGE_LABEL, type ProductSales, type SalesMetric, type SalesRange } from '../../domain/salesStats';
 import { useStore } from '../../store/AppDataContext';
@@ -11,24 +12,6 @@ function compactMoney(n: number): string {
   if (n >= 1e9) return `${fmt(n / 1e9)} tỷ đ`;
   if (n >= 1e6) return `${fmt(n / 1e6)} triệu đ`;
   return formatMoney(n);
-}
-
-function Segmented<T extends string>({ label, value, options, onChange }: { label: string; value: T; options: Record<T, string>; onChange: (v: T) => void }) {
-  return (
-    <div role="group" aria-label={label} className="flex gap-1 rounded-full border border-champagne-200 bg-white p-1">
-      {(Object.keys(options) as T[]).map((k) => (
-        <button
-          key={k}
-          type="button"
-          aria-pressed={value === k}
-          onClick={() => onChange(k)}
-          className={`min-h-11 rounded-full px-3 text-sm font-semibold transition-colors ${value === k ? 'bg-forest-900 text-champagne-100' : 'text-stone-700 hover:bg-champagne-50'}`}
-        >
-          {options[k]}
-        </button>
-      ))}
-    </div>
-  );
 }
 
 /**
@@ -47,6 +30,9 @@ export function CoopSalesTab() {
   const max = Math.max(1, ...data.rows.map((r) => r[metric]));
   const value = (r: ProductSales) => (metric === 'quantity' ? `${r.quantity.toLocaleString('vi-VN')} ${r.unit}` : formatMoney(r.revenue));
   const mixedUnits = new Set(data.rows.map((r) => r.unit)).size > 1;
+  // Cùng một sản phẩm có nhiều quy cách: ghi kèm quy cách để phân biệt.
+  const repeated = new Set(data.rows.filter((r, i) => data.rows.findIndex((x) => x.name === r.name) !== i).map((r) => r.name));
+  const nameOf = (r: ProductSales) => (repeated.has(r.name) ? `${r.name} · ${r.unit}` : r.name);
 
   return (
     <div className="space-y-4">
@@ -101,12 +87,12 @@ export function CoopSalesTab() {
                   onPointerLeave={() => setActive((a) => (a === r.productId ? null : a))}
                   onFocus={() => setActive(r.productId)}
                   onBlur={() => setActive((a) => (a === r.productId ? null : a))}
-                  aria-label={`Hạng ${i + 1}: ${r.name}, ${r.quantity} ${r.unit}, ${r.orders} đơn, tiền hàng ${formatMoney(r.revenue)}`}
+                  aria-label={`Hạng ${i + 1}: ${nameOf(r)}, ${r.quantity} ${r.unit}, ${r.orders} đơn, tiền hàng ${formatMoney(r.revenue)}`}
                   className="group relative rounded-xl px-1 py-1.5 outline-none focus-visible:ring-2 focus-visible:ring-forest-600/40"
                 >
                   <p className="truncate text-sm font-semibold text-ink">
                     <span className="mr-1 text-muted">{i + 1}.</span>
-                    {r.name}
+                    {nameOf(r)}
                   </p>
                   <div className="mt-1 flex items-center gap-2">
                     {/* Thanh: dài nhất bằng phần còn lại sau chỗ ghi giá trị; đầu thanh bo 4px, gốc thẳng. */}
@@ -122,7 +108,7 @@ export function CoopSalesTab() {
                   {shown && (
                     <div role="tooltip" className="pointer-events-none absolute top-0 right-1 z-10 -translate-y-full rounded-xl bg-ink px-3 py-2 text-xs text-white shadow-lg">
                       <span className="block text-sm font-bold">{value(r)}</span>
-                      <span className="block text-stone-300">{r.name}</span>
+                      <span className="block text-stone-300">{nameOf(r)}</span>
                       <span className="block text-stone-300">
                         {r.orders} đơn · {metric === 'quantity' ? `tiền hàng ${formatMoney(r.revenue)}` : `${r.quantity} ${r.unit}`}
                       </span>
@@ -168,7 +154,7 @@ export function CoopSalesTab() {
                   {data.rows.map((r, i) => (
                     <tr key={r.productId} className="border-t border-stone-100">
                       <td className="py-1.5 pr-2">{i + 1}</td>
-                      <td className="py-1.5 pr-2">{r.name}</td>
+                      <td className="py-1.5 pr-2">{nameOf(r)}</td>
                       <td className="py-1.5 pr-2 text-right whitespace-nowrap">
                         {r.quantity.toLocaleString('vi-VN')} {r.unit}
                       </td>

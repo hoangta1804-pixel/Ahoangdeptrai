@@ -27,12 +27,22 @@ export type ModalState =
   /** `returnTo`: màn mở lại sau khi lưu hoặc đóng form (mặc định là sổ địa chỉ). */
   | { type: 'address_form'; addressId?: string; returnTo?: ModalState }
   | { type: 'complaint'; orderId?: string }
+  /** Khiếu nại của khách, nhóm theo đơn. */
+  | { type: 'complaints' }
   | { type: 'coop_order'; orderId: string }
   /** HTX xác nhận thu hoạch cả lô cho một sản phẩm đặt trước. `returnTo`: mở lại khi đóng (vd. đơn đang xem). */
   | { type: 'coop_harvest'; productId: string; returnTo?: ModalState }
   | { type: 'notifications' }
+  /** Tin nhắn với HTX (khách) / với khách (HTX). `withId`: mở sẵn cuộc trò chuyện với bên này; `productId`: khách hỏi về sản phẩm. */
+  | { type: 'chat'; withId?: string; productId?: string }
   | { type: 'review'; orderId: string; productId: string }
   | { type: 'coop_product_form'; productId?: string }
+  /** HTX thêm quy cách (hộp 500 g…) cho sản phẩm. */
+  | { type: 'coop_variant_form'; productId: string }
+  /** HTX nộp hồ sơ đăng ký (màn đăng nhập); `applicationId`: bổ sung hồ sơ Admin yêu cầu. */
+  | { type: 'coop_apply'; applicationId?: string }
+  /** HTX tra cứu hồ sơ đăng ký; `phone`: tra sẵn số này (vừa nộp xong). */
+  | { type: 'coop_apply_status'; phone?: string }
   | { type: 'demo_panel' };
 
 const NO_ACTOR: Actor = { kind: 'system', name: 'Chưa đăng nhập' };
