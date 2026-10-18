@@ -37,6 +37,7 @@ Lần đầu chạy `npm run e2e` trên máy mới: `npx playwright install chro
 | `npm run build` | Thành công, không cảnh báo. Phần chung 416 kB (gzip 125 kB); màn HTX, Admin, QLNN tải riêng theo vai trò |
 | `npm run e2e` | 13 kịch bản, tất cả đạt (khoảng 2 phút): Luồng 1–6, chế độ trình diễn, giao diện ở 320 / 390 / 768 / 1.280 / 1.920px. Không lỗi JS, console chỉ có lỗi 409 có chủ đích |
 | Kiểm tra giao diện trong `npm run e2e` (axe-core 4.10 + đo vùng bấm, cỡ chữ, tràn ngang) | 0 lỗi axe, 0 vùng bấm dưới 44×44, 0 chữ dưới 12px, không tràn ngang |
+| Kịch bản hồi quy cũ (ngoài repo, 23 lượt) trên bản build | Tất cả đạt. So với lần chạy trước chỉ khác ngày giờ và câu nhắc mới khi màn hình lỗi; lỗi console duy nhất ngoài 409 là ở kịch bản cố ý ghi dữ liệu hỏng (khung báo lỗi bắt được, như trước) |
 
 ---
 
