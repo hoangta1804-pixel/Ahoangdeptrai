@@ -50,6 +50,7 @@ export class ListBoundary extends Component<
         ) : (
           <>
             <p className="font-semibold">Không hiển thị được {this.props.label ?? 'nội dung này'}.</p>
+            <p className="mt-1 break-words font-mono text-xs">Lỗi: {this.state.error.message.slice(0, 200)}</p>
             <p className="mt-1">Nếu lỗi lặp lại, nhờ Quản trị gốc hoặc Admin – Vận hành mở "Công cụ demo" và bấm "Khôi phục dữ liệu mẫu".</p>
             <div className="mt-3">
               <ErrorDetails text={errorDetails(this.state.error, this.props.label ?? 'nội dung này', this.state.componentStack)} />

@@ -22,6 +22,7 @@ export function DemoBand({ className = '' }: { className?: string }) {
     <p role="note" className={`bg-champagne-200 px-3 py-1 text-center text-xs font-semibold leading-snug text-champagne-950 ${className}`}>
       <span>{DEMO_BAND_TEXT}</span>
       {note && <span className="font-normal"> {note}</span>}
+      <span className="font-normal"> · Bản {__APP_BUILD__}</span>
     </p>
   );
 }

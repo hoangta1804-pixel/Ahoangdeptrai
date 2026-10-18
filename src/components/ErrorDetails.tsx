@@ -15,6 +15,7 @@ export function errorDetails(error: Error, where: string, componentStack?: strin
   return [
     `Lỗi: ${error.name}: ${error.message}`,
     `Ở: ${where}`,
+    `Bản: ${__APP_BUILD__}`,
     `Trang: ${window.location.pathname}${window.location.hash}`,
     `Lúc: ${new Date().toISOString()}`,
     `Trình duyệt: ${navigator.userAgent}`,
