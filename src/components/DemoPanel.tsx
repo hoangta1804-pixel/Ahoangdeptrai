@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useUi } from '../app/UiContext';
 import { canUseDemoTools, DEMO_TOOLS_ROLES, demoCodeIsSet, demoGatewaySuccess } from '../domain/demoAccess';
 import { DAY_MS, HOUR_MS, MINUTE_MS } from '../domain/state';
@@ -143,6 +143,7 @@ export function DemoPanel({ onClose }: { onClose: () => void }) {
                       : 'Dữ liệu dùng chung – đã đồng bộ'}
           </p>
           {sync.mode === 'local' && <p>{sync.reason} Các tab cùng trình duyệt vẫn thấy chung dữ liệu.</p>}
+          <DataSize />
           {shared && (
             <>
               <p>Mọi máy mở link demo thấy chung đơn, giỏ, khiếu nại… qua API /api/state. Máy khác thay đổi thì màn hình cập nhật trong khoảng 10 giây.</p>
@@ -240,5 +241,22 @@ function ServiceStatus() {
       </dl>
       <p className="text-xs text-muted">Chỉ đọc. Dịch vụ thật do chủ repo cấu hình trên Vercel (xem docs/FIX_REPORT.md).</p>
     </section>
+  );
+}
+
+/**
+ * Dung lượng dữ liệu demo (sửa lỗi bản web 18/10/2026): dữ liệu dùng chung đầy thì không lưu được lên máy chủ.
+ * Máy chủ nén trước khi lưu (giới hạn 900 KB sau khi nén); ảnh hầu như không nén được nên chiếm phần lớn.
+ */
+function DataSize() {
+  const { state } = useStore();
+  const { kb, photos } = useMemo(() => {
+    const json = JSON.stringify(state);
+    return { kb: Math.round(json.length / 1000), photos: (json.match(/data:image\//g) ?? []).length };
+  }, [state]);
+  return (
+    <p className="text-muted">
+      Dữ liệu demo: khoảng {kb.toLocaleString('vi-VN')} KB, {photos} ảnh. Máy chủ nén trước khi lưu, tối đa 900 KB sau khi nén; ảnh chiếm nhiều chỗ nhất.
+    </p>
   );
 }

@@ -8,6 +8,7 @@ import { addToCart } from '../../domain/cart';
 import { recordRandom, replayRandom } from '../../domain/ids';
 import type { DemoState } from '../../domain/types';
 import { makeState, T0 } from '../../domain/__tests__/fixtures';
+import { normalizeState } from '../normalize';
 import { RemoteSync, type Mutation, type SyncStatus } from '../remoteSync';
 
 const SCHEMA = 4;
@@ -63,13 +64,7 @@ const addCart = (productId: string) => (base: DemoState) => {
 };
 
 describe('RemoteSync', () => {
-  it('không có API (lỗi mạng) hoặc API chưa nối cơ sở dữ liệu (503) thì chuyển sang lưu trên trình duyệt', async () => {
-    const offline = device(async () => {
-      throw new TypeError('Failed to fetch');
-    });
-    await offline.sync.start(makeState());
-    expect(offline.seen.status).toMatchObject({ mode: 'local' });
-
+  it('API chưa nối cơ sở dữ liệu (503) hoặc bản không có API thì chuyển sang lưu trên trình duyệt', async () => {
     const noDb = device(async () => new Response(JSON.stringify({ error: 'chưa cấu hình' }), { status: 503 }));
     await noDb.sync.start(makeState());
     expect(noDb.seen.status).toMatchObject({ mode: 'local', reason: expect.stringContaining('chưa nối cơ sở dữ liệu') });
@@ -80,6 +75,72 @@ describe('RemoteSync', () => {
     // Chế độ trình duyệt: ghi nhận thao tác nhưng không gửi đi đâu.
     expect(html.act(addCart('x-dry'))).not.toBeNull();
     expect(html.sync.pendingCount).toBe(0);
+  });
+
+  it('API lỗi tạm lúc mở app thì không bỏ hẳn API: giữ thay đổi, thử lại, khi API trả lời thì gửi lên', async () => {
+    const store = createMemoryStore();
+    const real = fetchFor(store);
+    let down = true;
+    const flaky = device(async (input, init) => {
+      if (down) return new Response(JSON.stringify({ error: 'Cơ sở dữ liệu demo (Upstash) đang từ chối…', quota: true }), { status: 502 });
+      return real(input, init);
+    });
+    await flaky.sync.start(makeState());
+    expect(flaky.seen.status).toMatchObject({ mode: 'shared', phase: 'offline', message: expect.stringContaining('Upstash') });
+    flaky.act(addCart('x-dry'));
+    await settle();
+    expect(flaky.sync.pendingCount).toBe(1);
+    down = false;
+    await flaky.sync.poll();
+    await settle();
+    expect(flaky.seen.status).toMatchObject({ mode: 'shared', phase: 'synced' });
+    expect(flaky.sync.pendingCount).toBe(0);
+    expect(cartOf((await store.read()).data as DemoState)).toEqual(['x-dry']);
+    flaky.sync.stop();
+  });
+
+  it('dữ liệu quá lớn (413): báo lỗi, không gửi lặp; có thay đổi mới thì gửi lại', async () => {
+    let puts = 0;
+    const store = createMemoryStore();
+    const real = fetchFor(store);
+    let full = true;
+    const d = device(async (input, init) => {
+      if (init?.method === 'PUT') {
+        puts += 1;
+        if (full) return new Response(JSON.stringify({ error: 'Dữ liệu demo đầy… Khôi phục dữ liệu mẫu.' }), { status: 413 });
+      }
+      return real(input, init);
+    });
+    await d.sync.start(makeState());
+    await settle();
+    const before = puts;
+    d.act(addCart('x-dry'));
+    await settle();
+    expect(d.seen.status).toMatchObject({ phase: 'error', message: expect.stringContaining('Khôi phục dữ liệu mẫu') });
+    expect(puts).toBe(before + 1);
+    await d.sync.poll();
+    await d.sync.poll();
+    await settle();
+    expect(puts).toBe(before + 1); // không gửi lặp cùng dữ liệu
+    full = false;
+    d.act(addCart('y-dry'));
+    await settle();
+    expect(d.seen.status).toMatchObject({ phase: 'synced' });
+    d.sync.stop();
+  });
+
+  it('dữ liệu trên server thiếu trường (lưu từ bản cũ) thì được bù trước khi hiển thị', async () => {
+    const store = createMemoryStore();
+    const old = makeState() as unknown as Record<string, unknown>;
+    delete old.reviews;
+    delete old.tickets;
+    await handleStateRequest({ method: 'PUT', body: { baseVersion: 0, schema: SCHEMA, data: old } }, store);
+    const seen: { state: DemoState | null } = { state: null };
+    const sync = new RemoteSync({ schema: SCHEMA, fetch: fetchFor(store), onState: (s) => (seen.state = s), onStatus: () => {}, normalize: (x) => normalizeState(x, makeState) });
+    await sync.start(makeState());
+    expect(seen.state?.reviews).toEqual([]);
+    expect(seen.state?.tickets).toEqual([]);
+    sync.stop();
   });
 
   it('máy đầu tiên đưa dữ liệu lên; máy sau nhận đúng dữ liệu đó', async () => {

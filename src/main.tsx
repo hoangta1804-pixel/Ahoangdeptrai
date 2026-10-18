@@ -9,10 +9,19 @@ import '@fontsource/fraunces/500.css';
 import '@fontsource/fraunces/600.css';
 import '@fontsource/fraunces/500-italic.css';
 import App from './App';
+import { AppCrashBoundary } from './app/AppCrashBoundary';
+import { reloadOnceForNewVersion } from './app/chunkReload';
 import './index.css';
+
+// Vite báo không tải được mã của một màn (thường do vừa deploy bản mới): tải lại trang để lấy bản mới.
+window.addEventListener('vite:preloadError', (event) => {
+  if (reloadOnceForNewVersion()) event.preventDefault();
+});
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <AppCrashBoundary>
+      <App />
+    </AppCrashBoundary>
   </StrictMode>,
 );

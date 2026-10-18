@@ -16,11 +16,27 @@ import { jobsChanged, runScheduledJobs } from '../domain/jobs';
 import { deriveNotifications } from '../domain/notifications';
 import type { Actor, DemoState, Result } from '../domain/types';
 import { createSeedState } from '../data/seed';
+import { normalizeState } from './normalize';
 import { clearState, loadState, saveState, STORAGE_KEY, STORAGE_VERSION } from './persistence';
 import { RemoteSync, type Mutation, type SyncStatus } from './remoteSync';
 
 /** Hỏi API dữ liệu mới bao lâu một lần khi trang đang mở trên màn hình. */
 const POLL_MS = 10_000;
+
+/**
+ * Lâu không thao tác thì hỏi thưa hơn (10 giây → 30 giây sau 2 phút → 60 giây sau 15 phút) để đỡ tốn lượt của gói Upstash
+ * miễn phí khi nhiều người để tab mở (sửa lỗi bản web 18/10/2026). Quay lại thao tác hoặc mở lại tab thì hỏi ngay.
+ */
+export function pollEvery(idleMs: number): number {
+  if (idleMs > 15 * 60_000) return 6;
+  if (idleMs > 2 * 60_000) return 3;
+  return 1;
+}
+
+const seedNow = () => createSeedState(new Date());
+/** Dữ liệu trên trình duyệt, đã bù trường thiếu (dữ liệu lưu từ bản cũ). */
+const loadLocal = (): DemoState => normalizeState(loadState<unknown>(seedNow), seedNow) ?? seedNow();
+const normalizeRemote = (data: unknown) => normalizeState(data, seedNow);
 
 interface StoreValue {
   state: DemoState;
@@ -54,7 +70,7 @@ function withJobs(state: DemoState, at: Date): { state: DemoState; changed: bool
 }
 
 function initialState(): DemoState {
-  const loaded = loadState<DemoState>(() => createSeedState(new Date()));
+  const loaded = loadLocal();
   setClockOffset(loaded.clockOffsetMs ?? 0);
   return withJobs(loaded, clockNow()).state;
 }
@@ -101,22 +117,38 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       onState: show,
       onStatus: setSync,
       onDropped: (n) => setSyncNotice(`${n} thao tác không áp dụng được vì dữ liệu vừa được máy khác thay đổi. Màn hình đã cập nhật theo dữ liệu mới nhất.`),
+      normalize: normalizeRemote,
     });
     syncRef.current = remote;
     void remote.start(ref.current);
 
+    let lastInput = Date.now();
+    let tick = 0;
     const pollIfVisible = () => {
       if (document.visibilityState === 'visible') void remote.poll();
     };
-    const timer = setInterval(pollIfVisible, POLL_MS);
+    const onTick = () => {
+      tick += 1;
+      if (tick % pollEvery(Date.now() - lastInput) === 0) pollIfVisible();
+    };
+    const onInput = () => {
+      const wasIdle = Date.now() - lastInput > 2 * 60_000;
+      lastInput = Date.now();
+      if (wasIdle) pollIfVisible();
+    };
+    const timer = setInterval(onTick, POLL_MS);
     document.addEventListener('visibilitychange', pollIfVisible);
     window.addEventListener('focus', pollIfVisible);
+    window.addEventListener('pointerdown', onInput, { passive: true });
+    window.addEventListener('keydown', onInput);
     return () => {
       remote.stop();
       syncRef.current = null;
       clearInterval(timer);
       document.removeEventListener('visibilitychange', pollIfVisible);
       window.removeEventListener('focus', pollIfVisible);
+      window.removeEventListener('pointerdown', onInput);
+      window.removeEventListener('keydown', onInput);
     };
   }, [show]);
 
@@ -125,7 +157,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     const onStorage = (e: StorageEvent) => {
       if (e.key !== STORAGE_KEY) return;
       const remote = syncRef.current;
-      if (remote?.getStatus().mode === 'local') show(loadState<DemoState>(() => createSeedState(new Date())));
+      if (remote?.getStatus().mode === 'local') show(loadLocal());
       else void remote?.poll();
     };
     window.addEventListener('storage', onStorage);

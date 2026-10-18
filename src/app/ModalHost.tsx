@@ -10,21 +10,22 @@ import { PaymentSheet } from '../screens/customer/PaymentSheet';
 import { ProductDetailSheet } from '../screens/customer/ProductDetailSheet';
 import { TraceLotSheet } from '../screens/customer/TraceLotSheet';
 import { useStore } from '../store/AppDataContext';
+import { lazyWithReload } from './chunkReload';
 import { useUi } from './UiContext';
 
 // Sheet ít mở hoặc chỉ dùng ở màn HTX: tải khi mở lần đầu, để phần tải ban đầu của app nhẹ hơn.
-const CheckoutSheet = lazy(() => import('../screens/customer/CheckoutSheet').then((m) => ({ default: m.CheckoutSheet })));
-const OrderDetailSheet = lazy(() => import('../screens/customer/OrderDetailSheet').then((m) => ({ default: m.OrderDetailSheet })));
-const ComplaintSheet = lazy(() => import('../screens/customer/ComplaintSheet').then((m) => ({ default: m.ComplaintSheet })));
-const ComplaintsSheet = lazy(() => import('../screens/customer/ComplaintsSheet').then((m) => ({ default: m.ComplaintsSheet })));
-const ReviewSheet = lazy(() => import('../screens/customer/ReviewSheet').then((m) => ({ default: m.ReviewSheet })));
-const CoopOrderSheet = lazy(() => import('../screens/coop/CoopOrderSheet').then((m) => ({ default: m.CoopOrderSheet })));
-const CoopHarvestSheet = lazy(() => import('../screens/coop/CoopHarvestSheet').then((m) => ({ default: m.CoopHarvestSheet })));
-const CoopProductFormSheet = lazy(() => import('../screens/coop/CoopProductFormSheet').then((m) => ({ default: m.CoopProductFormSheet })));
-const CoopApplySheet = lazy(() => import('../screens/coopApply/CoopApplySheet').then((m) => ({ default: m.CoopApplySheet })));
-const CoopApplyStatusSheet = lazy(() => import('../screens/coopApply/CoopApplyStatusSheet').then((m) => ({ default: m.CoopApplyStatusSheet })));
-const ChatSheet = lazy(() => import('../components/ChatSheet').then((m) => ({ default: m.ChatSheet })));
-const CoopVariantFormSheet = lazy(() => import('../screens/coop/CoopVariantFormSheet').then((m) => ({ default: m.CoopVariantFormSheet })));
+const CheckoutSheet = lazy(lazyWithReload(() => import('../screens/customer/CheckoutSheet').then((m) => ({ default: m.CheckoutSheet }))));
+const OrderDetailSheet = lazy(lazyWithReload(() => import('../screens/customer/OrderDetailSheet').then((m) => ({ default: m.OrderDetailSheet }))));
+const ComplaintSheet = lazy(lazyWithReload(() => import('../screens/customer/ComplaintSheet').then((m) => ({ default: m.ComplaintSheet }))));
+const ComplaintsSheet = lazy(lazyWithReload(() => import('../screens/customer/ComplaintsSheet').then((m) => ({ default: m.ComplaintsSheet }))));
+const ReviewSheet = lazy(lazyWithReload(() => import('../screens/customer/ReviewSheet').then((m) => ({ default: m.ReviewSheet }))));
+const CoopOrderSheet = lazy(lazyWithReload(() => import('../screens/coop/CoopOrderSheet').then((m) => ({ default: m.CoopOrderSheet }))));
+const CoopHarvestSheet = lazy(lazyWithReload(() => import('../screens/coop/CoopHarvestSheet').then((m) => ({ default: m.CoopHarvestSheet }))));
+const CoopProductFormSheet = lazy(lazyWithReload(() => import('../screens/coop/CoopProductFormSheet').then((m) => ({ default: m.CoopProductFormSheet }))));
+const CoopApplySheet = lazy(lazyWithReload(() => import('../screens/coopApply/CoopApplySheet').then((m) => ({ default: m.CoopApplySheet }))));
+const CoopApplyStatusSheet = lazy(lazyWithReload(() => import('../screens/coopApply/CoopApplyStatusSheet').then((m) => ({ default: m.CoopApplyStatusSheet }))));
+const ChatSheet = lazy(lazyWithReload(() => import('../components/ChatSheet').then((m) => ({ default: m.ChatSheet }))));
+const CoopVariantFormSheet = lazy(lazyWithReload(() => import('../screens/coop/CoopVariantFormSheet').then((m) => ({ default: m.CoopVariantFormSheet }))));
 
 /** Hiển thị đúng một sheet đang mở. Sheet nhận mã bản ghi và đọc dữ liệu mới nhất từ store. */
 export function ModalHost() {
