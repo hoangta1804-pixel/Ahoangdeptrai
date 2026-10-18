@@ -1,4 +1,5 @@
-import { Component, useState, type ReactNode } from 'react';
+import { Component, useState, type ErrorInfo, type ReactNode } from 'react';
+import { ErrorDetails, errorDetails } from '../components/ErrorDetails';
 import { DEMO_OTP } from '../domain/auth';
 import { emergencyReset } from '../store/emergencyReset';
 import { clearState, saveSession } from '../store/persistence';
@@ -8,25 +9,26 @@ import { isChunkLoadError, reloadOnceForNewVersion } from './chunkReload';
  * Khung lỗi ở gốc app (sửa lỗi bản web 18/10/2026): trước đây lỗi ở khung app (thanh trên cùng, chuyển màn) làm trắng trang.
  * Lỗi do không tải được mã của bản cũ (vừa deploy bản mới) thì tự tải lại; lỗi khác thì hiện cách khôi phục.
  */
-export class AppCrashBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
-  state: { error: Error | null } = { error: null };
+export class AppCrashBoundary extends Component<{ children: ReactNode }, { error: Error | null; componentStack: string | null }> {
+  state: { error: Error | null; componentStack: string | null } = { error: null, componentStack: null };
 
   static getDerivedStateFromError(error: Error) {
     return { error };
   }
 
-  componentDidCatch(error: Error) {
+  componentDidCatch(error: Error, info: ErrorInfo) {
     console.error(error);
+    this.setState({ componentStack: info.componentStack ?? null });
     if (isChunkLoadError(error)) reloadOnceForNewVersion();
   }
 
   render() {
     if (!this.state.error) return this.props.children;
-    return <CrashScreen error={this.state.error} />;
+    return <CrashScreen error={this.state.error} componentStack={this.state.componentStack} />;
   }
 }
 
-function CrashScreen({ error }: { error: Error }) {
+function CrashScreen({ error, componentStack }: { error: Error; componentStack: string | null }) {
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [message, setMessage] = useState<string | null>(null);
@@ -93,6 +95,7 @@ function CrashScreen({ error }: { error: Error }) {
         </details>
       )}
       <p className="text-xs text-muted">Chi tiết lỗi: {error.message.slice(0, 160)}</p>
+      <ErrorDetails text={errorDetails(error, 'khung app', componentStack)} />
     </main>
   );
 }
