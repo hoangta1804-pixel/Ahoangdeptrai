@@ -1,6 +1,6 @@
 # Báo cáo sửa prototype "Đặc Sản Số Lào Cai"
 
-Tài liệu này cập nhật sau mỗi giai đoạn của `PROMPT_SUA_APP.md`. Mã trong ngoặc (`BR-…`, `FR-…`, `PAR-…`, `OI-…`) là mã trong SRS hợp nhất.
+Tài liệu này cập nhật sau mỗi giai đoạn của `PROMPT_SUA_APP.md` (bản 2 ngày 18/10/2026 thêm Giai đoạn 7–10). Mã trong ngoặc (`BR-…`, `FR-…`, `PAR-…`, `OI-…`) là mã trong SRS hợp nhất.
 
 | Giai đoạn | Nội dung | Tình trạng |
 |---|---|---|
@@ -10,6 +10,10 @@ Tài liệu này cập nhật sau mỗi giai đoạn của `PROMPT_SUA_APP.md`. 
 | 4 | Chức năng mức Must theo vai trò | **Xong** |
 | 5 | Nội dung và dữ liệu mẫu | **Xong** |
 | 6 | Giao diện | **Xong** |
+| 7 | Chế độ trình diễn an toàn, kiểm thử trình duyệt trong repo (đề bài bản 2) | **Xong** |
+| 8 | Bổ sung cho khách hàng | Chưa làm |
+| 9 | Bổ sung cho HTX và Admin | Chưa làm |
+| 10 | Cài lên màn hình chính, đo tốc độ | Chưa làm |
 
 ## Chạy local
 
@@ -19,17 +23,110 @@ npm run dev      # http://localhost:3000, có sẵn /api/state lưu trong bộ n
 npm run build    # ra thư mục dist/ (Vercel dùng thư mục này)
 npm run lint     # kiểm tra kiểu TypeScript
 npm test         # unit test vitest: src/domain, dữ liệu mẫu, quy ước giao diện
+npm run e2e      # kiểm thử trình duyệt (Playwright): tự build, chạy vite preview cổng 4173, chạy các luồng trong e2e/
 ```
 
-### Kết quả lần chạy cuối (Giai đoạn 6)
+Lần đầu chạy `npm run e2e` trên máy mới: `npx playwright install chromium` để tải trình duyệt.
+
+### Kết quả lần chạy cuối (Giai đoạn 7)
 
 | Lệnh | Kết quả |
 |---|---|
 | `npm run lint` | Không lỗi |
-| `npm test` | 15 file, 127 test, tất cả đạt |
-| `npm run build` | Thành công, không cảnh báo. Phần chung 431 kB (gzip 127 kB); màn HTX, Admin, QLNN tải riêng theo vai trò |
-| Luồng 1 và Luồng 2 (mục 11.2) bằng Playwright, chặn mọi request ngoài localhost | Đạt trọn vẹn. Không có request ra ngoài, không lỗi JS |
-| Kiểm tra giao diện tự động trên mọi màn và trong Luồng 1 (axe-core 4.10 + đo vùng bấm và cỡ chữ) | 0 lỗi tương phản AA, 0 nút thiếu tên, 0 vùng bấm dưới 44×44, 0 chữ dưới 12px |
+| `npm test` | 30 file, 212 test, tất cả đạt (có T1–T29) |
+| `npm run build` | Thành công, không cảnh báo. Phần chung 416 kB (gzip 125 kB); màn HTX, Admin, QLNN tải riêng theo vai trò |
+| `npm run e2e` | 13 kịch bản, tất cả đạt (khoảng 2 phút): Luồng 1–6, chế độ trình diễn, giao diện ở 320 / 390 / 768 / 1.280 / 1.920px. Không lỗi JS, console chỉ có lỗi 409 có chủ đích |
+| Kiểm tra giao diện trong `npm run e2e` (axe-core 4.10 + đo vùng bấm, cỡ chữ, tràn ngang) | 0 lỗi axe, 0 vùng bấm dưới 44×44, 0 chữ dưới 12px, không tràn ngang |
+
+---
+
+## Giai đoạn 7 – Chế độ trình diễn an toàn, kiểm thử trình duyệt trong repo
+
+Theo `PROMPT_SUA_APP.md` bản 2, mục 8. Mục tiêu: đem demo cho người ngoài mà dữ liệu không bị sửa, xoá ngoài ý muốn; kiểm thử chạy lại được bằng một lệnh. Chủ repo đồng ý thêm `@playwright/test` và `axe-core` vào devDependencies (18/10/2026).
+
+| Việc (mục của đề bài) | Tình trạng | Ghi chú |
+|---|---|---|
+| 8.1 Mã trình diễn (NEW-01) | **Đã làm** | Quản trị gốc đặt / đổi / bỏ ở màn Tham số; màn đăng nhập ẩn danh sách tài khoản demo tới khi nhập đúng mã |
+| 8.2 Giới hạn Công cụ demo | **Đã làm** | Tua giờ, gửi kết quả cổng, khôi phục dữ liệu: chỉ Quản trị gốc và Admin – Vận hành; kiểm quyền trong domain |
+| 8.3 Tình trạng cấu hình | **Đã làm** | Trong Công cụ demo, chỉ đọc: dữ liệu dùng chung, đăng nhập Google, Google Maps, mã trình diễn |
+| 8.4 Ghi rõ không phải bảo mật thật | **Đã làm** | Trên màn Tham số và trong báo cáo này |
+| 8.5 Kịch bản trình duyệt trong repo | **Đã làm** | `npm run e2e`, 13 kịch bản trong `e2e/` |
+| 8.6 Gắn mã T23–T28, sửa tên test cũ | **Đã làm** | Tên test bắt đầu bằng mã ca; sửa tên "khách thấy số mới" trong `coopContact.test.ts` |
+
+### Mã trình diễn (NEW-01)
+
+- **Ai đặt:** Quản trị gốc, ở mục mới "Tham số" của nhóm Quản trị gốc (đầu màn). Đặt, đổi hoặc bỏ mã; nhóm Admin khác chỉ thấy đã đặt hay chưa. Admin – Vận hành vẫn là nhóm duy nhất sửa được các tham số khác.
+- **Mã:** 4–32 ký tự, chữ không dấu và số; không phân biệt hoa thường, bỏ khoảng trắng (bàn phím điện thoại hay tự viết hoa chữ đầu).
+  - Chỉ lưu bản băm kèm muối; mã không hiện lại sau khi lưu, không ghi vào nhật ký.
+  - Nhật ký ghi "Đặt / Đổi / Bỏ mã trình diễn" và người làm.
+- **Màn đăng nhập khi đã đặt mã:**
+  - danh sách tài khoản demo ẩn, thay bằng ô "Mã trình diễn" và nút "Hiện tài khoản demo";
+  - nhập đúng thì hiện danh sách, nhớ theo tab (đóng tab là quên); Quản trị gốc đổi mã thì tab đã nhập mã cũ phải nhập lại;
+  - đăng nhập bằng SĐT + OTP mô phỏng vẫn dùng được như cũ (mục 5.9).
+- **Khôi phục dữ liệu mẫu giữ nguyên mã** (mã là cấu hình của buổi demo, không phải dữ liệu mẫu).
+- **Cách dùng khi demo:** đăng nhập Quản trị gốc (0900 000 209) → Tham số → nhập mã → "Đặt mã". Trên máy trình diễn, nhập mã ở màn đăng nhập để hiện danh sách tài khoản.
+- Mã nguồn: `src/domain/demoAccess.ts`, `AdminParamsTab.tsx` (mục NEW-01), `LoginScreen.tsx` (`DemoCodeGate`).
+
+### Công cụ demo
+
+- **Ai cũng mở được** để xem giờ demo và tình trạng cấu hình.
+- **Chỉ Quản trị gốc và Admin – Vận hành** thấy và bấm được các nút thay đổi dữ liệu của mọi máy: tua thời gian (+15 phút, +24 giờ, +3 ngày, về giờ thật), gửi "tiền về muộn", gửi kết quả cổng lần hai, khôi phục dữ liệu mẫu.
+  - Kiểm quyền trong domain (`demoShiftClock`, `demoResetClock`, `demoResetData`, `demoGatewaySuccess`), không chỉ ẩn nút.
+  - Mỗi lần bấm ghi nhật ký (vd. "Tua thời gian demo +15 phút", "Khôi phục dữ liệu mẫu").
+  - Người khác mở Công cụ demo thấy dòng giải thích và gợi ý: mở thêm một tab, đăng nhập Admin – Vận hành ở tab đó để điều khiển (mỗi tab giữ phiên đăng nhập riêng).
+- **Cổng thanh toán mô phỏng** khi khách đang thanh toán (Thanh toán thành công / thất bại / Huỷ) không đổi, khách vẫn dùng được.
+- **Tình trạng cấu hình** (chỉ đọc):
+
+| Mục | Cách app biết |
+|---|---|
+| Dữ liệu dùng chung | `/api/state` trả dữ liệu thì "Đã nối"; trả 503 hoặc không gọi được thì "Chưa nối – đang lưu trên trình duyệt này" |
+| Đăng nhập Google | Bản build có `VITE_GOOGLE_CLIENT_ID` thì "Thật", không thì "Mô phỏng" |
+| Google Maps | `GET /api/geocode?status=1` (mới): chỉ trả đã có `GOOGLE_MAPS_API_KEY` hay chưa, không gọi Google, không tính lượt, không trả khoá |
+| Mã trình diễn | Đã đặt / chưa đặt |
+
+- Lời nhắc khi màn hình gặp lỗi đổi thành "nhờ Quản trị gốc hoặc Admin – Vận hành … Khôi phục dữ liệu mẫu".
+
+### Đây là biện pháp cho buổi demo, không phải bảo mật thật
+
+- API dữ liệu demo không có đăng nhập phía máy chủ: ai có link vẫn đọc và ghi được toàn bộ dữ liệu bằng cách gọi API trực tiếp.
+- SĐT mẫu theo dãy `0900 000 xxx` nên đoán được, OTP mô phỏng luôn là `123456`: ai biết SĐT của Admin vẫn đăng nhập được.
+- Vì vậy mã trình diễn chỉ tránh người xem demo bấm nhầm vào tài khoản Admin hoặc khôi phục dữ liệu giữa buổi; không chặn người cố ý.
+- Bảo mật thật cần máy chủ có đăng nhập, OTP thật, phân quyền phía máy chủ (mục 12 của đề bài, ngoài phạm vi prototype).
+
+### Kiểm thử trình duyệt trong repo (`npm run e2e`)
+
+- **Cách chạy:** Playwright tự chạy `npm run build` rồi `vite preview` cổng 4173 (máy đã có server ở cổng này thì dùng lại).
+  - Bản preview có `/api/state` lưu trong bộ nhớ server, nên các kịch bản chạy lần lượt và khôi phục dữ liệu mẫu (bằng Quản trị gốc) trước mỗi kịch bản.
+  - Mỗi "máy" là một context riêng; mọi request ra ngoài localhost bị chặn.
+  - Lỗi JS hoặc lỗi console làm kịch bản thất bại, trừ 409 (hai máy ghi cùng lúc) và 503 (chưa có khoá dịch vụ).
+  - File kết thúc bằng `.e2e.ts` để `npm test` (vitest) không chạy nhầm.
+  - Đã thử chèn lỗi cố ý (nút 20px không tên, chữ 10px, phần tử rộng 2.000px): phần kiểm tra giao diện báo đủ 4 lỗi.
+
+| File | Nội dung |
+|---|---|
+| `e2e/luong1-2.e2e.ts` | Luồng 1 (mua sẵn + đặt trước + quà gửi người khác → HTX xác nhận, phiếu đóng gói không in giá, thu hoạch, bàn giao → ĐVVC mô phỏng → đã nhận, đánh giá, khiếu nại có ảnh → CSKH → Tài chính → QLNN thấy thêm 2 đơn). Luồng 2 (đơn online chưa trả, Admin – Vận hành tua 15 phút, đơn huỷ, tồn kho trả lại) |
+| `e2e/luong3-4.e2e.ts` | Luồng 3 (chọn hộp 500 g, hỏi HTX về sản phẩm, HTX trả lời, không hiện SĐT). Luồng 4 (đặt trước mận, HTX xác nhận, thu hoạch kèm ảnh, nhắn tin mẫu, ghi cuộc gọi, khách trả phần còn lại, bàn giao; hành trình hai phía đủ 7 bước) |
+| `e2e/luong5-6.e2e.ts` | Luồng 5 (nộp hồ sơ HTX: thiếu ảnh / OTP bị chặn → yêu cầu bổ sung → tra cứu, nộp lại → duyệt → HTX mới thêm sản phẩm → duyệt → khách tìm thấy). Luồng 6 (máy HTX tự thấy đơn mới trong 15 giây; hai máy HTX cùng xác nhận một đơn: máy chậm được báo, lịch sử chỉ có 1 lần xác nhận; tải lại khi đã xoá dữ liệu trên máy vẫn còn đơn) |
+| `e2e/trinh-dien.e2e.ts` | Giai đoạn 7: quyền Công cụ demo theo vai trò, tình trạng cấu hình, mã trình diễn trên nhiều máy, nhật ký không ghi mã |
+| `e2e/giao-dien.e2e.ts` | Kiểm tra giao diện ở 5 cỡ màn hình: đăng nhập, Khám phá, chi tiết sản phẩm, Vụ mùa, Đơn mua, chi tiết đơn, màn HTX, Tổng quan và Tham số Admin, Công cụ demo, QLNN |
+| `e2e/helpers.ts` | Mở máy, đăng nhập bằng SĐT, khôi phục dữ liệu, kiểm tra giao diện |
+
+- **Kịch bản hồi quy cũ (ngoài repo, dùng trong các lần trước):** sửa theo giao diện mới có chủ đích:
+  - kịch bản khôi phục dữ liệu đăng nhập Quản trị gốc / Admin – Vận hành trước khi bấm;
+  - 8 kịch bản bỏ đoạn tự khôi phục dữ liệu khi chưa đăng nhập (đã khôi phục trước mỗi kịch bản);
+  - kịch bản Luồng 1–2 cũ (khách tự tua giờ) thay bằng `e2e/luong1-2.e2e.ts`.
+
+### Việc cần chủ repo cấu hình trên Vercel
+
+Không cần cấu hình gì thêm cho Giai đoạn 7 (`@playwright/test`, `axe-core` là devDependencies, không vào bản build). Ba mục còn thiếu từ trước:
+
+| Mục | Chưa cấu hình thì | Hướng dẫn |
+|---|---|---|
+| Upstash Redis | Mỗi máy một dữ liệu riêng | Mục "API dữ liệu dùng chung giữa nhiều máy" |
+| `VITE_GOOGLE_CLIENT_ID` | Đăng nhập Google chạy chế độ mô phỏng | Mục "Địa chỉ theo GPS (Google Maps) và đăng nhập bằng Google" |
+| `GOOGLE_MAPS_API_KEY` | Nút lấy địa chỉ GPS báo chưa dùng được | Như trên |
+
+Cấu hình xong, mở "Công cụ demo" → "Tình trạng cấu hình" để kiểm tra.
 
 ---
 
@@ -1722,7 +1819,7 @@ Chưa chạy được, chờ giai đoạn sau:
 
 ---
 
-## Kiểm thử bắt buộc (mục 11.1)
+## Kiểm thử bắt buộc (mục 13.1 của đề bài bản 2)
 
 | Ca | Tình trạng | File test |
 |---|---|---|
@@ -1748,6 +1845,15 @@ Chưa chạy được, chờ giai đoạn sau:
 | T20 | Đạt | `text.test.ts` |
 | T21 | Đạt | `access.test.ts`, `flow.test.ts` |
 | T22 | Đạt | `access.test.ts`, `payment.test.ts` |
+| T23 | Đạt | `coopContact.test.ts` |
+| T24 | Đạt | `variants.test.ts` |
+| T25 | Đạt | `coopChat.test.ts` |
+| T26 | Đạt | `complaint.test.ts` |
+| T27 | Đạt | `coopApplication.test.ts` |
+| T28 | Đạt | `stats.test.ts` |
+| T29 | Đạt | `demoAccess.test.ts` |
+
+T30–T40 làm cùng Giai đoạn 8–9. Tên mỗi test bắt đầu bằng mã ca (vd. `T29: …`).
 
 Ngoài các ca trên còn có test cho:
 - đặt lặp với cùng khoá (BR-DAT-07), HTX không đặt được hàng (BR-DAT-01);
@@ -1844,6 +1950,11 @@ Ngoài các ca trên còn có test cho:
 82. **HTX mới do Admin – Chất lượng duyệt và hệ thống tự cấp tài khoản HTX** (không cần Admin – Vận hành cấp riêng). Ảnh giấy tờ chỉ để Admin xem; xác minh với cơ quan cấp là mô phỏng. Số tài khoản nhận chi trả chỉ lưu dạng che. Tra cứu hồ sơ bằng SĐT người đại diện + OTP mô phỏng.
 83. **Biểu đồ Tổng quan:** tiền hàng không tính đơn chưa thanh toán xong, đã huỷ, trả hàng; "Tất cả" vẽ tối đa 90 ngày ở biểu đồ theo ngày; vùng của đơn lấy theo sản phẩm đầu tiên trong đơn (như bảng Theo vùng trước đây).
 84. **Danh sách HTX thay Danh bạ HTX** ở mọi nhóm quyền Admin; nút gọi SĐT HTX giữ nguyên.
+85. **Mã trình diễn (NEW-01, chưa có trong SRS):** 4–32 ký tự chữ không dấu và số, không phân biệt hoa thường; chỉ lưu bản băm kèm muối (băm 53 bit, đủ để không đọc được mã trong dữ liệu dùng chung, không phải băm mật khẩu). Nhớ theo tab; đổi mã thì phải nhập lại; khôi phục dữ liệu mẫu giữ mã.
+86. **Mã trình diễn không nằm trong bộ tham số `params`**, vì bộ tham số được chép vào bản chốt của từng đơn (BR-DAT-06); vẫn hiện ở đầu màn Tham số. Quản trị gốc có thêm mục Tham số: xem tham số (chỉ Admin – Vận hành sửa) và đặt mã.
+87. **Công cụ demo giới hạn cả hai nút kết quả cổng** ("tiền về muộn", "kết quả lần hai"), không chỉ tua giờ và khôi phục dữ liệu như đề bài nêu, vì chúng cũng đổi giao dịch của người khác. Ai cũng mở được Công cụ demo để xem giờ demo và tình trạng cấu hình. Mỗi thao tác ghi nhật ký.
+88. **Kiểm tra khoá Google Maps qua `GET /api/geocode?status=1`** (thêm vào hàm có sẵn, không đổi cấu hình): chỉ trả đã có khoá hay chưa, không gọi Google, không tính lượt.
+89. **Kiểm thử trình duyệt dùng Playwright 1.56.1** (khớp bản Chromium có sẵn của môi trường kiểm thử) và **axe-core 4.10.2** (như các lần kiểm tra trước), ghi cố định phiên bản trong devDependencies.
 
 ## Vấn đề chờ nhóm chốt
 
@@ -1856,14 +1967,19 @@ Ngoài các ca trên còn có test cho:
 | OI-08 | Có hoàn phí giao khi lỗi không do khách | Tham số, mặc định không hoàn |
 | OI-11 | (theo SRS) | Chưa đụng tới |
 | OI-13 | Chính sách đổi hàng | Không làm chức năng đổi hàng |
+| OI-14 | Chỉ số thành công của sàn | Chưa làm màn chỉ tiêu (Giai đoạn 9 chỉ làm khi nhóm chốt) |
 | OI-15 | (theo SRS) | Chưa đụng tới |
 | OI-16 | (theo SRS) | Chưa đụng tới |
 
 Tài liệu yêu cầu không mô tả nội dung của OI-02, OI-04, OI-05, OI-11, OI-15, OI-16. Nhóm cần cung cấp mô tả để ghi đúng vào báo cáo.
 
+Thêm hai việc nhóm cần chốt:
+- **Các chức năng làm thêm chưa có trong SRS** (chủ repo yêu cầu, góp ý kiểm thử, Giai đoạn 7): quy cách bán hàng, nhắn tin riêng với HTX, 2 SĐT và địa chỉ HTX, xác nhận thu hoạch, quy trình duyệt HTX mới, biểu đồ Tổng quan, mã trình diễn. Nhóm cần quyết định đưa vào SRS hay bỏ.
+- **Ai cấp tài khoản HTX mới:** app đang để Admin – Chất lượng duyệt hồ sơ và hệ thống tự tạo tài khoản (giả định 82); SRS có thể giao cho Admin – Vận hành.
+
 ## Tài khoản demo và khôi phục dữ liệu
 
-**Tài khoản demo.** Đăng nhập bằng SĐT, OTP mô phỏng luôn là `123456`. Có thể bấm tên tài khoản ở màn đăng nhập để điền sẵn số.
+**Tài khoản demo.** Đăng nhập bằng SĐT, OTP mô phỏng luôn là `123456`. Có thể bấm tên tài khoản ở màn đăng nhập để điền sẵn số (khi Quản trị gốc đã đặt mã trình diễn thì phải nhập mã trước).
 
 | Tài khoản | SĐT | Vai trò |
 |---|---|---|
@@ -1883,4 +1999,5 @@ Tài liệu yêu cầu không mô tả nội dung của OI-02, OI-04, OI-05, OI-
 | Quản trị gốc (mẫu) | 0900 000 209 | Quản trị gốc |
 | Cơ quan QLNN (mẫu) | 0900 000 301 | Cơ quan QLNN (chỉ xem) |
 
-- **Khôi phục dữ liệu mẫu:** bấm "Công cụ demo" ở góc phải thanh trên cùng, rồi bấm "Khôi phục dữ liệu mẫu". Thao tác này xoá dữ liệu trong `localStorage` (khoá `dac-san-so-lao-cai:data`), nạp lại dữ liệu mẫu và đưa đồng hồ demo về giờ thật. Khi đang dùng API dữ liệu chung, thao tác áp dụng cho mọi máy.
+- **Khôi phục dữ liệu mẫu:** đăng nhập Quản trị gốc (0900 000 209) hoặc Admin – Vận hành (0900 000 201), bấm "Công cụ demo" ở góc phải thanh trên cùng, rồi bấm "Khôi phục dữ liệu mẫu" (từ Giai đoạn 7, tài khoản khác và người chưa đăng nhập không thấy nút này). Thao tác này xoá dữ liệu trong `localStorage` (khoá `dac-san-so-lao-cai:data`), nạp lại dữ liệu mẫu và đưa đồng hồ demo về giờ thật; mã trình diễn giữ nguyên. Khi đang dùng API dữ liệu chung, thao tác áp dụng cho mọi máy.
+- **Ẩn danh sách tài khoản demo khi đem demo cho người ngoài:** đăng nhập Quản trị gốc → Tham số → mục "NEW-01 Mã trình diễn" → nhập mã → "Đặt mã". Máy trình diễn nhập mã ở màn đăng nhập để hiện lại danh sách. Bỏ mã ở cùng chỗ. Xem mục Giai đoạn 7.
