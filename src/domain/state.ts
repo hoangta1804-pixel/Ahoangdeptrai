@@ -30,8 +30,8 @@ export function formatDateKey(key: string): string {
 }
 
 export function audit(state: DemoState, actor: Actor, action: string, target: string, at: Date, detail?: string): DemoState {
-  // Chỉ ghi thao tác của Admin và HTX (mục 5.9). Nhật ký chỉ thêm, không sửa, không xoá.
-  if (actor.kind !== 'admin' && actor.kind !== 'coop') return state;
+  // Ghi thao tác của Admin và HTX (mục 5.9), và của shipper. Nhật ký chỉ thêm, không sửa, không xoá.
+  if (actor.kind !== 'admin' && actor.kind !== 'coop' && actor.kind !== 'shipper') return state;
   if (actor.id === 'seed') return state;
   const entry: AuditLog = { id: generateId('AUD'), at: iso(at), actor, action, target, detail };
   return { ...state, auditLogs: [entry, ...state.auditLogs] };

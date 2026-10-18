@@ -71,6 +71,7 @@ export function normalizeState(raw: unknown, fallback: () => DemoState): DemoSta
   if (out.harvests !== undefined) out.harvests = withId(out.harvests).map((h) => arrays(h, ['photos', 'orderIds']));
   if (out.coopApplications !== undefined) out.coopApplications = withId(out.coopApplications).map((a) => arrays(a, ['phones', 'documents', 'history']));
   for (const k of ['orderMessages', 'directMessages']) if (out[k] !== undefined) out[k] = withId(out[k]);
+  if (out.codRemittances !== undefined) out.codRemittances = withId(out.codRemittances).map((r) => arrays(r, ['orderIds']));
   if (out.chatReads !== undefined && !isObj(out.chatReads)) out.chatReads = {};
   return out as unknown as DemoState;
 }

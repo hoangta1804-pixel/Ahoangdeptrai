@@ -17,6 +17,7 @@ import { useUi } from './UiContext';
 const CoopScreen = lazy(lazyWithReload(() => import('../screens/coop/CoopScreen').then((m) => ({ default: m.CoopScreen }))));
 const AdminScreen = lazy(lazyWithReload(() => import('../screens/admin/AdminScreen').then((m) => ({ default: m.AdminScreen }))));
 const RegulatorScreen = lazy(lazyWithReload(() => import('../screens/regulator/RegulatorScreen').then((m) => ({ default: m.RegulatorScreen }))));
+const ShipperScreen = lazy(lazyWithReload(() => import('../screens/shipper/ShipperScreen').then((m) => ({ default: m.ShipperScreen }))));
 
 /**
  * Khung app. Không có thanh chuyển vai trò công khai: vai trò theo tài khoản đăng nhập (mục 5.9).
@@ -127,6 +128,7 @@ export function AppShell() {
             {user?.role === 'customer' && <CustomerScreen />}
             {user?.role === 'coop' && <CoopScreen />}
             {user?.role === 'regulator' && <RegulatorScreen />}
+            {user?.role === 'shipper' && <ShipperScreen />}
             {user?.role === 'admin' && <AdminScreen />}
           </Suspense>
         </ListBoundary>

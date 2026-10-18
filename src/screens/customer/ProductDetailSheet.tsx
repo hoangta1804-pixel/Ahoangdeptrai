@@ -7,7 +7,7 @@ import { PreorderProgress } from '../../components/PreorderProgress';
 import { QuantityStepper } from '../../components/QuantityStepper';
 import { Stars } from '../../components/Stars';
 import { VariantPicker } from '../../components/VariantPicker';
-import { averageRating, publicReviews } from '../../domain/reviews';
+import { averageRating, matchesReviewFilter, publicReviews, REVIEW_FILTERS, type ReviewFilter } from '../../domain/reviews';
 import { ProductImage } from '../../components/ProductImage';
 import { deliveryWindow, isOrderableIn } from '../../domain/cart';
 import { computeDeposit, formatMoney } from '../../domain/pricing';
@@ -24,6 +24,7 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
   const [quantity, setQuantity] = useState(1);
   // Quy cách đang chọn: mở từ thẻ nào thì chọn sẵn quy cách đó.
   const [variantId, setVariantId] = useState(productId);
+  const [reviewFilter, setReviewFilter] = useState<ReviewFilter>('all');
   const product = findProduct(state, variantId) ?? findProduct(state, productId);
   if (!product) return null;
   const family = listedFamilyOf(state, product);
@@ -247,7 +248,24 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
             {reviews.length > 0 && (
               <section className="space-y-2 border-t border-stone-100 pt-3">
                 <h4 className="text-sm font-bold text-stone-800">Đánh giá của khách</h4>
-                {reviews.map((r) => (
+                <div role="group" aria-label="Lọc đánh giá" className="flex flex-wrap gap-1.5">
+                  {REVIEW_FILTERS.map((f) => {
+                    const count = reviews.filter((r) => matchesReviewFilter(r, f.key)).length;
+                    return (
+                      <button
+                        key={String(f.key)}
+                        type="button"
+                        aria-pressed={reviewFilter === f.key}
+                        onClick={() => setReviewFilter(f.key)}
+                        className={`min-h-11 rounded-full border px-3 text-sm font-semibold ${reviewFilter === f.key ? 'border-forest-800 bg-forest-900 text-champagne-100' : 'border-stone-300 bg-white text-stone-700 hover:bg-stone-50'}`}
+                      >
+                        {f.label} ({count})
+                      </button>
+                    );
+                  })}
+                </div>
+                {reviews.filter((r) => matchesReviewFilter(r, reviewFilter)).length === 0 && <p className="text-sm text-stone-600">Chưa có đánh giá phù hợp.</p>}
+                {reviews.filter((r) => matchesReviewFilter(r, reviewFilter)).map((r) => (
                   <div key={r.id} className="space-y-1 rounded-xl bg-stone-50 p-2.5 text-sm">
                     <p className="flex items-center gap-2">
                       <Stars value={r.stars} /> <span className="font-semibold">{r.reviewerName}</span>

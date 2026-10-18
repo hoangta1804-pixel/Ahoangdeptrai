@@ -120,3 +120,23 @@ export function publicReviews(state: DemoState, productId: string): PublicReview
       };
     });
 }
+
+// ---------- Lọc đánh giá kiểu sàn TMĐT (chủ repo yêu cầu ngày 18/10/2026) ----------
+
+export type ReviewFilter = 'all' | 'photos' | 1 | 2 | 3 | 4 | 5;
+
+export const REVIEW_FILTERS: { key: ReviewFilter; label: string }[] = [
+  { key: 'all', label: 'Tất cả' },
+  { key: 5, label: '5 sao' },
+  { key: 4, label: '4 sao' },
+  { key: 3, label: '3 sao' },
+  { key: 2, label: '2 sao' },
+  { key: 1, label: '1 sao' },
+  { key: 'photos', label: 'Có ảnh' },
+];
+
+export function matchesReviewFilter(r: Pick<Review, 'stars' | 'photos'>, filter: ReviewFilter): boolean {
+  if (filter === 'all') return true;
+  if (filter === 'photos') return r.photos.length > 0;
+  return r.stars === filter;
+}

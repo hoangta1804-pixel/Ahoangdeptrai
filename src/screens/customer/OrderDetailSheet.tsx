@@ -3,6 +3,7 @@ import { useUi } from '../../app/UiContext';
 import { BottomSheet, SheetColumns } from '../../components/BottomSheet';
 import { OrderChat } from '../../components/OrderChat';
 import { OrderJourney } from '../../components/OrderJourney';
+import { TrackingTimeline } from '../../components/TrackingTimeline';
 import { DangerButton, Field, Input, PrimaryButton, SecondaryButton, Select, Textarea } from '../../components/form';
 import { deliveryWindow } from '../../domain/cart';
 import { customerChangeAddress, customerChangeDeliveryDate, customerEditGift } from '../../domain/orderEdits';
@@ -114,6 +115,7 @@ export function OrderDetailSheet({ orderId, onClose }: { orderId: string; onClos
             </section>
 
             <OrderJourney order={order} />
+            <TrackingTimeline order={order} />
 
             {tickets.map((t) => (
               <CustomerTicketCard key={t.id} ticket={t} />

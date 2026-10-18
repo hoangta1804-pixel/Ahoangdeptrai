@@ -23,6 +23,7 @@ const AVATAR: Record<UserAccount['role'], string> = {
   coop: 'bg-champagne-300 text-forest-950',
   admin: 'bg-ink text-champagne-200',
   regulator: 'bg-forest-100 text-forest-900',
+  shipper: 'bg-champagne-100 text-forest-950',
 };
 const initialsOf = (name: string) => {
   const words = name
@@ -105,6 +106,7 @@ export function LoginScreen() {
     { title: 'Khách hàng', users: state.users.filter((u) => u.role === 'customer' && !u.google) },
     { title: 'HTX', users: state.users.filter((u) => u.role === 'coop') },
     { title: 'Admin', users: state.users.filter((u) => u.role === 'admin') },
+    { title: 'Giao vận', users: state.users.filter((u) => u.role === 'shipper') },
     { title: 'Cơ quan QLNN', users: state.users.filter((u) => u.role === 'regulator') },
   ];
 

@@ -29,6 +29,7 @@ export function OpsAccountsTab() {
               <option value="coop">HTX</option>
               <option value="admin">Admin</option>
               <option value="regulator">Cơ quan QLNN</option>
+              <option value="shipper">Shipper (giao vận)</option>
             </Select>
           </Field>
           {form.role === 'coop' && (

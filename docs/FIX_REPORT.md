@@ -14,6 +14,7 @@ Tài liệu này cập nhật sau mỗi giai đoạn của `PROMPT_SUA_APP.md` (
 | 8 | Bổ sung cho khách hàng | Chưa làm |
 | 9 | Bổ sung cho HTX và Admin | Chưa làm |
 | 10 | Cài lên màn hình chính, đo tốc độ | Chưa làm |
+| Sau 7 | Vai trò Shipper, theo dõi vận chuyển (đợt 1); trang chủ kiểu sàn, Shop HTX, Kho voucher (đợt 2) | Đợt 1 **Xong**, đợt 2 đang làm |
 
 ## Chạy local
 
@@ -28,16 +29,70 @@ npm run e2e      # kiểm thử trình duyệt (Playwright): tự build, chạy 
 
 Lần đầu chạy `npm run e2e` trên máy mới: `npx playwright install chromium` để tải trình duyệt.
 
-### Kết quả lần chạy cuối (sửa lỗi bản web, 18/10/2026)
+### Kết quả lần chạy cuối (Shipper, 18/10/2026)
 
 | Lệnh | Kết quả |
 |---|---|
 | `npm run lint` | Không lỗi |
-| `npm test` | 31 file, 223 test, tất cả đạt (có T1–T29) |
+| `npm test` | 33 file, 228 test, tất cả đạt (có T1–T29) |
 | `npm run build` | Thành công, không cảnh báo. Phần chung 416 kB (gzip 125 kB); màn HTX, Admin, QLNN tải riêng theo vai trò |
-| `npm run e2e` | 16 kịch bản, tất cả đạt (khoảng 2,5 phút): Luồng 1–6, chế độ trình diễn, 3 tình huống lỗi của bản web, giao diện ở 320 / 390 / 768 / 1.280 / 1.920px. Không lỗi JS ngoài lỗi có chủ đích của từng kịch bản |
+| `npm run e2e` | 17 kịch bản, tất cả đạt (khoảng 2,5 phút): Luồng 1–6, Luồng Shipper, chế độ trình diễn, 3 tình huống lỗi của bản web, giao diện ở 320 / 390 / 768 / 1.280 / 1.920px (có màn Shipper). Không lỗi JS ngoài lỗi có chủ đích của từng kịch bản |
 | Kiểm tra giao diện trong `npm run e2e` (axe-core 4.10 + đo vùng bấm, cỡ chữ, tràn ngang) | 0 lỗi axe, 0 vùng bấm dưới 44×44, 0 chữ dưới 12px, không tràn ngang |
 | Kịch bản hồi quy cũ (ngoài repo, 23 lượt) trên bản build | Tất cả đạt. So với lần chạy trước chỉ khác ngày giờ và câu nhắc mới khi màn hình lỗi; lỗi console duy nhất ngoài 409 là ở kịch bản cố ý ghi dữ liệu hỏng (khung báo lỗi bắt được, như trước) |
+
+---
+
+## Sau Giai đoạn 7 – Vai trò Shipper và theo dõi vận chuyển (đợt 1)
+
+**Yêu cầu của chủ repo (18/10/2026):** thêm tab cho shipper, thêm các chức năng như Shopee, làm giao diện thân thiện hơn. Chủ repo chọn:
+- đơn giao cho shipper do **Admin – Vận hành phân công** (đây là lựa chọn cho OI-01);
+- làm cả 4 nhóm chức năng kiểu sàn: trang chủ kiểu sàn, Shop HTX + Yêu thích, Kho voucher, theo dõi vận chuyển chi tiết;
+- giữ màu thương hiệu, làm dễ dùng hơn.
+
+Chia 2 đợt. **Đợt 1 (bản này): vai trò Shipper, theo dõi vận chuyển, lọc đánh giá.** Đợt 2: trang chủ kiểu sàn, Shop HTX + Yêu thích, Kho voucher, giao diện thân thiện.
+
+Không làm các chức năng kiểu sàn trái SRS: xu, mã freeship, cộng nhiều mã, số "đã bán" không có thật.
+
+### Shipper
+
+- **Tài khoản:** 2 shipper mẫu (0900 000 401, 0900 000 402); Admin – Vận hành cấp thêm được ở "Cấp & khoá tài khoản". Màn đăng nhập có nhóm "Giao vận".
+- **Admin – Vận hành, tab "Giao hàng"** (thay tab "Mô phỏng ĐVVC"):
+  - **Phân công shipper:** đơn Đang chuẩn bị / Đang giao, chọn shipper, ghi chú lấy hàng (chỉ shipper thấy); đổi shipper được khi chưa lấy hàng.
+  - **Mô phỏng ĐVVC:** chỉ cho đơn Đang giao chưa có shipper (như trước).
+- **Màn Shipper** (điện thoại trước):
+  - thẻ số việc: cần lấy hàng, đang giao, đã giao, tiền thu hộ đang giữ;
+  - tab vuốt: Cần giao · Đã giao · Chuyển hoàn · Thu hộ COD;
+  - chi tiết đơn: tiền thu hộ (hoặc "khách đã thanh toán"), người nhận, nút gọi và mở bản đồ, hàng cần giao, điểm lấy hàng; đơn quà gửi người khác nhắc không đưa giấy tờ có giá.
+- **Các bước của shipper:**
+  - "Đã lấy hàng" (sau khi HTX bàn giao) → khách được báo đơn đang giao;
+  - "Giao thành công": bắt buộc 1–2 ảnh giao hàng, ghi chú không bắt buộc. Theo mục 5.5, đơn sang Đã giao khi khách bấm Đã nhận hoặc sau PAR-26;
+  - "Giao thất bại": chọn lý do (không liên lạc được, hẹn giao lại, vắng nhà, sai địa chỉ, khác + ghi rõ); quá PAR-27 lần giao lại thì chuyển hoàn;
+  - "Khách từ chối nhận": bắt buộc lý do, chuyển hoàn.
+- **Tiền thu hộ (mô phỏng):**
+  - giao thành công đơn có thu khi nhận hàng thì shipper giữ khoản đó;
+  - shipper bấm "Nộp tiền thu hộ" tạo phiếu nộp;
+  - Admin – Tài chính xác nhận ở tab mới "Thu hộ COD", có bảng shipper đang giữ bao nhiêu.
+- **Quyền:**
+  - shipper chỉ thấy đơn được giao cho mình (kiểm trong domain);
+  - không thấy SĐT, địa chỉ HTX (mục 5.9), không thấy tài khoản ngân hàng của khách;
+  - thao tác của shipper có trong nhật ký.
+- **Thông báo:** shipper khi được giao đơn hoặc bị chuyển đơn; khách khi shipper lấy hàng, giao chưa thành công, đã giao; Tài chính khi có phiếu nộp; shipper khi Tài chính xác nhận.
+- Mã nguồn: `src/domain/shipper.ts`, `src/screens/shipper/`, `CarrierSimTab.tsx` (tab Giao hàng), `FinanceCodTab.tsx`. Mã Shipper cũ đang ẩn (`src/screens/_pending-OI-01/`) đã xoá.
+
+### Theo dõi vận chuyển, lọc đánh giá
+
+- **"Theo dõi vận chuyển"** trong chi tiết đơn của khách, của HTX và của shipper:
+  - các mốc mới nhất ở trên: HTX bàn giao, shipper nhận đơn, đã lấy hàng, giao không thành công (lần, lý do), giao thành công (kèm ảnh giao hàng), khách xác nhận nhận hàng, chuyển hoàn;
+  - không hiện ghi chú lấy hàng nội bộ.
+- **Trang sản phẩm:** lọc đánh giá Tất cả · 5 sao … 1 sao · Có ảnh, mỗi nút kèm số đánh giá.
+
+### Kiểm thử
+
+- Unit test mới:
+  - `shipper.test.ts`: phân công, quyền, lấy hàng → giao → thu hộ → Tài chính xác nhận, giao thất bại / chuyển hoàn, theo dõi vận chuyển;
+  - `reviewFilter.test.ts`.
+- `e2e/luong-shipper.e2e.ts`: 5 vai trò trên 5 máy, từ đặt đơn COD tới Tài chính xác nhận tiền thu hộ; khách thấy ảnh giao hàng và lần giao thất bại.
+- Kiểm tra giao diện ở 5 cỡ màn hình có thêm màn Shipper: 0 lỗi axe, 0 vùng bấm dưới 44px, 0 chữ dưới 12px, không tràn ngang.
 
 ---
 
@@ -1993,12 +2048,18 @@ Ngoài các ca trên còn có test cho:
 91. **Dữ liệu dùng chung lưu nén gzip trên Upstash**, giới hạn 900 KB sau khi nén và 4 MB trước khi nén (dưới mức của gói Upstash miễn phí và của hàm Vercel).
 92. **Lâu không thao tác thì hỏi máy chủ thưa hơn** (30 giây sau 2 phút, 60 giây sau 15 phút) để đỡ tốn lượt Upstash; dữ liệu của máy khác vì vậy có thể hiện chậm hơn khi màn hình để yên lâu.
 93. **Màn báo lỗi ở gốc app cho khôi phục dữ liệu mẫu** bằng SĐT + OTP mô phỏng của Quản trị gốc / Admin – Vận hành, để thoát được khi chính dữ liệu dùng chung làm app lỗi lúc mở. Không phải bảo mật thật, như mã trình diễn.
+94. **OI-01 theo lựa chọn của chủ repo:** Admin – Vận hành phân công shipper cho đơn Đang chuẩn bị / Đang giao; shipper báo lấy hàng, giao thành công, giao thất bại, khách từ chối. Đơn chưa có shipper vẫn dùng mô phỏng ĐVVC. Cần nhóm đưa vào SRS.
+95. **Shipper báo giao thành công chỉ ghi mốc;** đơn sang Đã giao khi khách bấm Đã nhận hoặc sau PAR-26, như SRS mục 5.5.
+96. **Giao thành công bắt buộc 1–2 ảnh giao hàng** (thu nhỏ như ảnh khiếu nại); lý do giao thất bại gồm 5 lựa chọn, "Khác" bắt buộc ghi rõ.
+97. **Tiền thu hộ của shipper là mô phỏng:** shipper giữ khoản thu khi nhận hàng của đơn đã báo giao thành công, nộp bằng phiếu, Admin – Tài chính xác nhận. Không thêm dòng vào sổ giao dịch hay đối soát HTX (tiền COD đã vào sổ khi đơn Đã giao, như trước).
+98. **Shipper không thấy SĐT, địa chỉ HTX;** điểm lấy hàng do Admin – Vận hành ghi khi phân công. Shipper thấy tên, SĐT, địa chỉ người nhận để giao.
+99. **Nhật ký ghi thêm thao tác của shipper** (ngoài Admin và HTX theo mục 5.9).
 
 ## Vấn đề chờ nhóm chốt
 
 | Mã | Nội dung | Cách app đang xử lý |
 |---|---|---|
-| OI-01 | Ai cập nhật trạng thái giao hàng | Ẩn Shipper và Điều phối Ops. Dùng màn "Mô phỏng ĐVVC" trong Admin – Vận hành |
+| OI-01 | Ai cập nhật trạng thái giao hàng | Chủ repo chọn ngày 18/10/2026: Admin – Vận hành phân công shipper, shipper báo kết quả giao (cần nhóm đưa vào SRS). Đơn chưa có shipper vẫn dùng mô phỏng ĐVVC. Vai trò Điều phối Ops vẫn ẩn: Admin – Vận hành làm thay |
 | OI-02 | (theo SRS) | Chưa đụng tới |
 | OI-04 | (theo SRS) | Chưa đụng tới |
 | OI-05 | (theo SRS) | Chưa đụng tới |
@@ -2036,6 +2097,8 @@ Thêm hai việc nhóm cần chốt:
 | Admin – Tài chính (mẫu) | 0900 000 204 | Admin – Tài chính |
 | Quản trị gốc (mẫu) | 0900 000 209 | Quản trị gốc |
 | Cơ quan QLNN (mẫu) | 0900 000 301 | Cơ quan QLNN (chỉ xem) |
+| Shipper mẫu 1 | 0900 000 401 | Giao vận (Shipper) |
+| Shipper mẫu 2 | 0900 000 402 | Giao vận (Shipper) |
 
 - **Khôi phục dữ liệu mẫu:** đăng nhập Quản trị gốc (0900 000 209) hoặc Admin – Vận hành (0900 000 201), bấm "Công cụ demo" ở góc phải thanh trên cùng, rồi bấm "Khôi phục dữ liệu mẫu" (từ Giai đoạn 7, tài khoản khác và người chưa đăng nhập không thấy nút này). Thao tác này xoá dữ liệu trong `localStorage` (khoá `dac-san-so-lao-cai:data`), nạp lại dữ liệu mẫu và đưa đồng hồ demo về giờ thật; mã trình diễn giữ nguyên. Khi đang dùng API dữ liệu chung, thao tác áp dụng cho mọi máy.
 - **Ẩn danh sách tài khoản demo khi đem demo cho người ngoài:** đăng nhập Quản trị gốc → Tham số → mục "NEW-01 Mã trình diễn" → nhập mã → "Đặt mã". Máy trình diễn nhập mã ở màn đăng nhập để hiện lại danh sách. Bỏ mã ở cùng chỗ. Xem mục Giai đoạn 7.

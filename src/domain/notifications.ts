@@ -9,6 +9,7 @@
 import { generateId } from './ids';
 import { formatMoney } from './pricing';
 import { formatDateKey, iso, remainingFor, toDateKey } from './state';
+import { shipperLabel } from './tracking';
 import {
   CALL_OUTCOME_LABEL,
   ORDER_STATUS_LABEL,
@@ -83,6 +84,19 @@ function orderDrafts(prev: DemoState, next: DemoState, o: Order): Draft[] {
     const label = o.paymentStatus === 'refunded' ? 'Đã hoàn tiền' : o.paymentStatus === 'refunding' ? 'Đang hoàn tiền' : 'Chờ hoàn tiền';
     out.push({ userIds: customer, title: `Đơn ${o.id}: ${label}`, body: 'Theo dõi chi tiết hoàn tiền trong đơn hàng.', link });
   }
+  // Giao hàng bằng shipper: phân công → shipper; lấy hàng, giao thất bại, giao thành công → khách.
+  if (o.shipment && o.shipment.shipperId !== before.shipment?.shipperId) {
+    const cod = o.pricing.payOnDelivery > 0 ? `Thu hộ ${formatMoney(o.pricing.payOnDelivery)}` : 'Khách đã thanh toán';
+    out.push({ userIds: [o.shipment.shipperId], title: `Đơn mới cần giao ${o.id}`, body: `${o.address.text} · ${cod}${o.shipment.pickupNote ? ` · ${o.shipment.pickupNote}` : ''}`.slice(0, 200), link });
+    if (before.shipment) out.push({ userIds: [before.shipment.shipperId], title: `Đơn ${o.id} đã chuyển cho shipper khác`, body: 'Bạn không cần giao đơn này nữa.', link });
+  }
+  for (const e of o.deliveryLog.slice(before.deliveryLog.length)) {
+    if (e.event === 'picked_up') out.push({ userIds: customer, title: `Đơn ${o.id} đang được giao`, body: e.by ? `${shipperLabel(e.by)} đã lấy hàng và đang giao tới bạn.` : 'Đơn vị vận chuyển đã lấy hàng.', link });
+    else if (e.event === 'failed' && o.status === 'shipping')
+      out.push({ userIds: customer, title: `Giao đơn ${o.id} chưa thành công`, body: `${e.reason ?? ''}. Đơn sẽ được giao lại (lần giao lại tối đa ${o.params.maxRedeliveries}).`.replace(/^\. /, ''), link });
+    else if (e.event === 'delivered_reported') out.push({ userIds: customer, title: `Đơn ${o.id} đã được giao`, body: 'Bấm "Đã nhận hàng" trong đơn khi bạn đã nhận đủ hàng.', link });
+  }
+
   if (o.cancelRequest?.status === 'pending' && before.cancelRequest?.status !== 'pending') {
     out.push({ userIds: coop, title: `Khách yêu cầu huỷ đơn ${o.id}`, body: o.cancelRequest.reason, link });
   }
@@ -163,6 +177,18 @@ export function deriveNotifications(prev: DemoState, next: DemoState, at: Date):
           body: `Chào mừng ${a.coopName}. Thêm sản phẩm ở mục Sản phẩm; sản phẩm mới chờ Admin – Chất lượng duyệt.`,
         });
       }
+    }
+  }
+
+  // Tiền thu hộ của shipper: nộp → Admin – Tài chính; xác nhận → shipper.
+  const prevRemits = prev.codRemittances ?? [];
+  const nextRemits = next.codRemittances ?? [];
+  if (prevRemits !== nextRemits) {
+    for (const r of nextRemits) {
+      const before = prevRemits.find((x) => x.id === r.id);
+      if (before?.status === r.status) continue;
+      if (r.status === 'submitted') drafts.push({ userIds: adminsOf(next, 'finance'), title: `${r.shipperName} nộp tiền thu hộ ${formatMoney(r.amount)}`, body: `${r.orderIds.length} đơn · phiếu ${r.id} (mô phỏng). Xác nhận ở mục Thu hộ COD.` });
+      else drafts.push({ userIds: [r.shipperId], title: `Đã xác nhận phiếu nộp tiền ${r.id}`, body: `Admin – Tài chính đã nhận ${formatMoney(r.amount)} (mô phỏng).` });
     }
   }
 

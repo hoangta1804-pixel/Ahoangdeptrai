@@ -352,7 +352,9 @@ export function coopHandover(state: DemoState, orderId: string, actor: Actor, at
   if (denied) return fail(denied);
   const moved = move(state, order, 'shipping', actor, at, 'HTX bàn giao vận chuyển');
   if (!moved.ok) return moved;
-  let next = replaceOrder(moved.value.state, { ...moved.value.order, deliveryLog: [...order.deliveryLog, { at: iso(at), event: 'picked_up' }] });
+  // Đơn đã có shipper: shipper tự báo đã lấy hàng (domain/shipper.ts). Chưa có: ghi ĐVVC mô phỏng đã nhận hàng.
+  const deliveryLog = order.shipment ? order.deliveryLog : [...order.deliveryLog, { at: iso(at), event: 'picked_up' as const }];
+  let next = replaceOrder(moved.value.state, { ...moved.value.order, deliveryLog });
   if (order.kind === 'ready') {
     next = {
       ...next,
@@ -399,38 +401,60 @@ export function coopDecideCancelRequest(state: DemoState, orderId: string, actor
 
 export type CarrierEvent = 'picked_up' | 'delivered_reported' | 'failed' | 'refused';
 
+/**
+ * Ghi một báo cáo giao hàng cho đơn Đang giao, của ĐVVC mô phỏng hoặc của shipper (`by` là tên shipper).
+ * - Báo giao thành công chỉ ghi mốc; đơn sang Đã giao khi khách bấm Đã nhận hoặc sau PAR-26 (mục 5.5).
+ * - Giao thất bại quá PAR-27 lần, hoặc khách từ chối nhận, thì chuyển hoàn. Hai trường hợp này bắt buộc lý do.
+ * - `patch` thêm thông tin của shipper vào đơn (ảnh giao hàng, tiền thu hộ…).
+ */
+export function reportDelivery(
+  state: DemoState,
+  orderId: string,
+  actor: Actor,
+  event: CarrierEvent,
+  reason: string,
+  at: Date,
+  opts: { by?: string; patch?: (order: Order) => Order } = {},
+): Result<DemoState> {
+  const order = findOrder(state, orderId);
+  if (!order) return fail('Không tìm thấy đơn.');
+  if (order.status !== 'shipping') return fail('Chỉ báo giao hàng với đơn Đang giao.');
+  if (order.carrierDeliveredAt) return fail(opts.by ? 'Đơn đã báo giao thành công.' : 'ĐVVC đã báo giao thành công.');
+  const log = [...order.deliveryLog, { at: iso(at), event, reason: reason.trim() || undefined, ...(opts.by ? { by: opts.by } : {}) }];
+  const reporter: Actor = opts.by ? actor : { kind: 'carrier_sim', name: 'ĐVVC mô phỏng' };
+  const label = opts.by ? 'Shipper' : 'Mô phỏng ĐVVC';
+  const patch = opts.patch ?? ((o: Order) => o);
+
+  if (event === 'picked_up') {
+    return ok(audit(replaceOrder(state, patch({ ...order, deliveryLog: log })), actor, `${label}: đang giao`, orderId, at));
+  }
+  if (event === 'delivered_reported') {
+    return ok(audit(replaceOrder(state, patch({ ...order, deliveryLog: log, carrierDeliveredAt: iso(at) })), actor, `${label}: giao thành công`, orderId, at));
+  }
+  if (!reason.trim()) return fail('Vui lòng nhập lý do giao thất bại.');
+  if (event === 'refused') {
+    const moved = move(state, patch({ ...order, deliveryLog: log }), 'returning', reporter, at, `Khách từ chối nhận: ${reason.trim()}`);
+    if (!moved.ok) return moved;
+    return ok(audit(moved.value.state, actor, `${label}: khách từ chối nhận`, orderId, at, reason));
+  }
+  // Giao thất bại: hết PAR-27 lần giao lại thì chuyển hoàn.
+  const attempts = order.deliveryAttempts + 1;
+  const updated: Order = patch({ ...order, deliveryLog: log, deliveryAttempts: attempts });
+  if (attempts > order.params.maxRedeliveries) {
+    const moved = move(state, updated, 'returning', reporter, at, `Hết ${order.params.maxRedeliveries} lần giao lại: ${reason.trim()}`);
+    if (!moved.ok) return moved;
+    return ok(audit(moved.value.state, actor, `${label}: chuyển hoàn`, orderId, at, reason));
+  }
+  return ok(audit(replaceOrder(state, updated), actor, `${label}: giao thất bại lần ${attempts}`, orderId, at, reason));
+}
+
+/** Admin – Vận hành mô phỏng ĐVVC cho đơn chưa phân công shipper (đơn đã có shipper thì shipper tự báo). */
 export function carrierSimulate(state: DemoState, orderId: string, actor: Actor, event: CarrierEvent, reason: string, at: Date): Result<DemoState> {
   const denied = requireAdmin(actor, 'operations');
   if (denied) return fail(denied);
   const order = findOrder(state, orderId);
-  if (!order) return fail('Không tìm thấy đơn.');
-  if (order.status !== 'shipping') return fail('Chỉ mô phỏng giao hàng với đơn Đang giao.');
-  const log = [...order.deliveryLog, { at: iso(at), event, reason: reason.trim() || undefined }];
-  const carrier: Actor = { kind: 'carrier_sim', name: 'ĐVVC mô phỏng' };
-
-  if (event === 'picked_up') {
-    if (order.carrierDeliveredAt) return fail('ĐVVC đã báo giao thành công.');
-    return ok(audit(replaceOrder(state, { ...order, deliveryLog: log }), actor, 'Mô phỏng ĐVVC: đang giao', orderId, at));
-  }
-  if (event === 'delivered_reported') {
-    if (order.carrierDeliveredAt) return fail('ĐVVC đã báo giao thành công.');
-    return ok(audit(replaceOrder(state, { ...order, deliveryLog: log, carrierDeliveredAt: iso(at) }), actor, 'Mô phỏng ĐVVC: giao thành công', orderId, at));
-  }
-  if (!reason.trim()) return fail('Vui lòng nhập lý do giao thất bại.');
-  if (event === 'refused') {
-    const moved = move(state, { ...order, deliveryLog: log }, 'returning', carrier, at, `Khách từ chối nhận: ${reason.trim()}`);
-    if (!moved.ok) return moved;
-    return ok(audit(moved.value.state, actor, 'Mô phỏng ĐVVC: khách từ chối nhận', orderId, at, reason));
-  }
-  // Giao thất bại: hết PAR-27 lần giao lại thì chuyển hoàn.
-  const attempts = order.deliveryAttempts + 1;
-  const updated: Order = { ...order, deliveryLog: log, deliveryAttempts: attempts };
-  if (attempts > order.params.maxRedeliveries) {
-    const moved = move(state, updated, 'returning', carrier, at, `Hết ${order.params.maxRedeliveries} lần giao lại: ${reason.trim()}`);
-    if (!moved.ok) return moved;
-    return ok(audit(moved.value.state, actor, 'Mô phỏng ĐVVC: chuyển hoàn', orderId, at, reason));
-  }
-  return ok(audit(replaceOrder(state, updated), actor, `Mô phỏng ĐVVC: giao thất bại lần ${attempts}`, orderId, at, reason));
+  if (order?.shipment) return fail(`Đơn đã giao cho ${order.shipment.shipperName}; shipper báo kết quả giao hàng.`);
+  return reportDelivery(state, orderId, actor, event, reason, at);
 }
 
 /** Tự chuyển Đã giao khi ĐVVC đã báo giao thành công mà sau PAR-26 khách vẫn chưa bấm. */
