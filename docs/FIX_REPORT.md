@@ -14,7 +14,7 @@ Tài liệu này cập nhật sau mỗi giai đoạn của `PROMPT_SUA_APP.md` (
 | 8 | Bổ sung cho khách hàng | Chưa làm |
 | 9 | Bổ sung cho HTX và Admin | Chưa làm |
 | 10 | Cài lên màn hình chính, đo tốc độ | Chưa làm |
-| Sau 7 | Vai trò Shipper, theo dõi vận chuyển (đợt 1); trang chủ kiểu sàn, Shop HTX, Kho voucher (đợt 2) | Đợt 1 **Xong**, đợt 2 đang làm |
+| Sau 7 | Vai trò Shipper, theo dõi vận chuyển (đợt 1); trang chủ kiểu sàn, Shop HTX, Kho voucher (đợt 2) | **Xong** |
 
 ## Chạy local
 
@@ -29,16 +29,74 @@ npm run e2e      # kiểm thử trình duyệt (Playwright): tự build, chạy 
 
 Lần đầu chạy `npm run e2e` trên máy mới: `npx playwright install chromium` để tải trình duyệt.
 
-### Kết quả lần chạy cuối (Shipper, 18/10/2026)
+### Kết quả lần chạy cuối (đợt 2 kiểu sàn, 18/10/2026)
 
 | Lệnh | Kết quả |
 |---|---|
 | `npm run lint` | Không lỗi |
-| `npm test` | 33 file, 228 test, tất cả đạt (có T1–T29) |
-| `npm run build` | Thành công, không cảnh báo. Phần chung 416 kB (gzip 125 kB); màn HTX, Admin, QLNN tải riêng theo vai trò |
-| `npm run e2e` | 17 kịch bản, tất cả đạt (khoảng 2,5 phút): Luồng 1–6, Luồng Shipper, chế độ trình diễn, 3 tình huống lỗi của bản web, giao diện ở 320 / 390 / 768 / 1.280 / 1.920px (có màn Shipper). Không lỗi JS ngoài lỗi có chủ đích của từng kịch bản |
-| Kiểm tra giao diện trong `npm run e2e` (axe-core 4.10 + đo vùng bấm, cỡ chữ, tràn ngang) | 0 lỗi axe, 0 vùng bấm dưới 44×44, 0 chữ dưới 12px, không tràn ngang |
-| Kịch bản hồi quy cũ (ngoài repo, 23 lượt) trên bản build | Tất cả đạt. So với lần chạy trước chỉ khác ngày giờ và câu nhắc mới khi màn hình lỗi; lỗi console duy nhất ngoài 409 là ở kịch bản cố ý ghi dữ liệu hỏng (khung báo lỗi bắt được, như trước) |
+| `npm test` | 34 file, 240 test, tất cả đạt (có T1–T29) |
+| `npm run build` | Thành công, không cảnh báo. Phần chung 445 kB (gzip 133 kB); màn HTX, Admin, QLNN, Shipper và các sheet ít mở (shop HTX, yêu thích, kho voucher…) tải riêng |
+| `npm run e2e` | 18 kịch bản, tất cả đạt (khoảng 3 phút): Luồng 1–6, Luồng Shipper, Luồng sàn, chế độ trình diễn, 3 tình huống lỗi của bản web, giao diện ở 320 / 390 / 768 / 1.280 / 1.920px. Không lỗi JS ngoài lỗi có chủ đích của từng kịch bản |
+| Kiểm tra giao diện trong `npm run e2e` (axe-core 4.10 + đo vùng bấm, cỡ chữ, tràn ngang) | 0 lỗi axe, 0 vùng bấm dưới 44×44, 0 chữ dưới 12px, không tràn ngang (có trang chủ mới, gợi ý tìm kiếm, shop HTX, yêu thích, kho voucher) |
+
+---
+
+## Sau Giai đoạn 7 – Trang chủ kiểu sàn, Shop HTX, Yêu thích, Kho voucher (đợt 2)
+
+Đợt 2 của yêu cầu ngày 18/10/2026 (xem đợt 1 bên dưới). Giữ màu thương hiệu, làm dễ dùng hơn. Không thêm chức năng kiểu sàn trái SRS: không xu, không mã freeship, không cộng nhiều mã, không hiện số lượng bán ra.
+
+### Trang chủ (Khám phá)
+
+- **Thanh tìm kiếm dính** ngay dưới thanh địa chỉ khi cuộn:
+  - đang gõ: gợi ý tối đa 5 sản phẩm và 3 shop HTX khớp, nút "Xem tất cả N kết quả";
+  - ô trống: **tìm kiếm gần đây** (6 từ khoá, nút "Xoá lịch sử");
+  - lưới sản phẩm vẫn lọc ngay khi gõ như trước; Enter lưu từ khoá và cuộn tới kết quả.
+- **Đầu trang gọn hơn** (thấp hơn khoảng một nửa trên điện thoại), số sản phẩm và số HTX lấy từ dữ liệu.
+- **Lối tắt** dạng ô có biểu tượng: Hàng khô, Chế biến, Nông sản tươi (bấm để lọc, bấm lại để bỏ), Đặt trước, Kho voucher, Yêu thích (kèm số), Shop HTX, Đơn mua.
+- **Mã ưu đãi:** dải vé mã đang phát hành, nút "Lưu" từng mã.
+- **Shop HTX:** dải thẻ shop (tên, vùng, số sản phẩm, điểm đánh giá, số người theo dõi, 3 ảnh sản phẩm), nút "Xem shop".
+- **Đã xem gần đây:** 12 sản phẩm mở gần nhất, nút "Xoá".
+- **Lưới sản phẩm:**
+  - sắp xếp: Phù hợp · Giá thấp → cao · Giá cao → thấp · Đánh giá cao (theo giá "từ" và điểm của cả nhóm quy cách);
+  - lọc vùng như trước, thêm **khoảng giá** (dưới 100.000đ, 100.000đ – 200.000đ, trên 200.000đ);
+  - thẻ sản phẩm có **trái tim Yêu thích** và **điểm đánh giá** (khi đã có đánh giá đang hiển thị).
+- Khi đang tìm / lọc thì ẩn các dải quảng bá như trước để kết quả lên gần đầu trang.
+
+### Shop HTX
+
+- Mở từ dải Shop HTX, gợi ý tìm kiếm, khối shop ở trang sản phẩm, mục Yêu thích.
+- Có: tên, vùng, giới thiệu, số sản phẩm đang bán, điểm đánh giá của shop (trung bình các đánh giá đang hiển thị của mọi sản phẩm), số người theo dõi, sản phẩm đang bán có sắp xếp, nút **Theo dõi** và **Nhắn tin** (mở tin nhắn riêng với HTX như nút chat nổi).
+- **Không có SĐT, địa chỉ cửa hàng, người đại diện, tài khoản nhận tiền** (mục 5.9); trang ghi rõ điều này và chỉ cách liên hệ (nhắn tin, khiếu nại theo đơn). Unit test kiểm dữ liệu trang shop không chứa các thông tin này.
+- HTX tạm khoá quyền bán: trang shop ghi "đang tạm ngừng nhận đơn".
+- **Theo dõi:** khi Admin – Chất lượng duyệt **sản phẩm mới** của HTX (không tính quy cách thêm), khách đang theo dõi nhận thông báo "HTX … có sản phẩm mới"; bấm thông báo mở trang sản phẩm.
+
+### Yêu thích
+
+- Trái tim trên thẻ sản phẩm và trang sản phẩm. Lưu theo nhóm quy cách (thích hộp 300 g là thích cả sản phẩm).
+- Tài khoản › Tiện ích › **Yêu thích**: sản phẩm yêu thích (mới trước; sản phẩm HTX đã ẩn hiện "Không còn bán", vẫn bỏ được) và HTX đang theo dõi (Xem shop, Bỏ theo dõi).
+
+### Kho voucher
+
+- Lưu mã ở trang chủ hoặc trong Tài khoản › Tiện ích › **Kho voucher**. Chỉ lưu được mã khách dùng được hoặc sắp tới ngày dùng; mã chỉ cho đơn đầu tiên không cho khách đã đặt hàng lưu.
+- Mã đã lưu hiện kèm tình trạng (dùng được, chưa đến ngày, hết hạn, hết lượt, ngừng áp dụng); bỏ lưu được.
+- **Bước đặt hàng:** mã đã lưu lên đầu danh sách, có nhãn "Đã lưu". Quy tắc mã giữ nguyên: mỗi lần đặt tối đa PAR-28 mã (= 1), chỉ giảm tiền hàng hợp lệ.
+
+### Sửa thêm
+
+- Thông báo cho shipper (được giao đơn, Tài chính xác nhận tiền) trước đây không bấm được; nay bấm mở đơn như khách và HTX.
+- Thao tác Yêu thích / Theo dõi / Lưu mã ghi rõ bật hay tắt (không đảo trạng thái), nên khi máy khác vừa ghi và thao tác được chạy lại trên dữ liệu mới thì kết quả vẫn đúng.
+
+### Mã nguồn
+
+- `src/domain/marketplace.ts`: yêu thích, theo dõi, trang shop (chỉ trường công khai), kho voucher, sắp xếp, khoảng giá.
+- Dữ liệu dùng chung thêm `favorites`, `follows`, `savedVouchers` (theo mã khách; không bắt buộc để dữ liệu cũ vẫn đọc được, có chuẩn hoá).
+- Tìm kiếm gần đây và đã xem gần đây chỉ lưu trên máy (`src/store/viewerPrefs.ts`, localStorage), không đưa vào dữ liệu dùng chung.
+- Giao diện: `ExploreTab.tsx` (làm lại), `CoopShopSheet.tsx`, `FavoritesSheet.tsx`, `VoucherWalletSheet.tsx`, `VoucherTicket.tsx`, `FavoriteButton.tsx`, `useMarketplace.ts`; sửa `ProductDetailSheet.tsx`, `CheckoutSheet.tsx`, `AccountTab.tsx`, `NotificationsSheet.tsx`.
+
+### Kiểm thử
+
+- Unit test mới `marketplace.test.ts` (12 test): yêu thích theo nhóm quy cách, sản phẩm đã ẩn, chạy lại thao tác không đảo kết quả, theo dõi và đếm người theo dõi, trang shop không lộ SĐT / địa chỉ / người đại diện / tài khoản, thông báo sản phẩm mới cho người theo dõi (không báo khi thêm quy cách), lưu / bỏ lưu mã và tình trạng mã, giới hạn kho, mã đã lưu lên đầu, sắp xếp theo giá và đánh giá, khoảng giá, chuẩn hoá dữ liệu.
+- `e2e/luong-san.e2e.ts`: gợi ý và lịch sử tìm kiếm, sắp xếp giá, lọc khoảng giá, yêu thích, đã xem gần đây, shop HTX + theo dõi (không có SĐT HTX), lưu mã, mã đã lưu lên đầu ở bước đặt hàng; kiểm tra giao diện ở từng bước.
 
 ---
 
@@ -2054,6 +2112,12 @@ Ngoài các ca trên còn có test cho:
 97. **Tiền thu hộ của shipper là mô phỏng:** shipper giữ khoản thu khi nhận hàng của đơn đã báo giao thành công, nộp bằng phiếu, Admin – Tài chính xác nhận. Không thêm dòng vào sổ giao dịch hay đối soát HTX (tiền COD đã vào sổ khi đơn Đã giao, như trước).
 98. **Shipper không thấy SĐT, địa chỉ HTX;** điểm lấy hàng do Admin – Vận hành ghi khi phân công. Shipper thấy tên, SĐT, địa chỉ người nhận để giao.
 99. **Nhật ký ghi thêm thao tác của shipper** (ngoài Admin và HTX theo mục 5.9).
+100. **Yêu thích, theo dõi HTX, kho voucher là chức năng thêm theo yêu cầu của chủ repo,** ngoài SRS. Không ghi nhật ký (thao tác cá nhân của khách, như giỏ hàng). Mỗi khách tối đa 100 sản phẩm yêu thích, 50 HTX theo dõi, 30 mã đã lưu, để dữ liệu dùng chung gọn.
+101. **Trang shop chỉ có thông tin công khai;** điểm shop là trung bình các đánh giá đang hiển thị của mọi sản phẩm đang bán của HTX. Không hiện người đại diện vì là thông tin cá nhân.
+102. **Kho voucher không đổi quy tắc mã:** lưu mã không giữ lượt; lượt chỉ bị giữ khi đặt hàng như trước (BR-KM). Mã hết lượt / hết hạn sau khi lưu vẫn nằm trong kho kèm tình trạng.
+103. **Tìm kiếm gần đây và đã xem gần đây lưu trên từng máy** (localStorage theo mã khách), không đồng bộ giữa các máy.
+104. **Khoảng giá và sắp xếp dùng giá "từ" của nhóm quy cách** (quy cách đang bán giá thấp nhất), như giá in trên thẻ.
+105. **Báo "có sản phẩm mới" chỉ khi Admin – Chất lượng duyệt sản phẩm mới,** không báo khi duyệt quy cách thêm, giá hay nội dung.
 
 ## Vấn đề chờ nhóm chốt
 

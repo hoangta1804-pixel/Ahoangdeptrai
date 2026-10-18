@@ -288,6 +288,9 @@ function baseState(now: Date): DemoState {
     chatReads: {},
     coopApplications: [],
     codRemittances: [],
+    favorites: {},
+    follows: {},
+    savedVouchers: {},
   };
 }
 

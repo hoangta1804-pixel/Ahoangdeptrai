@@ -25,6 +25,9 @@ function arrays(x: Obj, keys: string[]): Obj {
   return out;
 }
 
+/** Bảng "mã khách → danh sách mã" (yêu thích, theo dõi, kho voucher): bỏ phần tử không phải chuỗi. */
+const idLists = (v: unknown): Record<string, string[]> => (isObj(v) ? Object.fromEntries(Object.entries(v).map(([k, l]) => [k, list(l).filter((x): x is string => typeof x === 'string')])) : {});
+
 function normalizeOrder(o: Obj): Obj | null {
   // Thiếu tiền hoặc địa chỉ thì không hiển thị được đơn: bỏ.
   if (!isObj(o.pricing) || !isObj(o.address) || typeof o.status !== 'string') return null;
@@ -73,5 +76,6 @@ export function normalizeState(raw: unknown, fallback: () => DemoState): DemoSta
   for (const k of ['orderMessages', 'directMessages']) if (out[k] !== undefined) out[k] = withId(out[k]);
   if (out.codRemittances !== undefined) out.codRemittances = withId(out.codRemittances).map((r) => arrays(r, ['orderIds']));
   if (out.chatReads !== undefined && !isObj(out.chatReads)) out.chatReads = {};
+  for (const k of ['favorites', 'follows', 'savedVouchers']) if (out[k] !== undefined) out[k] = idLists(out[k]);
   return out as unknown as DemoState;
 }
