@@ -4,9 +4,11 @@ import { SimBadge } from '../components/EmptyState';
 import { LandscapeArt } from '../components/LandscapeArt';
 import { Field, Input, PrimaryButton, SecondaryButton } from '../components/form';
 import { DEMO_OTP, googleLogin, registerCustomer, registerGoogleCustomer, requestOtp, verifyLogin, type GoogleProfile } from '../domain/auth';
+import { demoAccountsVisible, unlockDemoAccounts } from '../domain/demoAccess';
 import { formatPhone, PHONE_RULE } from '../domain/phone';
 import { ACCOUNT_ROLE_LABEL, ADMIN_GROUP_LABEL, type UserAccount } from '../domain/types';
 import { useStore } from '../store/AppDataContext';
+import { loadDemoUnlock, saveDemoUnlock } from '../store/persistence';
 import { GoogleSignIn } from './GoogleSignIn';
 import { PAGE_X } from './layout';
 import { useUi } from './UiContext';
@@ -33,6 +35,7 @@ const initialsOf = (name: string) => {
 /**
  * Đăng nhập demo (mục 5.9): SĐT + OTP mô phỏng (luôn là 123456), có danh sách tài khoản demo để bấm nhanh.
  * Khách hàng mới đăng ký được bằng SĐT + OTP. HTX mới nộp hồ sơ đăng ký, được duyệt thì có tài khoản; Admin, QLNN do Admin cấp.
+ * Giai đoạn 7: Quản trị gốc đặt mã trình diễn (NEW-01) thì danh sách tài khoản demo ẩn cho tới khi tab này nhập đúng mã.
  */
 export function LoginScreen() {
   const { state, run } = useStore();
@@ -42,6 +45,8 @@ export function LoginScreen() {
   const [otp, setOtp] = useState('');
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [unlocked, setUnlocked] = useState(loadDemoUnlock);
+  const showDemoAccounts = demoAccountsVisible(state, unlocked);
 
   const sendOtp = (p = phone) => {
     const r = requestOtp(state, p);
@@ -234,10 +239,19 @@ export function LoginScreen() {
 
         <section className="space-y-3" aria-labelledby="tai-khoan-demo">
           <SectionHeading id="tai-khoan-demo" eyebrow="Bản demo" title="Tài khoản demo" />
-          <p className="text-sm text-stone-600">
-            Bấm một tài khoản để điền sẵn số điện thoại, sau đó nhập OTP mô phỏng. Đổi vai trò bằng cách đăng xuất rồi đăng nhập tài khoản khác.
-          </p>
-          {groups.map((g) => (
+          {showDemoAccounts ? (
+            <p className="text-sm text-stone-600">
+              Bấm một tài khoản để điền sẵn số điện thoại, sau đó nhập OTP mô phỏng. Đổi vai trò bằng cách đăng xuất rồi đăng nhập tài khoản khác.
+            </p>
+          ) : (
+            <DemoCodeGate
+              onUnlocked={(hash) => {
+                saveDemoUnlock(hash);
+                setUnlocked(hash);
+              }}
+            />
+          )}
+          {showDemoAccounts && groups.map((g) => (
             <div key={g.title} className="space-y-1.5">
               <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-champagne-700">{g.title}</h3>
               <ul className="grid gap-2 sm:grid-cols-2 2xl:grid-cols-3">
@@ -269,6 +283,37 @@ export function LoginScreen() {
           ))}
         </section>
       </div>
+    </div>
+  );
+}
+
+/** Danh sách tài khoản demo đang ẩn (NEW-01): nhập đúng mã trình diễn thì hiện, nhớ theo tab. */
+function DemoCodeGate({ onUnlocked }: { onUnlocked: (codeHash: string) => void }) {
+  const { state } = useStore();
+  const { showToast } = useUi();
+  const [code, setCode] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const unlock = () => {
+    const r = unlockDemoAccounts(state, code);
+    if (!r.ok) return setError(r.error);
+    setError(null);
+    onUnlocked(r.value);
+    showToast('Đã hiện danh sách tài khoản demo cho tab này.');
+  };
+  return (
+    <div className="space-y-3 rounded-[28px] border border-champagne-200 bg-white p-5">
+      <p className="text-sm text-stone-600">Danh sách tài khoản demo đang ẩn. Người trình diễn nhập mã trình diễn để hiện danh sách; người xem đăng nhập bằng số điện thoại ở trên.</p>
+      <Field label="Mã trình diễn">
+        <Input type="password" autoComplete="off" value={code} onChange={(e) => setCode(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && unlock()} />
+      </Field>
+      <SecondaryButton className="w-full" onClick={unlock}>
+        Hiện tài khoản demo
+      </SecondaryButton>
+      {error && (
+        <p className="text-sm font-semibold text-rose-700" role="alert">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

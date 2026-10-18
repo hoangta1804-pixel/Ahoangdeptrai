@@ -87,6 +87,16 @@ describe('/api/geocode (Google Maps)', () => {
       ]),
     ).toEqual({ formattedAddress: 'Thanh Xuân, Hà Nội', street: '', areas: ['Thanh Xuân'], city: '' });
   });
+
+  it('?status=1 chỉ cho biết đã có khoá hay chưa: không gọi Google, không tính lượt, không trả khoá', async () => {
+    let calls = 0;
+    const deps = { fetch: async () => (calls++, json(200, sample)), countToday: async () => (calls++, 1) };
+    expect(await handleGeocodeRequest({ method: 'GET', query: { status: '1' } }, deps)).toEqual({ status: 200, body: { configured: false } });
+    const r = await handleGeocodeRequest({ method: 'GET', query: { status: '1' } }, { ...deps, apiKey: 'secret-key' });
+    expect(r).toEqual({ status: 200, body: { configured: true } });
+    expect(JSON.stringify(r)).not.toContain('secret-key');
+    expect(calls).toBe(0);
+  });
 });
 
 describe('/api/auth/google', () => {

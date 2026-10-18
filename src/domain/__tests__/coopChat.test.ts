@@ -35,7 +35,7 @@ describe('Nhắn tin riêng giữa khách và HTX (nút chat nổi)', () => {
     expect(must(conversationsFor(s, COOP_X))[0]).toMatchObject({ customerId: 'cust-1', title: 'Khách 1' });
   });
 
-  it('HTX không nhắn được cho khách lạ; sản phẩm phải thuộc HTX; QLNN, Admin không có hộp tin', () => {
+  it('T25: HTX không nhắn được cho khách lạ; sản phẩm phải thuộc HTX; QLNN, Admin không có hộp tin', () => {
     const s = makeState();
     expect(coopMayMessage(s, 'coop-x', 'cust-1')).toBe(false);
     expect(sendDirectMessage(s, COOP_X, 'cust-1', 'Chào', T0)).toMatchObject({ ok: false });

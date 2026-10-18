@@ -65,6 +65,8 @@ const TABS: Record<AdminSubGroup, TabDef[]> = {
     OVERVIEW,
     { key: 'accounts', label: 'Phân quyền', render: () => <AdminAccountsTab /> },
     { key: 'audit', label: 'Nhật ký', render: () => <AdminAuditTab /> },
+    // Quản trị gốc xem tham số và đặt mã trình diễn NEW-01 (Giai đoạn 7); chỉ Admin – Vận hành sửa tham số.
+    { key: 'params', label: 'Tham số', render: () => <AdminParamsTab /> },
     COOP_LIST,
   ],
 };

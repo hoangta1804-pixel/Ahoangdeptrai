@@ -57,3 +57,22 @@ export function saveSession(userId: string | null): void {
     // bỏ qua
   }
 }
+
+/** Tab đã nhập đúng mã trình diễn (NEW-01): nhớ bản băm của mã theo từng tab, đóng tab là quên. */
+const DEMO_UNLOCK_KEY = 'dac-san-so-lao-cai:demo-unlock';
+
+export function loadDemoUnlock(): string | null {
+  try {
+    return sessionStorage.getItem(DEMO_UNLOCK_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function saveDemoUnlock(codeHash: string): void {
+  try {
+    sessionStorage.setItem(DEMO_UNLOCK_KEY, codeHash);
+  } catch {
+    // bỏ qua: không nhớ được thì lần sau nhập lại mã
+  }
+}

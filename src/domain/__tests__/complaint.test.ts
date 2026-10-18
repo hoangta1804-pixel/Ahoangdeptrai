@@ -31,7 +31,7 @@ function withTicket(requestRefund = true): { s: DemoState; ticket: Ticket } {
 const states = (s: DemoState, t: Ticket, now = addMs(T0, 2 * HOUR_MS)) => ticketSteps(s, s.tickets.find((x) => x.id === t.id)!, now).map((x) => `${x.key}:${x.state}`);
 
 describe('Quy trình xử lý khiếu nại', () => {
-  it('đi đúng thứ tự: tiếp nhận → HTX phản hồi → kết luận duyệt hoàn → hoàn tiền → đóng; các bước hiện đúng', () => {
+  it('T26: đi đúng thứ tự: tiếp nhận → HTX phản hồi → kết luận duyệt hoàn → hoàn tiền → đóng; các bước hiện đúng', () => {
     let { s, ticket } = withTicket();
     expect(ticketsOfOrder(s, ticket.orderId).map((t) => t.id)).toEqual([ticket.id]);
     expect(states(s, ticket)).toEqual(['submitted:done', 'accepted:current', 'coop:upcoming', 'concluded:upcoming', 'refund:upcoming', 'closed:upcoming']);

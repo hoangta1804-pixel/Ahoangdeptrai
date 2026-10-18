@@ -62,7 +62,7 @@ describe('Quy trình phê duyệt HTX mới', () => {
     expect(requestOtp(s1, '0900000501').ok).toBe(false);
   });
 
-  it('tiếp nhận → thẩm định đủ 4 mục → duyệt: tạo HTX (đang bán, hồ sơ đã duyệt) và tài khoản đăng nhập', () => {
+  it('T27: tiếp nhận → thẩm định đủ 4 mục → duyệt: tạo HTX (đang bán, hồ sơ đã duyệt) và tài khoản đăng nhập', () => {
     let { s, id } = submitted();
     expect(qualityAcceptApplication(s, ADMIN_OPS, id, T0)).toMatchObject({ ok: false });
     expect(qualitySetCheck(s, ADMIN_QA, id, 'documents', true, T0)).toMatchObject({ ok: false });

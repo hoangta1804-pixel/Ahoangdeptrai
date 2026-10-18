@@ -10,6 +10,7 @@
  * - Không lưu toạ độ.
  *
  *   200 { formattedAddress, street, areas, city }
+ *   GET /api/geocode?status=1 → 200 { configured }: chỉ cho biết đã có khoá hay chưa (Công cụ demo), không gọi Google, không tính lượt.
  *   400 toạ độ sai · 422 ngoài Hà Nội · 404 Google không tìm thấy địa chỉ · 429 hết lượt
  *   502 Google từ chối (khoá sai, chưa bật Geocoding API, chưa bật thanh toán) · 503 chưa có khoá
  *
@@ -86,6 +87,7 @@ const first = (v: unknown): unknown => (Array.isArray(v) ? v[0] : v);
 
 export async function handleGeocodeRequest(req: { method?: string; query?: Record<string, unknown> }, deps: GeocodeDeps): Promise<ApiResult> {
   if (req.method !== 'GET') return { status: 405, body: { error: 'Chỉ hỗ trợ GET.' } };
+  if (first(req.query?.status) !== undefined) return { status: 200, body: { configured: !!deps.apiKey } };
   const lat = Number(first(req.query?.lat));
   const lng = Number(first(req.query?.lng));
   if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return { status: 400, body: { error: 'Toạ độ không hợp lệ.' } };

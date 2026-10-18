@@ -10,10 +10,11 @@
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { now as clockNow, setClockOffset } from '../domain/clock';
+import { demoResetClock, demoResetData, demoShiftClock } from '../domain/demoAccess';
 import { recordRandom, replayRandom } from '../domain/ids';
 import { jobsChanged, runScheduledJobs } from '../domain/jobs';
 import { deriveNotifications } from '../domain/notifications';
-import type { DemoState, Result } from '../domain/types';
+import type { Actor, DemoState, Result } from '../domain/types';
 import { createSeedState } from '../data/seed';
 import { clearState, loadState, saveState, STORAGE_KEY, STORAGE_VERSION } from './persistence';
 import { RemoteSync, type Mutation, type SyncStatus } from './remoteSync';
@@ -27,11 +28,14 @@ interface StoreValue {
   now: () => Date;
   /** Chạy một thao tác domain trên dữ liệu mới nhất. Thành công thì lưu và trả về kết quả. */
   run: <T = DemoState>(op: (s: DemoState, at: Date) => Result<T>, pick?: (value: T) => DemoState) => Result<T>;
-  /** Tua đồng hồ demo thêm `ms` mili giây rồi chạy các tác vụ theo giờ. */
-  advanceClock: (ms: number) => void;
-  resetClock: () => void;
+  /**
+   * Tua đồng hồ demo thêm `ms` mili giây rồi chạy các tác vụ theo giờ.
+   * Ba thao tác của Công cụ demo chỉ Quản trị gốc và Admin – Vận hành làm được (kiểm trong domain/demoAccess.ts).
+   */
+  advanceClock: (actor: Actor, ms: number) => Result<DemoState>;
+  resetClock: (actor: Actor) => Result<DemoState>;
   /** Xoá dữ liệu đã lưu và nạp lại dữ liệu mẫu (dữ liệu dùng chung thì mọi máy cùng thấy). */
-  resetDemoData: () => void;
+  resetDemoData: (actor: Actor) => Result<DemoState>;
   /** Trạng thái lưu dữ liệu: dùng chung qua API hay chỉ trên trình duyệt này. */
   sync: SyncStatus;
   /** Gửi ngay thay đổi đang chờ và lấy dữ liệu mới nhất. */
@@ -155,30 +159,53 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     [commit],
   );
 
-  const advanceClock = useCallback(
-    (ms: number) => {
-      const realNow = Date.now();
+  /** Chạy một thao tác của Công cụ demo; `after` xử lý tiếp dữ liệu mới (vd. chạy tác vụ theo giờ sau khi tua). */
+  const runDemoTool = useCallback(
+    (op: (base: DemoState) => Result<DemoState>, after: (next: DemoState) => DemoState = (n) => n, beforeCommit?: () => void): Result<DemoState> => {
+      let result: Result<DemoState> | undefined;
       const { next, mutation } = replayable((base) => {
-        const shifted = { ...base, clockOffsetMs: base.clockOffsetMs + ms };
-        return withJobs(shifted, new Date(realNow + shifted.clockOffsetMs)).state;
+        const r = op(base);
+        result ??= r;
+        return r.ok ? after(r.value) : null;
       }, ref.current);
-      commit(next!, mutation);
+      if (next) {
+        beforeCommit?.();
+        commit(next, mutation);
+      }
+      return result!;
     },
     [commit],
   );
 
-  const resetClock = useCallback(() => {
-    const realNow = Date.now();
-    const { next, mutation } = replayable((base) => withJobs({ ...base, clockOffsetMs: 0 }, new Date(realNow)).state, ref.current);
-    commit(next!, mutation);
-  }, [commit]);
+  const advanceClock = useCallback(
+    (actor: Actor, ms: number) => {
+      const realNow = Date.now();
+      return runDemoTool(
+        (base) => demoShiftClock(base, actor, ms, new Date(realNow + base.clockOffsetMs)),
+        (shifted) => withJobs(shifted, new Date(realNow + shifted.clockOffsetMs)).state,
+      );
+    },
+    [runDemoTool],
+  );
 
-  const resetDemoData = useCallback(() => {
-    clearState();
-    const seedAt = new Date();
-    const { next, mutation } = replayable(() => createSeedState(seedAt), ref.current);
-    commit(next!, mutation);
-  }, [commit]);
+  const resetClock = useCallback(
+    (actor: Actor) => {
+      const realNow = Date.now();
+      return runDemoTool(
+        (base) => demoResetClock(base, actor, new Date(realNow + base.clockOffsetMs)),
+        (next) => withJobs(next, new Date(realNow)).state,
+      );
+    },
+    [runDemoTool],
+  );
+
+  const resetDemoData = useCallback(
+    (actor: Actor) => {
+      const seedAt = new Date();
+      return runDemoTool((base) => demoResetData(base, actor, createSeedState(seedAt), seedAt), undefined, clearState);
+    },
+    [runDemoTool],
+  );
 
   const syncNow = useCallback(() => void syncRef.current?.syncNow(), []);
   const clearSyncNotice = useCallback(() => setSyncNotice(null), []);
