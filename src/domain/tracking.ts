@@ -12,6 +12,9 @@ export const DELIVERY_EVENT_LABEL: Record<DeliveryEvent['event'], string> = {
   refused: 'Người nhận từ chối nhận hàng',
 };
 
+/** "Shipper mẫu 1" giữ nguyên; tên không bắt đầu bằng "Shipper" thì thêm chữ "Shipper" phía trước. */
+export const shipperLabel = (name: string): string => (/^shipper\b/i.test(name.trim()) ? name.trim() : `Shipper ${name.trim()}`);
+
 export interface TrackingEvent {
   at: string;
   title: string;
@@ -22,7 +25,7 @@ export interface TrackingEvent {
 
 /** Một dòng mô tả ngắn cho sự kiện giao hàng (vd. bước "Đang giao" của hành trình đơn). */
 export function deliveryEventText(e: DeliveryEvent): string {
-  const who = e.by ? ` · shipper ${e.by}` : '';
+  const who = e.by ? ` · ${shipperLabel(e.by)}` : '';
   return `${DELIVERY_EVENT_LABEL[e.event]}${e.reason ? ` – ${e.reason}` : ''}${who}`;
 }
 
@@ -35,14 +38,19 @@ export function trackingEvents(order: Order): TrackingEvent[] {
   for (const h of order.statusHistory) {
     if (h.to === 'shipping') push(RANK.handover, { at: h.at, title: `${order.coopName} đã bàn giao cho đơn vị vận chuyển`, tone: 'normal' });
     else if (h.to === 'delivered')
-      push(RANK.delivered, { at: h.at, title: h.actor.kind === 'customer' ? 'Bạn đã xác nhận nhận hàng' : 'Đơn chuyển sang Đã giao', detail: h.actor.kind === 'customer' ? undefined : h.reason, tone: 'success' });
+      push(RANK.delivered, {
+        at: h.at,
+        title: h.actor.kind === 'customer' ? 'Bạn đã xác nhận nhận hàng' : 'Đơn chuyển sang Đã giao',
+        detail: h.actor.kind === 'customer' ? undefined : h.reason,
+        tone: 'success',
+      });
     else if (h.to === 'returning') push(RANK.returning, { at: h.at, title: 'Đang chuyển hoàn về HTX', detail: h.reason, tone: 'warning' });
     else if (h.to === 'returned') push(RANK.returned, { at: h.at, title: 'Hàng đã hoàn về HTX', tone: 'warning' });
   }
   let attempt = 0;
   for (const e of order.deliveryLog) {
-    if (e.event === 'assigned') push(RANK.assigned, { at: e.at, title: `Shipper ${e.by} nhận giao đơn`, tone: 'normal' });
-    else if (e.event === 'picked_up') push(RANK.picked_up, { at: e.at, title: e.by ? `Shipper ${e.by} đã lấy hàng, đang giao` : 'Đơn vị vận chuyển đã nhận hàng', tone: 'normal' });
+    if (e.event === 'assigned') push(RANK.assigned, { at: e.at, title: `${shipperLabel(e.by ?? '')} nhận giao đơn`, tone: 'normal' });
+    else if (e.event === 'picked_up') push(RANK.picked_up, { at: e.at, title: e.by ? `${shipperLabel(e.by)} đã lấy hàng, đang giao` : 'Đơn vị vận chuyển đã nhận hàng', tone: 'normal' });
     else if (e.event === 'failed') push(RANK.failed, { at: e.at, title: `Giao hàng không thành công (lần ${++attempt})`, detail: e.reason, tone: 'warning' });
     else if (e.event === 'refused') push(RANK.refused, { at: e.at, title: 'Người nhận từ chối nhận hàng', detail: e.reason, tone: 'warning' });
     else if (e.event === 'delivered_reported') {
@@ -50,7 +58,7 @@ export function trackingEvents(order: Order): TrackingEvent[] {
       push(RANK.delivered_reported, {
         at: e.at,
         title: 'Giao hàng thành công',
-        detail: e.by ? `Shipper ${e.by}${note ? ` · ${note}` : ''}` : 'Đơn vị vận chuyển báo đã giao',
+        detail: e.by ? `${shipperLabel(e.by)}${note ? ` · ${note}` : ''}` : 'Đơn vị vận chuyển báo đã giao',
         ...(e.by && order.shipment?.proofPhotos?.length ? { photos: order.shipment.proofPhotos } : {}),
         tone: 'success',
       });

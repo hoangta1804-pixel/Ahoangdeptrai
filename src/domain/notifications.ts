@@ -9,6 +9,7 @@
 import { generateId } from './ids';
 import { formatMoney } from './pricing';
 import { formatDateKey, iso, remainingFor, toDateKey } from './state';
+import { shipperLabel } from './tracking';
 import {
   CALL_OUTCOME_LABEL,
   ORDER_STATUS_LABEL,
@@ -90,7 +91,7 @@ function orderDrafts(prev: DemoState, next: DemoState, o: Order): Draft[] {
     if (before.shipment) out.push({ userIds: [before.shipment.shipperId], title: `Đơn ${o.id} đã chuyển cho shipper khác`, body: 'Bạn không cần giao đơn này nữa.', link });
   }
   for (const e of o.deliveryLog.slice(before.deliveryLog.length)) {
-    if (e.event === 'picked_up') out.push({ userIds: customer, title: `Đơn ${o.id} đang được giao`, body: e.by ? `Shipper ${e.by} đã lấy hàng và đang giao tới bạn.` : 'Đơn vị vận chuyển đã lấy hàng.', link });
+    if (e.event === 'picked_up') out.push({ userIds: customer, title: `Đơn ${o.id} đang được giao`, body: e.by ? `${shipperLabel(e.by)} đã lấy hàng và đang giao tới bạn.` : 'Đơn vị vận chuyển đã lấy hàng.', link });
     else if (e.event === 'failed' && o.status === 'shipping')
       out.push({ userIds: customer, title: `Giao đơn ${o.id} chưa thành công`, body: `${e.reason ?? ''}. Đơn sẽ được giao lại (lần giao lại tối đa ${o.params.maxRedeliveries}).`.replace(/^\. /, ''), link });
     else if (e.event === 'delivered_reported') out.push({ userIds: customer, title: `Đơn ${o.id} đã được giao`, body: 'Bấm "Đã nhận hàng" trong đơn khi bạn đã nhận đủ hàng.', link });

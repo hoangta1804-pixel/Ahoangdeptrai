@@ -46,5 +46,11 @@ for (const width of [320, 390, 768, 1280, 1920]) {
 
     await login(page, PHONES.regulator);
     await checkUi(page, at('QLNN – Số liệu tổng hợp'));
+    await logout(page);
+
+    await login(page, '0900000401');
+    await checkUi(page, at('Shipper – Cần giao'));
+    await page.getByRole('tab', { name: /^Thu hộ COD/ }).click();
+    await checkUi(page, at('Shipper – Thu hộ COD'));
   });
 }

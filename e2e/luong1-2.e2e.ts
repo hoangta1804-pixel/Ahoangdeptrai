@@ -104,8 +104,8 @@ test('Luồng 1: đặt hàng tới hoàn tiền, QLNN thấy số liệu thay �
   // 5. Admin – Vận hành: ĐVVC mô phỏng giao thành công 2 đơn.
   await page.setViewportSize(DESKTOP);
   await login(page, PHONES.ops);
-  await page.getByRole('button', { name: 'Mô phỏng ĐVVC' }).click();
-  await checkUi(page, 'Luồng 1 – Mô phỏng ĐVVC');
+  await page.getByRole('button', { name: 'Giao hàng', exact: true }).click();
+  await checkUi(page, 'Luồng 1 – Giao hàng (Admin – Vận hành)');
   for (let i = 0; i < 2; i++) await page.getByRole('button', { name: 'Giao thành công' }).first().click();
   await expect(page.getByRole('button', { name: 'Giao thành công' })).toHaveCount(0);
   await logout(page);

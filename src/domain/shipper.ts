@@ -110,8 +110,7 @@ export function shipperRefused(state: DemoState, actor: Actor, orderId: string, 
 // ---------- Tiền thu hộ (COD) ----------
 
 /** Đơn shipper đã thu tiền khi giao mà chưa nộp. */
-export const codOnHand = (state: DemoState, shipperId: string): Order[] =>
-  state.orders.filter((o) => o.shipment?.shipperId === shipperId && (o.shipment.codHeld ?? 0) > 0 && !o.shipment.remittanceId);
+export const codOnHand = (state: DemoState, shipperId: string): Order[] => state.orders.filter((o) => o.shipment?.shipperId === shipperId && (o.shipment.codHeld ?? 0) > 0 && !o.shipment.remittanceId);
 
 export const codTotal = (orders: Order[]): number => orders.reduce((s, o) => s + (o.shipment?.codHeld ?? 0), 0);
 

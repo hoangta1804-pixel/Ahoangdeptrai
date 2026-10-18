@@ -94,7 +94,10 @@ function OrderList({ orders, tab }: { orders: Order[]; tab: Exclude<ShipperTab, 
     <ul className="grid gap-2 pt-4 lg:grid-cols-2 2xl:grid-cols-3">
       {orders.map((o) => (
         <li key={o.id}>
-          <button onClick={() => openModal({ type: 'shipper_order', orderId: o.id })} className="h-full w-full space-y-1.5 rounded-2xl border border-stone-200 bg-white p-3 text-left hover:bg-stone-50">
+          <button
+            onClick={() => openModal({ type: 'shipper_order', orderId: o.id })}
+            className="h-full w-full space-y-1.5 rounded-2xl border border-stone-200 bg-white p-3 text-left hover:bg-stone-50"
+          >
             <span className="flex flex-wrap items-center justify-between gap-2">
               <span className="font-mono text-sm font-bold">{o.id}</span>
               <ShipperStepBadge order={o} />
@@ -102,7 +105,9 @@ function OrderList({ orders, tab }: { orders: Order[]; tab: Exclude<ShipperTab, 
             <span className="block text-base font-semibold text-ink">{o.address.receiverName}</span>
             <span className="block text-sm text-stone-700">{o.address.text}</span>
             <span className="flex flex-wrap items-center justify-between gap-2 text-sm">
-              <span className="text-stone-600">{o.items.reduce((n, i) => n + i.quantity, 0)} món · HTX {o.coopName}</span>
+              <span className="text-stone-600">
+                {o.items.reduce((n, i) => n + i.quantity, 0)} món · {o.coopName}
+              </span>
               {o.pricing.payOnDelivery > 0 ? <strong className="tabular-nums text-ink">Thu hộ {formatMoney(o.pricing.payOnDelivery)}</strong> : <span className="text-forest-800">Đã thanh toán</span>}
             </span>
             {o.deliveryAttempts > 0 && o.status === 'shipping' && <span className="block text-sm font-semibold text-rose-800">Giao lại – đã thất bại {o.deliveryAttempts} lần</span>}

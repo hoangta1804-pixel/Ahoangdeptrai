@@ -94,10 +94,7 @@ function Recipient({ order: o }: { order: Order }) {
       <p className="text-stone-700">{o.address.text}</p>
       {o.note && <p className="rounded-xl bg-stone-50 p-2 text-stone-700">Ghi chú của khách: {o.note}</p>}
       <div className="grid grid-cols-2 gap-2">
-        <a
-          href={`tel:${o.address.receiverPhone}`}
-          className="flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-forest-900 px-3 text-sm font-bold text-champagne-100 hover:bg-forest-800"
-        >
+        <a href={`tel:${o.address.receiverPhone}`} className="flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-forest-900 px-3 text-sm font-bold text-champagne-100 hover:bg-forest-800">
           <Phone size={16} aria-hidden="true" /> Gọi {formatPhone(o.address.receiverPhone)}
         </a>
         <a
@@ -126,7 +123,7 @@ function Goods({ order: o }: { order: Order }) {
       </ul>
       {o.gift?.sendToOther && <p className="rounded-xl bg-champagne-50 p-2 text-ink">Đơn quà gửi người khác: không đưa giấy tờ có ghi giá cho người nhận.</p>}
       <p className="text-stone-600">
-        Điểm lấy hàng: {o.shipment?.pickupNote ?? 'Admin – Vận hành sẽ báo khi phân công.'} · HTX {o.coopName}
+        Điểm lấy hàng: {o.shipment?.pickupNote ?? 'Admin – Vận hành sẽ báo khi phân công.'} · {o.coopName}
       </p>
     </section>
   );
@@ -176,11 +173,18 @@ function Actions({ order: o }: { order: Order }) {
       {step === 'deliver' && mode === 'success' && (
         <div className="space-y-3">
           <p className="text-sm text-stone-700">Chụp ảnh hàng đã giao (bắt buộc, tối đa {MAX_PROOF_PHOTOS} ảnh).</p>
-          <PhotoPicker photos={photos} onChange={setPhotos} max={MAX_PROOF_PHOTOS} />
+          <PhotoPicker
+            photos={photos}
+            onChange={(next) => {
+              setPhotos(next);
+              setError(null);
+            }}
+            max={MAX_PROOF_PHOTOS}
+          />
           <Field label="Ghi chú (không bắt buộc)">
             <Input value={note} maxLength={200} onChange={(e) => setNote(e.target.value)} placeholder="Vd. gửi bảo vệ toà nhà" />
           </Field>
-          {o.pricing.payOnDelivery > 0 && <p className="text-sm font-semibold text-ink">Đã thu {formatMoney(o.pricing.payOnDelivery)} của khách.</p>}
+          {o.pricing.payOnDelivery > 0 && <p className="text-sm font-semibold text-ink">Thu {formatMoney(o.pricing.payOnDelivery)} của khách trước khi xác nhận.</p>}
           <div className="grid grid-cols-2 gap-2">
             <SecondaryButton onClick={() => setMode(null)}>Thôi</SecondaryButton>
             <PrimaryButton onClick={() => act((s, t) => shipperDelivered(s, actor, o.id, { photos, note }, t), 'Đã báo giao thành công. Chờ khách xác nhận đã nhận.')}>Xác nhận đã giao</PrimaryButton>

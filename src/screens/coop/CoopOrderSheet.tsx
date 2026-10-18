@@ -3,6 +3,7 @@ import { useUi } from '../../app/UiContext';
 import { BottomSheet, SheetColumns } from '../../components/BottomSheet';
 import { OrderChat } from '../../components/OrderChat';
 import { OrderJourney } from '../../components/OrderJourney';
+import { TrackingTimeline } from '../../components/TrackingTimeline';
 import { DangerButton, PrimaryButton, ReasonPrompt, SecondaryButton } from '../../components/form';
 import { OrderStatusBadge, PaymentStatusBadge } from '../../components/StatusBadge';
 import { getOrderFor } from '../../domain/access';
@@ -220,6 +221,7 @@ export function CoopOrderSheet({ orderId, onClose }: { orderId: string; onClose:
           <>
             <OrderChat order={order} side="coop" prefill={prefill} inputRef={chatInput} />
             <OrderJourney order={order} />
+            <TrackingTimeline order={order} />
 
             <details className="group space-y-1">
               <summary className="flex min-h-11 cursor-pointer items-center text-sm font-bold text-stone-700">Lịch sử trạng thái chi tiết</summary>

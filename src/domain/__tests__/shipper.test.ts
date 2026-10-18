@@ -4,18 +4,7 @@ import { placeCheckout } from '../checkout';
 import { listCoopContacts } from '../coopContact';
 import { deriveNotifications } from '../notifications';
 import { carrierSimulate, coopConfirm, coopHandover, customerConfirmReceived } from '../orders';
-import {
-  codOnHand,
-  financeConfirmRemittance,
-  opsAssignShipper,
-  shipperDelivered,
-  shipperFailed,
-  shipperOrders,
-  shipperPickUp,
-  shipperRefused,
-  shipperRemitCod,
-  shipperStep,
-} from '../shipper';
+import { codOnHand, financeConfirmRemittance, opsAssignShipper, shipperDelivered, shipperFailed, shipperOrders, shipperPickUp, shipperRefused, shipperRemitCod, shipperStep } from '../shipper';
 import { trackingEvents } from '../tracking';
 import type { Actor, DemoState, Result } from '../types';
 import { ADMIN_FIN, ADMIN_OPS, ADMIN_QA, COOP_X, CUSTOMER, keyX, line, makeState, placeInput, T0 } from './fixtures';
@@ -54,7 +43,12 @@ describe('Giao hàng bằng shipper', () => {
 
     const moved = must(opsAssignShipper(assigned, ADMIN_OPS, id, 'u-ship-2', '', T0));
     expect(moved.auditLogs[0].action).toBe('Đổi shipper');
-    expect(deriveNotifications(assigned, moved, T0).notifications.slice(0, 2).map((n) => n.userId).sort()).toEqual(['u-ship-1', 'u-ship-2']);
+    expect(
+      deriveNotifications(assigned, moved, T0)
+        .notifications.slice(0, 2)
+        .map((n) => n.userId)
+        .sort(),
+    ).toEqual(['u-ship-1', 'u-ship-2']);
     // ĐVVC mô phỏng không báo thay cho đơn đã có shipper.
     const shipping = must(coopHandover(moved, id, COOP_X, T0));
     expect(carrierSimulate(shipping, id, ADMIN_OPS, 'delivered_reported', '', T0).ok).toBe(false);
@@ -96,13 +90,8 @@ describe('Giao hàng bằng shipper', () => {
     expect(order.shipment).toMatchObject({ proofPhotos: ['data:a'], deliveredNote: 'Gửi bảo vệ toà nhà', codHeld: order.pricing.payOnDelivery });
     expect(order.pricing.payOnDelivery).toBe(order.pricing.total);
     expect(codOnHand(delivered, 'u-ship-1').map((o) => o.id)).toEqual([id]);
-    expect(trackingEvents(order).map((e) => e.title)).toEqual([
-      'Giao hàng thành công',
-      'Shipper Shipper 1 đã lấy hàng, đang giao',
-      'HTX X đã bàn giao cho đơn vị vận chuyển',
-      'Shipper Shipper 1 nhận giao đơn',
-    ]);
-    expect(trackingEvents(order)[0]).toMatchObject({ detail: 'Shipper Shipper 1 · Gửi bảo vệ toà nhà', photos: ['data:a'] });
+    expect(trackingEvents(order).map((e) => e.title)).toEqual(['Giao hàng thành công', 'Shipper 1 đã lấy hàng, đang giao', 'HTX X đã bàn giao cho đơn vị vận chuyển', 'Shipper 1 nhận giao đơn']);
+    expect(trackingEvents(order)[0]).toMatchObject({ detail: 'Shipper 1 · Gửi bảo vệ toà nhà', photos: ['data:a'] });
     expect(must(customerConfirmReceived(delivered, id, CUSTOMER, T0)).orders[0].status).toBe('delivered');
 
     expect(shipperRemitCod(delivered, SHIP_2, T0)).toEqual({ ok: false, error: 'Không có tiền thu hộ cần nộp.' });
