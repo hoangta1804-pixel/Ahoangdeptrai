@@ -21,7 +21,7 @@ function withOrders(): DemoState {
 }
 
 describe('Số liệu biểu đồ ở Tổng quan', () => {
-  it('7 ngày: mỗi ngày một cột kể cả ngày trống; tiền hàng không tính đơn huỷ; theo HTX, trạng thái', () => {
+  it('T28: 7 ngày: mỗi ngày một cột kể cả ngày trống; tiền hàng không tính đơn huỷ; theo HTX, trạng thái', () => {
     const p = periodStats(withOrders(), '7d', addMs(T0, 60_000));
     expect(p.daily).toHaveLength(7);
     expect(p.daily.at(-1)).toMatchObject({ label: '14/10', orders: 3, goods: 1_640_000 });

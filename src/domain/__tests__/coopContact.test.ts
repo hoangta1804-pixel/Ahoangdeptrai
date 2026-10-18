@@ -29,7 +29,7 @@ describe('SĐT liên hệ của HTX', () => {
     expect(formatContactPhone('02143821234')).toBe('0214 382 1234');
   });
 
-  it('HTX lưu 2 số của mình, có nhật ký; khách thấy số mới', () => {
+  it('HTX lưu 2 số của mình (đưa về dạng bắt đầu bằng 0), có nhật ký; HTX khác không bị đổi', () => {
     const s = makeState();
     const r = coopSetPhones(s, COOP_X, ['+84 912 345 678', '0214 382 1234'], T0);
     if (!r.ok) throw new Error(r.error);
@@ -55,7 +55,7 @@ describe('SĐT liên hệ của HTX', () => {
     expect(coopPhonesOf({ id: 'coop-x' })).toEqual([]);
   });
 
-  it('chỉ Admin (mọi nhóm) xem danh bạ SĐT HTX; HTX chỉ thấy số của mình; khách và QLNN không xem được', () => {
+  it('T23: chỉ Admin (mọi nhóm) xem danh bạ SĐT HTX; HTX chỉ thấy số của mình; khách và QLNN không xem được', () => {
     const r = coopSetPhones(makeState(), COOP_X, ['0912345678', '0912345679'], T0);
     if (!r.ok) throw new Error(r.error);
     const s = r.value;

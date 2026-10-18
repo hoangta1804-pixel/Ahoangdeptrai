@@ -13,7 +13,7 @@ function withVariant(s = makeState(), unit = 'gói lớn', price = 1_200_000, qu
 }
 
 describe('Quy cách bán hàng', () => {
-  it('HTX thêm quy cách: chờ duyệt, cùng nội dung với sản phẩm gốc, có yêu cầu duyệt', () => {
+  it('T24: HTX thêm quy cách: chờ duyệt, cùng nội dung với sản phẩm gốc, có yêu cầu duyệt', () => {
     const { state, id } = withVariant();
     const v = state.products.find((p) => p.id === id)!;
     expect(v).toMatchObject({ variantOf: 'x-dry', coopId: 'coop-x', name: 'x-dry', unit: 'gói lớn', price: 1_200_000, stockOnHand: 5, status: 'pending', kind: 'ready' });
@@ -28,7 +28,7 @@ describe('Quy cách bán hàng', () => {
     expect(again.ok && again.value.product.variantOf).toBe('x-dry');
   });
 
-  it('chặn quy cách trùng (không phân biệt dấu, hoa thường), HTX khác, giá / số lượng sai, quá số quy cách', () => {
+  it('T24: chặn quy cách trùng (không phân biệt dấu, hoa thường), HTX khác, giá / số lượng sai, quá số quy cách', () => {
     const s = makeState();
     expect(coopAddVariant(s, COOP_Y, 'x-dry', { unit: 'hộp', price: 1, quantity: 1 }, T0)).toMatchObject({ ok: false });
     expect(coopAddVariant(s, COOP_X, 'x-dry', { unit: ' GÓI ', price: 1, quantity: 1 }, T0)).toMatchObject({ ok: false, error: 'Sản phẩm đã có quy cách "GÓI".' });

@@ -3,9 +3,7 @@ import { Mail } from 'lucide-react';
 import { SimBadge } from '../components/EmptyState';
 import { Field, Input, PrimaryButton, SecondaryButton } from '../components/form';
 import { isEmail, maskEmail, type GoogleProfile } from '../domain/auth';
-
-/** Client ID của Google (công khai, không phải bí mật). Đặt ở Vercel: VITE_GOOGLE_CLIENT_ID. Chưa có thì dùng bản mô phỏng. */
-const CLIENT_ID = String(import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '').trim();
+import { GOOGLE_CLIENT_ID as CLIENT_ID } from '../store/serviceStatus';
 
 interface GoogleIdApi {
   initialize(config: {

@@ -2,6 +2,7 @@
  * Mô hình dữ liệu nghiệp vụ theo SRS. Mọi thay đổi dữ liệu đi qua các hàm trong src/domain.
  */
 import type { CoopApplication } from './coopApplication';
+import type { DemoAccess } from './demoAccess';
 import type { Params, ParamChange } from './params';
 import type { OrderPricing, PaymentMethod } from './pricing';
 import type { Voucher } from './voucher';
@@ -789,4 +790,6 @@ export interface DemoState {
   chatReads?: Record<string, { customer?: string; coop?: string }>;
   /** Hồ sơ đăng ký HTX mới chờ / đã xử lý (domain/coopApplication.ts). Không bắt buộc, như orderMessages. */
   coopApplications?: CoopApplication[];
+  /** NEW-01 Mã trình diễn (domain/demoAccess.ts), chỉ lưu bản băm. Không có nghĩa là chưa đặt mã. */
+  demoAccess?: DemoAccess;
 }

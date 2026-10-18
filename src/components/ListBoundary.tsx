@@ -38,7 +38,7 @@ export class ListBoundary extends Component<{ children: ReactNode; label?: strin
         }
       >
         <p className="font-semibold">Không hiển thị được {this.props.label ?? 'nội dung này'}.</p>
-        <p className="mt-1">Nếu lỗi lặp lại, mở "Công cụ demo" và bấm "Khôi phục dữ liệu mẫu".</p>
+        <p className="mt-1">Nếu lỗi lặp lại, nhờ Quản trị gốc hoặc Admin – Vận hành mở "Công cụ demo" và bấm "Khôi phục dữ liệu mẫu".</p>
       </ErrorState>,
     );
   }
