@@ -37,6 +37,32 @@ export interface App {
   allowConsole(pattern: RegExp): void;
 }
 
+/**
+ * Chrome mới cho các hàm cuộn (window.scrollTo, element.scrollIntoView…) trả về Promise; Chromium dùng để test chưa.
+ * Lỗi bản web 18/10/2026: effect trả về kết quả của scrollTo, React gọi Promise đó như hàm dọn dẹp khi đổi tab → màn lỗi.
+ * Mọi "máy" trong kịch bản chạy như Chrome mới để bắt loại lỗi này.
+ */
+function scrollReturnsPromise() {
+  const targets: [object, string][] = [
+    [window, 'scrollTo'],
+    [window, 'scroll'],
+    [window, 'scrollBy'],
+    [Element.prototype, 'scrollTo'],
+    [Element.prototype, 'scroll'],
+    [Element.prototype, 'scrollBy'],
+    [Element.prototype, 'scrollIntoView'],
+  ];
+  for (const [obj, name] of targets) {
+    const target = obj as Record<string, (...args: unknown[]) => unknown>;
+    const original = target[name];
+    if (typeof original !== 'function') continue;
+    target[name] = function (this: unknown, ...args: unknown[]) {
+      original.apply(this, args);
+      return Promise.resolve();
+    };
+  }
+}
+
 export const test = base.extend<{ app: App }>({
   app: async ({ browser }, use) => {
     const errors: string[] = [];
@@ -48,6 +74,7 @@ export const test = base.extend<{ app: App }>({
         const ctx = await browser.newContext({ viewport: { width, height }, hasTouch: mobile, isMobile: mobile });
         contexts.push(ctx);
         await ctx.route('**/*', (r) => (new URL(r.request().url()).hostname === 'localhost' ? r.continue() : r.abort()));
+        await ctx.addInitScript(scrollReturnsPromise);
         await setup?.(ctx);
         const page = await ctx.newPage();
         page.on('console', (m) => {

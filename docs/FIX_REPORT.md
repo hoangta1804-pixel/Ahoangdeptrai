@@ -41,6 +41,29 @@ Lần đầu chạy `npm run e2e` trên máy mới: `npx playwright install chro
 
 ---
 
+## Sửa lỗi bản web: chuyển tab là báo lỗi (18/10/2026, lần 2)
+
+**Chủ repo báo:** trên bản web, đăng nhập và bấm sang tab khác (Vụ mùa, Tài khoản…) thì hiện "Không hiển thị được màn này"; bấm tải lại thì về tab Khám phá.
+
+**Nguyên nhân:**
+- Hai chỗ viết `useEffect(() => window.scrollTo({ top: 0 }), …)`:
+  - màn khách, chạy khi đổi tab;
+  - khung app, chạy khi đăng nhập / đăng xuất.
+- Effect viết như vậy trả về đúng giá trị mà `window.scrollTo` trả về. Chrome bản mới cho các hàm cuộn trang trả về Promise. React coi giá trị đó là hàm dọn dẹp và gọi nó khi đổi tab / đổi tài khoản, nên báo "TypeError: … is not a function".
+- Chromium dùng để kiểm thử (141) vẫn trả về rỗng, nên các kịch bản e2e trước đây không bắt được.
+- Đã dựng lại đúng lỗi bằng cách giả lập Chrome mới: đăng nhập thì "Ứng dụng gặp lỗi"; tải lại rồi bấm "Vụ mùa" thì "Không hiển thị được màn này".
+
+**Sửa:**
+- Hai effect để thân hàm trong `{ }`, không trả về gì.
+- `ui.test.ts` có quy ước mới: effect chỉ được trả về hàm dọn dẹp, không trả về giá trị của lời gọi hàm.
+- `e2e/helpers.ts`: mọi "máy" trong kịch bản chạy như Chrome mới (các hàm cuộn trả về Promise). Đã kiểm ngược: bỏ bản sửa thì kịch bản giao diện thất bại với đúng lỗi "l is not a function".
+
+**Theo dõi lỗi trên bản web:**
+- Dải "Bản demo" ghi mã phiên bản (commit), để biết máy đang mở đúng bản mới nhất chưa.
+- Khung báo lỗi hiện dòng "Lỗi: …" và phần "Chi tiết lỗi" có nút sao chép (thông báo lỗi, vị trí trong mã, trình duyệt; không chứa dữ liệu demo).
+
+---
+
 ## Sau Giai đoạn 7 – Trang chủ kiểu sàn, Shop HTX, Yêu thích, Kho voucher (đợt 2)
 
 Đợt 2 của yêu cầu ngày 18/10/2026 (xem đợt 1 bên dưới). Giữ màu thương hiệu, làm dễ dùng hơn. Không thêm chức năng kiểu sàn trái SRS: không xu, không mã freeship, không cộng nhiều mã, không hiện số lượng bán ra.
