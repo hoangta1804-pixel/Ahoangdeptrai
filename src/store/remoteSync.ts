@@ -7,6 +7,9 @@
  *   chạy lại các thay đổi chưa gửi được trên dữ liệu đó rồi gửi lại. Thay đổi không còn hợp lệ thì bỏ và báo.
  * - Hỏi server định kỳ (chỉ đọc số phiên bản) để thấy thay đổi của máy khác.
  * - Không có API, API chưa nối cơ sở dữ liệu, hoặc mở ngoài Vercel: chuyển sang chế độ lưu trên trình duyệt như trước.
+ * - API lỗi tạm lúc mở app (mất mạng, lỗi 5xx, cơ sở dữ liệu từ chối): không bỏ hẳn API mà thử lại sau; thay đổi trong lúc chờ
+ *   được giữ và gửi khi API trả lời (sửa lỗi bản web 18/10/2026: trước đây chuyển hẳn sang lưu trên máy, mỗi máy một dữ liệu).
+ * - Dữ liệu quá lớn (413): báo rõ, không gửi lặp lại cùng dữ liệu; gửi lại khi có thay đổi mới (vd. khôi phục dữ liệu mẫu).
  */
 import type { DemoState } from '../domain/types';
 
@@ -30,6 +33,8 @@ export interface RemoteSyncOptions {
   onStatus: (status: SyncStatus) => void;
   /** Có thay đổi bị bỏ vì dữ liệu vừa được máy khác thay đổi. */
   onDropped?: (count: number) => void;
+  /** Kiểm tra và bù trường thiếu cho dữ liệu từ server; null nếu không phải dữ liệu demo. */
+  normalize?: (data: unknown) => DemoState | null;
 }
 
 const looksLikeDemoState = (data: unknown): data is DemoState =>
@@ -47,6 +52,8 @@ export class RemoteSync {
   private retryDelay = 5_000;
   private retryTimer: ReturnType<typeof setTimeout> | undefined;
   private stopped = false;
+  /** Lần gửi gần nhất bị từ chối vì dữ liệu quá lớn: chờ thay đổi mới rồi mới gửi lại. */
+  private tooLarge = false;
   private readonly endpoint: string;
   private readonly fetch: FetchLike;
 
@@ -75,18 +82,22 @@ export class RemoteSync {
     try {
       res = await this.fetch(this.endpoint, { method: 'GET', headers: { Accept: 'application/json' }, cache: 'no-store' });
     } catch {
-      return this.goLocal('Không kết nối được API dữ liệu chung. Dữ liệu đang lưu trên trình duyệt này.');
+      return this.startFailed('Chưa kết nối được API dữ liệu chung. Đang thử lại; thay đổi được giữ trên máy này.');
     }
     const body = await readJson(res);
     if (res.status === 503) return this.goLocal('API chưa nối cơ sở dữ liệu. Dữ liệu đang lưu trên trình duyệt này.');
+    if (res.status >= 500 || res.status === 429) {
+      return this.startFailed(`${typeof body?.error === 'string' ? body.error : `API dữ liệu chung trả lỗi ${res.status}.`} Đang thử lại; thay đổi được giữ trên máy này.`);
+    }
     if (!res.ok || !body || typeof body.version !== 'number') {
       return this.goLocal('Bản đang mở không có API dữ liệu chung. Dữ liệu đang lưu trên trình duyệt này.');
     }
     this.version = body.version;
     this.lastSyncAt = Date.now();
     this.setShared('synced');
-    if (body.schema === this.opts.schema && looksLikeDemoState(body.data)) {
-      this.adopt(body.data);
+    const data = body.schema === this.opts.schema ? this.parse(body.data) : null;
+    if (data) {
+      this.adopt(data);
     } else {
       // Lần đầu dùng API (chưa có dữ liệu) hoặc dữ liệu cũ khác cấu trúc: đưa dữ liệu của máy này lên.
       this.overwrite = true;
@@ -98,6 +109,7 @@ export class RemoteSync {
   record(mutation: Mutation, next: DemoState): void {
     this.current = next;
     if (this.status.mode === 'local' || this.stopped) return;
+    this.tooLarge = false;
     this.pending.push(mutation);
     if (this.isShared) void this.flush();
   }
@@ -140,9 +152,10 @@ export class RemoteSync {
     if (res.status === 409 && body && typeof body.version === 'number') {
       // Máy khác vừa ghi: lấy dữ liệu mới nhất, chạy lại các thay đổi rồi gửi lại.
       this.version = body.version;
-      if (body.schema === this.opts.schema && looksLikeDemoState(body.data)) {
+      const data = body.schema === this.opts.schema ? this.parse(body.data) : null;
+      if (data) {
         this.overwrite = false;
-        this.adopt(body.data);
+        this.adopt(data);
       } else {
         this.overwrite = true;
         void this.flush();
@@ -150,6 +163,7 @@ export class RemoteSync {
       return;
     }
     if (res.status === 413) {
+      this.tooLarge = true;
       this.setShared('error', typeof body?.error === 'string' ? body.error : 'Dữ liệu demo quá lớn để lưu lên API.');
       return;
     }
@@ -175,17 +189,18 @@ export class RemoteSync {
     this.lastSyncAt = Date.now();
     if (body.changed === false) {
       if (this.status.mode === 'shared' && this.status.phase === 'offline') this.setShared('synced');
-      if (this.pending.length > 0 || this.overwrite) void this.flush();
+      if ((this.pending.length > 0 || this.overwrite) && !this.tooLarge) void this.flush();
       else this.emitStatus();
       return;
     }
     this.version = body.version;
-    if (body.schema === this.opts.schema && looksLikeDemoState(body.data)) {
-      this.adopt(body.data);
+    const data = body.schema === this.opts.schema ? this.parse(body.data) : null;
+    if (data) {
+      this.adopt(data);
       if (this.pending.length === 0) this.setShared('synced');
     } else {
       this.overwrite = true;
-      void this.flush();
+      if (!this.tooLarge) void this.flush();
     }
   }
 
@@ -219,6 +234,18 @@ export class RemoteSync {
     this.opts.onState(next);
     if (dropped > 0) this.opts.onDropped?.(dropped);
     if (this.pending.length > 0) void this.flush();
+  }
+
+  private parse(data: unknown): DemoState | null {
+    if (this.opts.normalize) return this.opts.normalize(data);
+    return looksLikeDemoState(data) ? data : null;
+  }
+
+  /** API lỗi tạm lúc mở app: vẫn coi là dữ liệu dùng chung (chưa có phiên bản), thử hỏi lại sau. */
+  private startFailed(message: string): void {
+    this.version = 0;
+    this.setShared('offline', message);
+    this.scheduleRetry();
   }
 
   private goLocal(reason: string): void {

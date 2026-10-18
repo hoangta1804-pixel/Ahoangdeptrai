@@ -7,15 +7,16 @@ import { Toast } from '../components/Toast';
 import { ACCOUNT_ROLE_LABEL, ADMIN_GROUP_LABEL } from '../domain/types';
 import { CustomerScreen } from '../screens/customer/CustomerScreen';
 import { useStore } from '../store/AppDataContext';
+import { lazyWithReload } from './chunkReload';
 import { PAGE_X } from './layout';
 import { LoginScreen } from './LoginScreen';
 import { ModalHost } from './ModalHost';
 import { useUi } from './UiContext';
 
 // Màn HTX, Admin, QLNN tải riêng theo vai trò, để khách trên điện thoại không phải tải mã của các màn này.
-const CoopScreen = lazy(() => import('../screens/coop/CoopScreen').then((m) => ({ default: m.CoopScreen })));
-const AdminScreen = lazy(() => import('../screens/admin/AdminScreen').then((m) => ({ default: m.AdminScreen })));
-const RegulatorScreen = lazy(() => import('../screens/regulator/RegulatorScreen').then((m) => ({ default: m.RegulatorScreen })));
+const CoopScreen = lazy(lazyWithReload(() => import('../screens/coop/CoopScreen').then((m) => ({ default: m.CoopScreen }))));
+const AdminScreen = lazy(lazyWithReload(() => import('../screens/admin/AdminScreen').then((m) => ({ default: m.AdminScreen }))));
+const RegulatorScreen = lazy(lazyWithReload(() => import('../screens/regulator/RegulatorScreen').then((m) => ({ default: m.RegulatorScreen }))));
 
 /**
  * Khung app. Không có thanh chuyển vai trò công khai: vai trò theo tài khoản đăng nhập (mục 5.9).

@@ -31,28 +31,35 @@ export const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAA
 export const pngFile = (name: string) => ({ name, mimeType: 'image/png', buffer: PNG });
 
 export interface App {
-  /** Mở app trên một "máy" mới (mặc định điện thoại 390px). */
-  open(viewport?: { width?: number; height?: number }): Promise<Page>;
+  /** Mở app trên một "máy" mới (mặc định điện thoại 390px). `setup` thêm route trước khi mở trang (vd. giả lập API lỗi). */
+  open(viewport?: { width?: number; height?: number }, setup?: (ctx: BrowserContext) => Promise<void>): Promise<Page>;
+  /** Lỗi console có chủ đích trong kịch bản này (vd. 404 khi giả lập file của bản cũ không còn). */
+  allowConsole(pattern: RegExp): void;
 }
 
 export const test = base.extend<{ app: App }>({
   app: async ({ browser }, use) => {
     const errors: string[] = [];
+    const allowed: RegExp[] = [EXPECTED_CONSOLE];
     const contexts: BrowserContext[] = [];
     await use({
-      async open({ width = 390, height = 860 } = {}) {
+      async open({ width = 390, height = 860 } = {}, setup) {
         const mobile = width < 1000;
         const ctx = await browser.newContext({ viewport: { width, height }, hasTouch: mobile, isMobile: mobile });
         contexts.push(ctx);
         await ctx.route('**/*', (r) => (new URL(r.request().url()).hostname === 'localhost' ? r.continue() : r.abort()));
+        await setup?.(ctx);
         const page = await ctx.newPage();
         page.on('console', (m) => {
-          if (m.type() === 'error' && !EXPECTED_CONSOLE.test(m.text())) errors.push(`console: ${m.text()}`);
+          if (m.type() === 'error' && !allowed.some((re) => re.test(m.text()))) errors.push(`console: ${m.text()}`);
         });
         page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
         await page.goto('/');
         await expect(page.getByRole('heading', { name: 'Đăng nhập', exact: true })).toBeVisible();
         return page;
+      },
+      allowConsole(pattern) {
+        allowed.push(pattern);
       },
     });
     await Promise.all(contexts.map((c) => c.close().catch(() => {})));

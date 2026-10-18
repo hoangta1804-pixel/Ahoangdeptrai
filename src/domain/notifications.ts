@@ -283,11 +283,24 @@ export function deriveNotifications(prev: DemoState, next: DemoState, at: Date):
     [...new Set(d.userIds)].map((userId) => ({ id: generateId('TB'), userId, at: iso(at), title: d.title, body: d.body, link: d.link, read: false })),
   );
   if (created.length === 0 && lowStockAlerts === next.lowStockAlerts) return next;
-  return { ...next, notifications: [...created, ...next.notifications], lowStockAlerts };
+  return { ...next, notifications: capNotifications([...created, ...next.notifications]), lowStockAlerts };
 }
 
 export function notificationsOf(state: DemoState, userId: string): AppNotification[] {
   return state.notifications.filter((n) => n.userId === userId);
+}
+
+/** Mỗi tài khoản giữ tối đa chừng này thông báo mới nhất (sửa lỗi bản web: thông báo tăng mãi làm dữ liệu dùng chung đầy). */
+export const NOTIFICATIONS_PER_USER = 40;
+
+/** Bỏ thông báo cũ quá NOTIFICATIONS_PER_USER của mỗi tài khoản. `list` xếp mới nhất trước. */
+export function capNotifications(list: AppNotification[], perUser = NOTIFICATIONS_PER_USER): AppNotification[] {
+  const seen = new Map<string, number>();
+  return list.filter((n) => {
+    const count = (seen.get(n.userId) ?? 0) + 1;
+    seen.set(n.userId, count);
+    return count <= perUser;
+  });
 }
 
 export function markNotificationsRead(state: DemoState, userId: string, ids?: string[]): DemoState {

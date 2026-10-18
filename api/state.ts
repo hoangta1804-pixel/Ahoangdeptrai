@@ -21,12 +21,29 @@
  * Đây là API cho bản demo: không có đăng nhập phía server, ai có link cũng đọc và ghi được dữ liệu demo.
  * Không nhập dữ liệu cá nhân thật.
  *
- * File này tự chứa (chỉ import @upstash/redis) để Vercel chạy được ở chế độ ES module mà không cần đường dẫn import tương đối.
+ * Bản ghi lưu dạng nén gzip (tiền tố "gz1:"), đọc được cả bản ghi cũ chưa nén. Dữ liệu chữ nén còn khoảng 1/5–1/10,
+ * nên cùng giới hạn lưu được nhiều đơn, thông báo hơn (sửa lỗi bản web 18/10/2026: dữ liệu dùng chung đầy thì mọi lần lưu bị từ chối).
+ *
+ * File này tự chứa (chỉ import @upstash/redis và thư viện có sẵn của Node) để Vercel chạy được ở chế độ ES module
+ * mà không cần đường dẫn import tương đối.
  */
+import { gunzipSync, gzipSync } from 'node:zlib';
 import { Redis } from '@upstash/redis';
 
-/** Giới hạn kích thước bản ghi (byte). Ảnh khiếu nại / đánh giá đã thu nhỏ còn khoảng 20–40 KB mỗi ảnh. */
+/** Giới hạn bản ghi đã nén (byte), dưới mức 1 MB mỗi yêu cầu của gói Upstash miễn phí. Ảnh đã thu nhỏ hầu như không nén thêm được. */
 export const STATE_LIMIT_BYTES = 900_000;
+/** Giới hạn dữ liệu chưa nén, dưới mức 4,5 MB mỗi yêu cầu của hàm Vercel. */
+export const RAW_LIMIT_BYTES = 4_000_000;
+
+const GZIP_PREFIX = 'gz1:';
+
+/** Nén bản ghi trước khi lưu. */
+export const encodePayload = (json: string): string => GZIP_PREFIX + gzipSync(Buffer.from(json, 'utf8')).toString('base64');
+
+/** Đọc bản ghi đã lưu: dạng nén (mới) hoặc JSON thường (bản ghi cũ). */
+export function decodePayload(raw: string): string {
+  return raw.startsWith(GZIP_PREFIX) ? gunzipSync(Buffer.from(raw.slice(GZIP_PREFIX.length), 'base64')).toString('utf8') : raw;
+}
 
 export interface StoredState {
   version: number;
@@ -52,7 +69,7 @@ interface Envelope {
 function parseEnvelope(version: number, raw: string | null): StoredState {
   if (!raw) return { version, schema: null, data: null, updatedAt: null };
   try {
-    const env = JSON.parse(raw) as Envelope;
+    const env = JSON.parse(decodePayload(raw)) as Envelope;
     return { version, schema: typeof env.schema === 'number' ? env.schema : null, data: env.data ?? null, updatedAt: env.updatedAt ?? null };
   } catch {
     return { version, schema: null, data: null, updatedAt: null };
@@ -183,12 +200,18 @@ export async function handleStateRequest(req: ApiRequest, store: StateStore): Pr
     if (!Number.isInteger(schema)) return { status: 400, body: { error: 'Thiếu schema (phiên bản cấu trúc dữ liệu).' } };
     if (!looksLikeDemoState(data)) return { status: 400, body: { error: 'Dữ liệu không đúng dạng dữ liệu demo.' } };
 
-    const payload = JSON.stringify({ schema: schema as number, data, updatedAt: new Date().toISOString() } satisfies Envelope);
-    const bytes = new TextEncoder().encode(payload).length;
-    if (bytes > STATE_LIMIT_BYTES) {
+    const json = JSON.stringify({ schema: schema as number, data, updatedAt: new Date().toISOString() } satisfies Envelope);
+    const rawBytes = Buffer.byteLength(json, 'utf8');
+    const payload = encodePayload(json);
+    const bytes = Buffer.byteLength(payload, 'utf8');
+    if (bytes > STATE_LIMIT_BYTES || rawBytes > RAW_LIMIT_BYTES) {
       return {
         status: 413,
-        body: { error: `Dữ liệu demo quá lớn (${Math.round(bytes / 1000)} KB, tối đa ${Math.round(STATE_LIMIT_BYTES / 1000)} KB). Hãy bớt ảnh hoặc khôi phục dữ liệu mẫu.` },
+        body: {
+          error: `Dữ liệu demo đầy (${Math.round(bytes / 1000)} KB sau khi nén, tối đa ${Math.round(STATE_LIMIT_BYTES / 1000)} KB), chưa lưu được lên máy chủ. Nhờ Quản trị gốc hoặc Admin – Vận hành mở "Công cụ demo" và bấm "Khôi phục dữ liệu mẫu".`,
+          bytes,
+          limit: STATE_LIMIT_BYTES,
+        },
       };
     }
 
@@ -226,6 +249,22 @@ export default async function handler(req: VercelLikeRequest, res: VercelLikeRes
     res.status(result.status).json(result.body);
   } catch (e) {
     console.error(e);
-    res.status(502).json({ error: 'Không đọc hoặc ghi được cơ sở dữ liệu.' });
+    res.status(502).json(storeErrorBody(e));
   }
+}
+
+/**
+ * Lời báo khi Upstash từ chối. Gói miễn phí giới hạn số lệnh mỗi tháng và dung lượng mỗi yêu cầu;
+ * hết lượt thì mọi máy không lưu được, nên báo rõ để chủ repo kiểm tra gói Upstash.
+ */
+export function storeErrorBody(e: unknown): Record<string, unknown> {
+  const detail = (e instanceof Error ? e.message : String(e)).slice(0, 200);
+  const quota = /limit|quota|exceeded|max request/i.test(detail);
+  return {
+    error: quota
+      ? 'Cơ sở dữ liệu demo (Upstash) đang từ chối vì vượt giới hạn của gói đang dùng (số lệnh hoặc dung lượng). Dữ liệu chưa lưu được lên máy chủ; chủ repo cần kiểm tra gói Upstash.'
+      : 'Không đọc hoặc ghi được cơ sở dữ liệu demo.',
+    quota,
+    detail,
+  };
 }

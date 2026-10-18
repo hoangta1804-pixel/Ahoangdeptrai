@@ -28,16 +28,49 @@ npm run e2e      # kiểm thử trình duyệt (Playwright): tự build, chạy 
 
 Lần đầu chạy `npm run e2e` trên máy mới: `npx playwright install chromium` để tải trình duyệt.
 
-### Kết quả lần chạy cuối (Giai đoạn 7)
+### Kết quả lần chạy cuối (sửa lỗi bản web, 18/10/2026)
 
 | Lệnh | Kết quả |
 |---|---|
 | `npm run lint` | Không lỗi |
-| `npm test` | 30 file, 212 test, tất cả đạt (có T1–T29) |
+| `npm test` | 31 file, 223 test, tất cả đạt (có T1–T29) |
 | `npm run build` | Thành công, không cảnh báo. Phần chung 416 kB (gzip 125 kB); màn HTX, Admin, QLNN tải riêng theo vai trò |
-| `npm run e2e` | 13 kịch bản, tất cả đạt (khoảng 2 phút): Luồng 1–6, chế độ trình diễn, giao diện ở 320 / 390 / 768 / 1.280 / 1.920px. Không lỗi JS, console chỉ có lỗi 409 có chủ đích |
+| `npm run e2e` | 16 kịch bản, tất cả đạt (khoảng 2,5 phút): Luồng 1–6, chế độ trình diễn, 3 tình huống lỗi của bản web, giao diện ở 320 / 390 / 768 / 1.280 / 1.920px. Không lỗi JS ngoài lỗi có chủ đích của từng kịch bản |
 | Kiểm tra giao diện trong `npm run e2e` (axe-core 4.10 + đo vùng bấm, cỡ chữ, tràn ngang) | 0 lỗi axe, 0 vùng bấm dưới 44×44, 0 chữ dưới 12px, không tràn ngang |
 | Kịch bản hồi quy cũ (ngoài repo, 23 lượt) trên bản build | Tất cả đạt. So với lần chạy trước chỉ khác ngày giờ và câu nhắc mới khi màn hình lỗi; lỗi console duy nhất ngoài 409 là ở kịch bản cố ý ghi dữ liệu hỏng (khung báo lỗi bắt được, như trước) |
+
+---
+
+## Sửa lỗi bản web (18/10/2026)
+
+**Chủ repo báo:** bản web (dacsan-vung-mien.vercel.app) lỗi rất nặng: không lưu được, mất dữ liệu; màn báo lỗi, trắng trang.
+
+**Cách tìm lỗi:** môi trường kiểm thử bị chặn tên miền vercel.app nên không mở được bản web. Tìm các lỗi chỉ xảy ra trên bản deploy (dữ liệu dùng chung tích luỹ lâu ngày, deploy liên tục, gói Upstash miễn phí), rồi giả lập trên máy bằng 3 kịch bản trong `e2e/ben-vung.e2e.ts`. Cả 3 **thất bại trên bản `main` trước khi sửa** (bản đang chạy trên web) và đạt sau khi sửa:
+
+| Tình huống | Bản trước khi sửa | Đã sửa |
+|---|---|---|
+| Dữ liệu dùng chung lưu từ bản cũ, thiếu trường (vd. thiếu danh sách khiếu nại, đánh giá) | **Trắng trang trên mọi máy**, lỗi `Cannot read properties of undefined (reading 'filter')`. Không ai đăng nhập được nên cũng không ai khôi phục được dữ liệu | Dữ liệu từ API và từ trình duyệt đều được chuẩn hoá trước khi hiển thị: thiếu trường thì bù giá trị mặc định, bản ghi hỏng thì bỏ (`src/store/normalize.ts`) |
+| Vừa deploy bản mới khi tab đang mở (đã merge nhiều PR liên tiếp) | Đăng nhập HTX / Admin / QLNN: "Failed to fetch dynamically imported module", màn báo lỗi; bấm Thử lại vẫn lỗi | Không tải được mã của màn thì tự tải lại trang 1 lần để lấy bản mới, chặn lặp vô hạn (`src/app/chunkReload.ts`) |
+| Cơ sở dữ liệu Upstash từ chối lúc mở app (vd. hết lượt của gói miễn phí) | App lặng lẽ chuyển sang "lưu trên trình duyệt này" và không thử lại: mỗi máy một dữ liệu, tải lại hay đổi máy là mất | App báo rõ lý do, giữ thay đổi trên máy, tự thử lại; Upstash trả lời thì gửi lên. Lỗi hết lượt được báo riêng để chủ repo kiểm tra gói Upstash |
+
+Sửa thêm để dữ liệu dùng chung không đầy và lỗi không làm trắng trang:
+
+- **Dữ liệu đầy (quá 900 KB) thì mọi lần lưu bị từ chối**, app còn gửi lại cả khối dữ liệu mỗi 10 giây:
+  - máy chủ nén gzip trước khi lưu (dữ liệu chữ còn khoảng 1/5–1/10); đọc được bản ghi cũ chưa nén;
+  - mỗi tài khoản giữ 40 thông báo mới nhất (trước đây thông báo tăng mãi);
+  - bị từ chối vì quá lớn thì báo cách khôi phục và không gửi lặp; có thay đổi mới (vd. khôi phục dữ liệu mẫu) thì gửi lại;
+  - Công cụ demo hiện dung lượng dữ liệu và số ảnh.
+- **Đỡ tốn lượt Upstash:** quá 2 phút không thao tác thì hỏi máy chủ 30 giây/lần, quá 15 phút thì 60 giây/lần (trước đây luôn 10 giây); thao tác lại thì hỏi ngay.
+- **Khung lỗi ở gốc app:** lỗi ở khung app không còn làm trắng trang mà hiện màn "Ứng dụng gặp lỗi" với:
+  - nút tải lại trang và nút xoá dữ liệu trên máy này;
+  - mục "Khôi phục dữ liệu mẫu" cho Quản trị gốc / Admin – Vận hành (SĐT + OTP mô phỏng), ghi dữ liệu mẫu lên máy chủ khi chính dữ liệu dùng chung làm app lỗi lúc mở.
+
+**Việc chủ repo nên làm sau khi bản này deploy:**
+1. Mở bản web, tải lại trang (Ctrl+Shift+R trên máy tính; trên điện thoại đóng hẳn tab rồi mở lại).
+2. Đăng nhập Quản trị gốc (0900 000 209) → "Công cụ demo" → xem mục "Dữ liệu": trạng thái đồng bộ, dung lượng, lời báo lỗi nếu có.
+3. Vẫn báo "vượt giới hạn của gói" thì vào trang quản lý Upstash (qua Vercel → Storage) xem số lệnh đã dùng trong tháng; cần thì nâng gói hoặc chờ sang tháng.
+4. Dữ liệu cũ vẫn lỗi thì bấm "Khôi phục dữ liệu mẫu" (trong Công cụ demo, hoặc trên màn báo lỗi).
+5. Muốn tôi kiểm tra trực tiếp bản web: thêm `dacsan-vung-mien.vercel.app` vào Allowed domains trong cài đặt mạng của môi trường làm việc.
 
 ---
 
@@ -1956,6 +1989,10 @@ Ngoài các ca trên còn có test cho:
 87. **Công cụ demo giới hạn cả hai nút kết quả cổng** ("tiền về muộn", "kết quả lần hai"), không chỉ tua giờ và khôi phục dữ liệu như đề bài nêu, vì chúng cũng đổi giao dịch của người khác. Ai cũng mở được Công cụ demo để xem giờ demo và tình trạng cấu hình. Mỗi thao tác ghi nhật ký.
 88. **Kiểm tra khoá Google Maps qua `GET /api/geocode?status=1`** (thêm vào hàm có sẵn, không đổi cấu hình): chỉ trả đã có khoá hay chưa, không gọi Google, không tính lượt.
 89. **Kiểm thử trình duyệt dùng Playwright 1.56.1** (khớp bản Chromium có sẵn của môi trường kiểm thử) và **axe-core 4.10.2** (như các lần kiểm tra trước), ghi cố định phiên bản trong devDependencies.
+90. **Mỗi tài khoản giữ 40 thông báo mới nhất** (sửa lỗi bản web); thông báo cũ hơn bị bỏ khi có thông báo mới. Nhật ký thao tác không bị cắt (mục 5.9).
+91. **Dữ liệu dùng chung lưu nén gzip trên Upstash**, giới hạn 900 KB sau khi nén và 4 MB trước khi nén (dưới mức của gói Upstash miễn phí và của hàm Vercel).
+92. **Lâu không thao tác thì hỏi máy chủ thưa hơn** (30 giây sau 2 phút, 60 giây sau 15 phút) để đỡ tốn lượt Upstash; dữ liệu của máy khác vì vậy có thể hiện chậm hơn khi màn hình để yên lâu.
+93. **Màn báo lỗi ở gốc app cho khôi phục dữ liệu mẫu** bằng SĐT + OTP mô phỏng của Quản trị gốc / Admin – Vận hành, để thoát được khi chính dữ liệu dùng chung làm app lỗi lúc mở. Không phải bảo mật thật, như mã trình diễn.
 
 ## Vấn đề chờ nhóm chốt
 

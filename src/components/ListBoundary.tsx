@@ -1,4 +1,5 @@
 import { Component, type ReactNode } from 'react';
+import { isChunkLoadError, reloadOnceForNewVersion } from '../app/chunkReload';
 import { ErrorState } from './EmptyState';
 
 /**
@@ -15,6 +16,8 @@ export class ListBoundary extends Component<{ children: ReactNode; label?: strin
 
   componentDidCatch(error: Error) {
     console.error(error);
+    // Không tải được mã của bản cũ (vừa deploy bản mới): tải lại trang để lấy bản mới.
+    if (isChunkLoadError(error)) reloadOnceForNewVersion();
   }
 
   componentDidUpdate(prev: { resetKey?: unknown }) {
@@ -37,8 +40,14 @@ export class ListBoundary extends Component<{ children: ReactNode; label?: strin
           </div>
         }
       >
-        <p className="font-semibold">Không hiển thị được {this.props.label ?? 'nội dung này'}.</p>
-        <p className="mt-1">Nếu lỗi lặp lại, nhờ Quản trị gốc hoặc Admin – Vận hành mở "Công cụ demo" và bấm "Khôi phục dữ liệu mẫu".</p>
+        {isChunkLoadError(this.state.error) ? (
+          <p className="font-semibold">Ứng dụng vừa có bản mới. Bấm "Tải lại trang" để dùng bản mới.</p>
+        ) : (
+          <>
+            <p className="font-semibold">Không hiển thị được {this.props.label ?? 'nội dung này'}.</p>
+            <p className="mt-1">Nếu lỗi lặp lại, nhờ Quản trị gốc hoặc Admin – Vận hành mở "Công cụ demo" và bấm "Khôi phục dữ liệu mẫu".</p>
+          </>
+        )}
       </ErrorState>,
     );
   }
