@@ -9,6 +9,7 @@ import { fullyHarvested, harvestsForOrder } from './harvest';
 import { generateId } from './ids';
 import { formatMoney } from './pricing';
 import { findOrder, formatDateKey, iso, replaceOrder } from './state';
+import { deliveryEventText } from './tracking';
 import { CALL_OUTCOME_LABEL, fail, ok, ORDER_STATUS_LABEL, type Actor, type CallOutcome, type DemoState, type Order, type OrderMessage, type OrderStatus, type Result } from './types';
 
 export type ChatSide = 'customer' | 'coop';
@@ -154,7 +155,6 @@ export interface Journey {
 
 const ENDED: OrderStatus[] = ['cancelled', 'return_refund', 'returning', 'returned'];
 
-const DELIVERY_EVENT_LABEL = { picked_up: 'Đơn vị vận chuyển đã lấy hàng', delivered_reported: 'Đơn vị vận chuyển báo đã giao', failed: 'Giao không thành công', refused: 'Người nhận từ chối nhận' } as const;
 
 /**
  * Các bước của đơn, tính từ lịch sử trạng thái, mốc báo sẵn sàng, liên hệ của HTX và nhật ký vận chuyển.
@@ -271,7 +271,7 @@ export function orderJourney(state: DemoState, order: Order): Journey {
       done: !!deliveredAt || !!order.carrierDeliveredAt,
       ready: !!shippingAt,
       at: order.carrierDeliveredAt,
-      detail: lastDelivery ? `${DELIVERY_EVENT_LABEL[lastDelivery.event]}${lastDelivery.reason ? ` – ${lastDelivery.reason}` : ''}${order.deliveryAttempts > 1 ? ` (lần ${order.deliveryAttempts})` : ''}` : undefined,
+      detail: lastDelivery ? `${deliveryEventText(lastDelivery)}${order.deliveryAttempts > 1 ? ` (lần ${order.deliveryAttempts})` : ''}` : undefined,
     },
     { key: 'delivered', title: 'Đã nhận hàng', done: !!deliveredAt, ready: !!order.carrierDeliveredAt || !!deliveredAt, at: deliveredAt },
   );

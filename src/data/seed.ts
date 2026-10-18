@@ -204,7 +204,7 @@ function vouchers(now: Date): Voucher[] {
 
 /**
  * Tài khoản demo (mục 5.9). SĐT rõ ràng là giả; OTP mô phỏng luôn là 123456.
- * Đủ 2 khách hàng, các HTX, Admin theo 4 nhóm quyền + Quản trị gốc, 1 tài khoản Cơ quan QLNN.
+ * Đủ 2 khách hàng, các HTX, Admin theo 4 nhóm quyền + Quản trị gốc, 1 tài khoản Cơ quan QLNN, 2 shipper.
  */
 export const DEMO_USERS: Omit<UserAccount, 'createdAt'>[] = [
   { id: 'u-kh1', phone: '0900000001', name: 'Khách hàng mẫu 1', role: 'customer', customerId: 'cust-1', status: 'active' },
@@ -222,6 +222,9 @@ export const DEMO_USERS: Omit<UserAccount, 'createdAt'>[] = [
   { id: 'u-ad-tc', phone: '0900000204', name: 'Admin – Tài chính (mẫu)', role: 'admin', adminGroup: 'finance', status: 'active' },
   { id: 'u-ad-root', phone: '0900000209', name: 'Quản trị gốc (mẫu)', role: 'admin', adminGroup: 'root', status: 'active' },
   { id: 'u-qlnn', phone: '0900000301', name: 'Cơ quan QLNN (mẫu)', role: 'regulator', status: 'active' },
+  // Shipper (chủ repo yêu cầu ngày 18/10/2026; Admin – Vận hành phân công đơn).
+  { id: 'u-ship-1', phone: '0900000401', name: 'Shipper mẫu 1', role: 'shipper', status: 'active' },
+  { id: 'u-ship-2', phone: '0900000402', name: 'Shipper mẫu 2', role: 'shipper', status: 'active' },
 ];
 
 function baseState(now: Date): DemoState {
@@ -284,6 +287,7 @@ function baseState(now: Date): DemoState {
     directMessages: [],
     chatReads: {},
     coopApplications: [],
+    codRemittances: [],
   };
 }
 

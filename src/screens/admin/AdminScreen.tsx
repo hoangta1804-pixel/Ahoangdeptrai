@@ -7,6 +7,7 @@ import { ADMIN_GROUP_LABEL, type AdminSubGroup } from '../../domain/types';
 import { AdminAccountsTab } from './AdminAccountsTab';
 import { AdminAuditTab } from './AdminAuditTab';
 import { AdminCoopsTab } from './AdminCoopsTab';
+import { FinanceCodTab } from './FinanceCodTab';
 import { FinanceLedgerTab } from './FinanceLedgerTab';
 import { AdminOrdersTab } from './AdminOrdersTab';
 import { AdminOverviewTab } from './AdminOverviewTab';
@@ -34,7 +35,7 @@ const TABS: Record<AdminSubGroup, TabDef[]> = {
   operations: [
     OVERVIEW,
     { key: 'orders', label: 'Đơn hàng', render: () => <AdminOrdersTab /> },
-    { key: 'carrier', label: 'Mô phỏng ĐVVC', render: () => <CarrierSimTab /> },
+    { key: 'carrier', label: 'Giao hàng', render: () => <CarrierSimTab /> },
     { key: 'accounts', label: 'Cấp & khoá tài khoản', render: () => <OpsAccountsTab /> },
     { key: 'params', label: 'Tham số', render: () => <AdminParamsTab /> },
     { key: 'catalog', label: 'Danh mục dùng chung', render: () => <SharedCatalogTab /> },
@@ -59,6 +60,7 @@ const TABS: Record<AdminSubGroup, TabDef[]> = {
     { key: 'refunds', label: 'Hoàn tiền', render: () => <FinanceRefundsTab /> },
     { key: 'settlement', label: 'Đối soát HTX', render: () => <FinanceSettlementTab /> },
     { key: 'ledger', label: 'Sổ giao dịch', render: () => <FinanceLedgerTab /> },
+    { key: 'cod', label: 'Thu hộ COD', render: () => <FinanceCodTab /> },
     COOP_LIST,
   ],
   root: [

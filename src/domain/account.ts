@@ -82,12 +82,12 @@ export function unlinkRefundAccount(state: DemoState, actor: Actor): Result<Demo
 export interface NewAccountInput {
   name: string;
   phone: string;
-  role: 'coop' | 'admin' | 'regulator';
+  role: 'coop' | 'admin' | 'regulator' | 'shipper';
   coopId?: string;
   adminGroup?: AdminSubGroup;
 }
 
-/** Admin – Vận hành cấp tài khoản HTX, Admin, Cơ quan QLNN (FR-TK-10). Khách hàng tự đăng ký. */
+/** Admin – Vận hành cấp tài khoản HTX, Admin, Cơ quan QLNN, Shipper (FR-TK-10). Khách hàng tự đăng ký. */
 export function opsCreateAccount(state: DemoState, actor: Actor, input: NewAccountInput, at: Date): Result<{ state: DemoState; user: UserAccount }> {
   if (actor.kind !== 'admin' || actor.adminGroup !== 'operations') return fail('Chỉ Admin – Vận hành được cấp tài khoản.');
   const phone = normalizePhone(input.phone);

@@ -34,11 +34,11 @@ export const ADMIN_GROUP_LABEL: Record<AdminSubGroup, string> = {
 };
 
 /** Ai thực hiện một thao tác: người dùng (theo vai trò) hoặc hệ thống. */
-export type ActorKind = 'customer' | 'coop' | 'admin' | 'regulator' | 'system' | 'carrier_sim' | 'gateway_sim';
+export type ActorKind = 'customer' | 'coop' | 'admin' | 'regulator' | 'shipper' | 'system' | 'carrier_sim' | 'gateway_sim';
 
 export interface Actor {
   kind: ActorKind;
-  /** Khách: mã khách hàng. HTX: mã HTX. Admin, QLNN: mã tài khoản. */
+  /** Khách: mã khách hàng. HTX: mã HTX. Admin, QLNN, Shipper: mã tài khoản. */
   id?: string;
   /** Mã tài khoản đăng nhập (để gửi thông báo, ghi nhật ký). */
   userId?: string;
@@ -372,8 +372,46 @@ export interface StatusChange {
 
 export interface DeliveryEvent {
   at: string;
-  event: 'picked_up' | 'delivered_reported' | 'failed' | 'refused';
+  /** `assigned`: Admin – Vận hành giao đơn cho shipper. Các sự kiện khác do shipper hoặc ĐVVC mô phỏng báo. */
+  event: 'assigned' | 'picked_up' | 'delivered_reported' | 'failed' | 'refused';
   reason?: string;
+  /** Ai báo (tên shipper; không có là ĐVVC mô phỏng). */
+  by?: string;
+}
+
+/**
+ * Giao hàng bằng shipper (chủ repo chọn ngày 18/10/2026 cho OI-01: Admin – Vận hành phân công shipper).
+ * Shipper chỉ thấy đơn được giao cho mình (domain/shipper.ts).
+ */
+export interface Shipment {
+  /** Mã tài khoản shipper. */
+  shipperId: string;
+  shipperName: string;
+  assignedAt: string;
+  assignedBy: string;
+  /** Ghi chú lấy hàng của Admin – Vận hành (điểm lấy hàng, giờ hẹn…). */
+  pickupNote?: string;
+  pickedUpAt?: string;
+  /** Ảnh giao hàng shipper chụp khi giao thành công (ảnh thu nhỏ). */
+  proofPhotos?: string[];
+  deliveredNote?: string;
+  /** Tiền thu hộ (COD) shipper đã thu khi giao, chờ nộp. */
+  codHeld?: number;
+  /** Phiếu nộp tiền thu hộ chứa khoản này. */
+  remittanceId?: string;
+}
+
+/** Shipper nộp tiền thu hộ (mô phỏng); Admin – Tài chính xác nhận đã nhận. */
+export interface CodRemittance {
+  id: string;
+  shipperId: string;
+  shipperName: string;
+  orderIds: string[];
+  amount: number;
+  createdAt: string;
+  status: 'submitted' | 'confirmed';
+  confirmedAt?: string;
+  confirmedBy?: string;
 }
 
 export interface Order {
@@ -425,6 +463,8 @@ export interface Order {
   chatReadAt?: { customer?: string; coop?: string };
   /** Đơn đặt trước: HTX đã xác nhận thu hoạch xong cho từng sản phẩm của đơn (mã lần thu hoạch). */
   harvest?: Record<string, string>;
+  /** Shipper được phân công (không có: chưa phân công, hoặc đơn giao qua ĐVVC mô phỏng). */
+  shipment?: Shipment;
 }
 
 /** Một lần HTX xác nhận thu hoạch xong một sản phẩm đặt trước (cho một đơn hoặc cả lô đơn đang chờ). */
@@ -662,13 +702,14 @@ export interface AuditLog {
 // Tài khoản, thông báo, sổ giao dịch, đánh giá
 // ==========================================
 
-export type AccountRole = 'customer' | 'coop' | 'admin' | 'regulator';
+export type AccountRole = 'customer' | 'coop' | 'admin' | 'regulator' | 'shipper';
 
 export const ACCOUNT_ROLE_LABEL: Record<AccountRole, string> = {
   customer: 'Khách hàng',
   coop: 'HTX',
   admin: 'Admin',
   regulator: 'Cơ quan QLNN',
+  shipper: 'Giao vận (Shipper)',
 };
 
 /** Tài khoản đăng nhập bằng Google. Chỉ lưu mã đã băm và email đã che, không lưu email đầy đủ. */
@@ -792,4 +833,6 @@ export interface DemoState {
   coopApplications?: CoopApplication[];
   /** NEW-01 Mã trình diễn (domain/demoAccess.ts), chỉ lưu bản băm. Không có nghĩa là chưa đặt mã. */
   demoAccess?: DemoAccess;
+  /** Phiếu nộp tiền thu hộ của shipper (domain/shipper.ts). Không bắt buộc, như orderMessages. */
+  codRemittances?: CodRemittance[];
 }

@@ -21,6 +21,7 @@ const ComplaintsSheet = lazy(lazyWithReload(() => import('../screens/customer/Co
 const ReviewSheet = lazy(lazyWithReload(() => import('../screens/customer/ReviewSheet').then((m) => ({ default: m.ReviewSheet }))));
 const CoopOrderSheet = lazy(lazyWithReload(() => import('../screens/coop/CoopOrderSheet').then((m) => ({ default: m.CoopOrderSheet }))));
 const CoopHarvestSheet = lazy(lazyWithReload(() => import('../screens/coop/CoopHarvestSheet').then((m) => ({ default: m.CoopHarvestSheet }))));
+const ShipperOrderSheet = lazy(lazyWithReload(() => import('../screens/shipper/ShipperOrderSheet').then((m) => ({ default: m.ShipperOrderSheet }))));
 const CoopProductFormSheet = lazy(lazyWithReload(() => import('../screens/coop/CoopProductFormSheet').then((m) => ({ default: m.CoopProductFormSheet }))));
 const CoopApplySheet = lazy(lazyWithReload(() => import('../screens/coopApply/CoopApplySheet').then((m) => ({ default: m.CoopApplySheet }))));
 const CoopApplyStatusSheet = lazy(lazyWithReload(() => import('../screens/coopApply/CoopApplyStatusSheet').then((m) => ({ default: m.CoopApplyStatusSheet }))));
@@ -77,6 +78,8 @@ function ModalContent() {
       return <ComplaintsSheet onClose={closeModal} />;
     case 'coop_order':
       return <CoopOrderSheet key={modal.orderId} orderId={modal.orderId} onClose={closeModal} />;
+    case 'shipper_order':
+      return <ShipperOrderSheet key={modal.orderId} orderId={modal.orderId} onClose={closeModal} />;
     case 'coop_harvest':
       return <CoopHarvestSheet key={modal.productId} productId={modal.productId} onClose={() => (modal.returnTo ? openModal(modal.returnTo) : closeModal())} />;
     case 'coop_apply':

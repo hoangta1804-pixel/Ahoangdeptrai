@@ -30,6 +30,8 @@ export type ModalState =
   /** Khiếu nại của khách, nhóm theo đơn. */
   | { type: 'complaints' }
   | { type: 'coop_order'; orderId: string }
+  /** Shipper xem đơn được giao, lấy hàng, báo kết quả giao. */
+  | { type: 'shipper_order'; orderId: string }
   /** HTX xác nhận thu hoạch cả lô cho một sản phẩm đặt trước. `returnTo`: mở lại khi đóng (vd. đơn đang xem). */
   | { type: 'coop_harvest'; productId: string; returnTo?: ModalState }
   | { type: 'notifications' }

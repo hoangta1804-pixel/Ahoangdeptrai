@@ -10,6 +10,8 @@ import { fail, ok, type Actor, type AuditLog, type BankAccount, type DemoState, 
 export function canReadOrder(actor: Actor, order: Order): boolean {
   if (actor.kind === 'customer') return actor.id === order.customerId;
   if (actor.kind === 'coop') return actor.id === order.coopId;
+  // Shipper chỉ thấy đơn được giao cho mình (domain/shipper.ts).
+  if (actor.kind === 'shipper') return !!actor.id && order.shipment?.shipperId === actor.id;
   return actor.kind === 'admin';
 }
 
@@ -23,7 +25,7 @@ export function getOrderFor(state: DemoState, actor: Actor, orderId: string): Re
 
 export function listOrdersFor(state: DemoState, actor: Actor): Result<Order[]> {
   if (actor.kind === 'regulator') return fail('Cơ quan QLNN chỉ xem số liệu tổng hợp, không xem chi tiết đơn.');
-  if (!['customer', 'coop', 'admin'].includes(actor.kind)) return fail('Bạn không có quyền xem danh sách đơn.');
+  if (!['customer', 'coop', 'admin', 'shipper'].includes(actor.kind)) return fail('Bạn không có quyền xem danh sách đơn.');
   return ok(state.orders.filter((o) => canReadOrder(actor, o)).sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
 }
 

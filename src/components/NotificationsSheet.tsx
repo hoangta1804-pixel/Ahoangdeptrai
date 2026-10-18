@@ -30,6 +30,7 @@ export function NotificationsSheet({ onClose }: { onClose: () => void }) {
     if (!orderId) return;
     if (user.role === 'customer') openModal({ type: 'order_detail', orderId });
     else if (user.role === 'coop') openModal({ type: 'coop_order', orderId });
+    else if (user.role === 'shipper') openModal({ type: 'shipper_order', orderId });
   };
 
   return (

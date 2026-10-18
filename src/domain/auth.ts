@@ -130,5 +130,7 @@ export function actorOf(user: UserAccount): Actor {
       return { kind: 'admin', id: user.id, userId: user.id, name: user.name, adminGroup: user.adminGroup };
     case 'regulator':
       return { kind: 'regulator', id: user.id, userId: user.id, name: user.name };
+    case 'shipper':
+      return { kind: 'shipper', id: user.id, userId: user.id, name: user.name };
   }
 }
