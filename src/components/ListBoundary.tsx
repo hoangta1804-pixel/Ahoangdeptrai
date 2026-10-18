@@ -1,21 +1,26 @@
-import { Component, type ReactNode } from 'react';
+import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { isChunkLoadError, reloadOnceForNewVersion } from '../app/chunkReload';
 import { ErrorState } from './EmptyState';
+import { ErrorDetails, errorDetails } from './ErrorDetails';
 
 /**
  * Trạng thái lỗi cho danh sách và màn (Giai đoạn 6, mục 10.5): một phần giao diện gặp lỗi
  * (dữ liệu trên trình duyệt bị hỏng, không tải được mã của màn) thì chỉ phần đó báo lỗi, phần còn lại vẫn dùng được.
  * Đặt `key` theo tab hoặc màn để chuyển tab là thử lại. `resetKey` đổi (vd. dữ liệu vừa được khôi phục) cũng thử lại.
  */
-export class ListBoundary extends Component<{ children: ReactNode; label?: string; wrap?: (node: ReactNode) => ReactNode; resetKey?: unknown }, { error: Error | null }> {
-  state: { error: Error | null } = { error: null };
+export class ListBoundary extends Component<
+  { children: ReactNode; label?: string; wrap?: (node: ReactNode) => ReactNode; resetKey?: unknown },
+  { error: Error | null; componentStack: string | null }
+> {
+  state: { error: Error | null; componentStack: string | null } = { error: null, componentStack: null };
 
   static getDerivedStateFromError(error: Error) {
     return { error };
   }
 
-  componentDidCatch(error: Error) {
+  componentDidCatch(error: Error, info: ErrorInfo) {
     console.error(error);
+    this.setState({ componentStack: info.componentStack ?? null });
     // Không tải được mã của bản cũ (vừa deploy bản mới): tải lại trang để lấy bản mới.
     if (isChunkLoadError(error)) reloadOnceForNewVersion();
   }
@@ -46,6 +51,9 @@ export class ListBoundary extends Component<{ children: ReactNode; label?: strin
           <>
             <p className="font-semibold">Không hiển thị được {this.props.label ?? 'nội dung này'}.</p>
             <p className="mt-1">Nếu lỗi lặp lại, nhờ Quản trị gốc hoặc Admin – Vận hành mở "Công cụ demo" và bấm "Khôi phục dữ liệu mẫu".</p>
+            <div className="mt-3">
+              <ErrorDetails text={errorDetails(this.state.error, this.props.label ?? 'nội dung này', this.state.componentStack)} />
+            </div>
           </>
         )}
       </ErrorState>,
