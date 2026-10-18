@@ -66,6 +66,12 @@ describe('Giao diện (mục 10)', () => {
     expect(phoneUse.filter((f) => /src\/screens\/(customer|regulator)\//.test(f) || f.startsWith('src/app/'))).toEqual([]);
   });
 
+  it('effect không trả về giá trị của lời gọi hàm (chỉ được trả về hàm dọn dẹp)', () => {
+    // useEffect(() => window.scrollTo(...)) trả về kết quả của scrollTo; Chrome mới trả về Promise, React gọi nó như hàm
+    // dọn dẹp khi đổi tab / đổi tài khoản → "… is not a function" (lỗi bản web 18/10/2026). Thân hàm phải trong { } hoặc là () => () => …
+    expect(offenders(/use(Layout)?Effect\(\s*\(\)\s*=>\s*(?![\s{]|\(\)\s*=>)/)).toEqual([]);
+  });
+
   it('mọi sheet dùng chung BottomSheet', () => {
     expect(offenders(/role="dialog"/)).toEqual(['src/components/BottomSheet.tsx']);
   });

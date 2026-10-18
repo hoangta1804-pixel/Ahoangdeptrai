@@ -12,8 +12,10 @@ import { SeasonTab } from './SeasonTab';
 export function CustomerScreen() {
   const { customerTab } = useUi();
   const { state } = useStore();
-  // Đổi tab thì về đầu trang, không giữ vị trí cuộn của tab trước.
-  useEffect(() => window.scrollTo({ top: 0 }), [customerTab]);
+  // Đổi tab thì về đầu trang, không giữ vị trí cuộn của tab trước. Không trả về kết quả của scrollTo (xem AppShell).
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, [customerTab]);
   return (
     <div className="flex flex-1 flex-col pb-[calc(4.5rem+env(safe-area-inset-bottom))]">
       <CustomerTopBar />

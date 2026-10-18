@@ -51,7 +51,11 @@ export function AppShell() {
   }, [syncNotice, showToast, clearSyncNotice]);
 
   // Đăng nhập, đăng xuất thì về đầu trang (màn đăng nhập dài, không giữ vị trí cuộn sang màn mới).
-  useEffect(() => window.scrollTo({ top: 0 }), [user?.id]);
+  // Thân hàm để trong ngoặc nhọn: Chrome mới cho window.scrollTo trả về Promise; nếu effect trả về giá trị đó,
+  // React coi là hàm dọn dẹp và gọi nó khi đổi tài khoản → lỗi "… is not a function" (sửa lỗi bản web 18/10/2026).
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, [user?.id]);
 
   // Link chia sẻ sản phẩm (FR-TKSP-05): #/san-pham/<mã>. Chưa đăng nhập thì giữ link, mở sau khi khách đăng nhập.
   useEffect(() => {
