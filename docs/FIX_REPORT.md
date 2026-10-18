@@ -29,16 +29,15 @@ npm run e2e      # kiểm thử trình duyệt (Playwright): tự build, chạy 
 
 Lần đầu chạy `npm run e2e` trên máy mới: `npx playwright install chromium` để tải trình duyệt.
 
-### Kết quả lần chạy cuối (Shipper, 18/10/2026)
+### Kết quả lần chạy cuối (đợt 2 kiểu sàn, 18/10/2026)
 
 | Lệnh | Kết quả |
 |---|---|
 | `npm run lint` | Không lỗi |
-| `npm test` | 33 file, 228 test, tất cả đạt (có T1–T29) |
-| `npm run build` | Thành công, không cảnh báo. Phần chung 416 kB (gzip 125 kB); màn HTX, Admin, QLNN tải riêng theo vai trò |
-| `npm run e2e` | 17 kịch bản, tất cả đạt (khoảng 2,5 phút): Luồng 1–6, Luồng Shipper, chế độ trình diễn, 3 tình huống lỗi của bản web, giao diện ở 320 / 390 / 768 / 1.280 / 1.920px (có màn Shipper). Không lỗi JS ngoài lỗi có chủ đích của từng kịch bản |
-| Kiểm tra giao diện trong `npm run e2e` (axe-core 4.10 + đo vùng bấm, cỡ chữ, tràn ngang) | 0 lỗi axe, 0 vùng bấm dưới 44×44, 0 chữ dưới 12px, không tràn ngang |
-| Kịch bản hồi quy cũ (ngoài repo, 23 lượt) trên bản build | Tất cả đạt. So với lần chạy trước chỉ khác ngày giờ và câu nhắc mới khi màn hình lỗi; lỗi console duy nhất ngoài 409 là ở kịch bản cố ý ghi dữ liệu hỏng (khung báo lỗi bắt được, như trước) |
+| `npm test` | 34 file, 240 test, tất cả đạt (có T1–T29) |
+| `npm run build` | Thành công, không cảnh báo. Phần chung 445 kB (gzip 133 kB); màn HTX, Admin, QLNN, Shipper và các sheet ít mở (shop HTX, yêu thích, kho voucher…) tải riêng |
+| `npm run e2e` | 18 kịch bản, tất cả đạt (khoảng 3 phút): Luồng 1–6, Luồng Shipper, Luồng sàn, chế độ trình diễn, 3 tình huống lỗi của bản web, giao diện ở 320 / 390 / 768 / 1.280 / 1.920px. Không lỗi JS ngoài lỗi có chủ đích của từng kịch bản |
+| Kiểm tra giao diện trong `npm run e2e` (axe-core 4.10 + đo vùng bấm, cỡ chữ, tràn ngang) | 0 lỗi axe, 0 vùng bấm dưới 44×44, 0 chữ dưới 12px, không tràn ngang (có trang chủ mới, gợi ý tìm kiếm, shop HTX, yêu thích, kho voucher) |
 
 ---
 
