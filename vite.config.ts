@@ -1,5 +1,6 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
+import { execSync } from 'node:child_process';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import path from 'path';
 import {defineConfig, loadEnv, type Connect, type Plugin} from 'vite';
@@ -63,11 +64,27 @@ function demoApiPlugin(env: Record<string, string>): Plugin {
   };
 }
 
+/**
+ * Mã phiên bản hiện trên dải demo và trong chi tiết lỗi (sửa lỗi bản web 18/10/2026), để biết máy đang mở đúng bản mới nhất chưa.
+ * Trên Vercel lấy mã commit đang deploy; chạy local lấy từ git; không có thì là "local".
+ */
+function buildId(): string {
+  if (process.env.VERCEL_GIT_COMMIT_SHA) return process.env.VERCEL_GIT_COMMIT_SHA.slice(0, 7);
+  try {
+    return execSync('git rev-parse --short=7 HEAD', { stdio: ['ignore', 'pipe', 'ignore'] })
+      .toString()
+      .trim();
+  } catch {
+    return 'local';
+  }
+}
+
 export default defineConfig(({ mode }) => {
   // Đọc cả biến không có tiền tố VITE_ (khoá Google Maps) cho API chạy local; app trên trình duyệt chỉ thấy biến VITE_.
   const env = loadEnv(mode, process.cwd(), '');
   return {
     plugins: [react(), tailwindcss(), demoApiPlugin(env)],
+    define: { __APP_BUILD__: JSON.stringify(buildId()) },
     resolve: {
       alias: {
         '@': path.resolve(import.meta.dirname, '.'),
