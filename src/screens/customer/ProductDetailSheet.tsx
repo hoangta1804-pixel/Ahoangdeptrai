@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { BadgeCheck, FileBadge, MessageCircle, Share2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { BadgeCheck, ChevronRight, FileBadge, MessageCircle, Share2, Star, Store } from 'lucide-react';
 import { useUi } from '../../app/UiContext';
 import { Ornament } from '../../components/Brand';
 import { BottomSheet, SheetColumns } from '../../components/BottomSheet';
@@ -13,19 +13,27 @@ import { deliveryWindow, isOrderableIn } from '../../domain/cart';
 import { computeDeposit, formatMoney } from '../../domain/pricing';
 import { findProduct, formatDateKey, isSamplePrice, remainingFor } from '../../domain/state';
 import { CATEGORY_LABEL, ORDER_KIND_LABEL } from '../../domain/types';
-import { listedFamilyOf } from '../../domain/variants';
+import { coopShop } from '../../domain/marketplace';
+import { familyKey, listedFamilyOf } from '../../domain/variants';
 import { useStore } from '../../store/AppDataContext';
+import { pushViewerList } from '../../store/viewerPrefs';
+import { FavoriteButton } from './FavoriteButton';
 import { useCartActions } from './useCartActions';
 
 export function ProductDetailSheet({ productId, onClose }: { productId: string; onClose: () => void }) {
   const { state, now } = useStore();
-  const { openModal, showToast } = useUi();
+  const { openModal, showToast, customerActor } = useUi();
   const { add, cart } = useCartActions();
   const [quantity, setQuantity] = useState(1);
   // Quy cách đang chọn: mở từ thẻ nào thì chọn sẵn quy cách đó.
   const [variantId, setVariantId] = useState(productId);
   const [reviewFilter, setReviewFilter] = useState<ReviewFilter>('all');
   const product = findProduct(state, variantId) ?? findProduct(state, productId);
+  // Ghi "Đã xem gần đây" trên máy này (theo nhóm quy cách).
+  const viewedKey = product ? familyKey(product) : '';
+  useEffect(() => {
+    if (viewedKey && customerActor.id) pushViewerList('recently-viewed', customerActor.id, viewedKey);
+  }, [viewedKey, customerActor.id]);
   if (!product) return null;
   const family = listedFamilyOf(state, product);
 
@@ -135,11 +143,12 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
             <div className="flex items-center justify-between gap-2">
               <span className="font-display text-3xl font-semibold tabular-nums text-forest-900">
                 {formatMoney(product.price)}
-                <span className="font-sans text-sm font-normal text-muted">/{product.unit}</span>
+                <span className="whitespace-nowrap font-sans text-sm font-normal text-muted">/{product.unit}</span>
                 {isSamplePrice(product) && <span className="ml-1.5 text-sm font-semibold text-champagne-800">(giá mẫu)</span>}
               </span>
               <span className="flex items-center gap-1">
                 <span className="whitespace-nowrap rounded-md bg-stone-100 px-2 py-0.5 text-xs font-semibold text-stone-700">{ORDER_KIND_LABEL[product.kind]}</span>
+                <FavoriteButton product={product} />
                 <button onClick={share} aria-label="Chia sẻ link sản phẩm" className="flex h-11 w-11 items-center justify-center rounded-xl text-stone-700 hover:bg-stone-100">
                   <Share2 size={18} />
                 </button>
@@ -164,6 +173,7 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
                 'Chưa có đánh giá'
               )}
             </p>
+            <ShopBlock coopId={product.coopId} />
             <button
               type="button"
               onClick={() => openModal({ type: 'chat', withId: product.coopId, productId: product.id })}
@@ -291,6 +301,40 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
         }
       />
     </BottomSheet>
+  );
+}
+
+/** Khối shop HTX kiểu sàn: tên, vùng, điểm đánh giá của shop, người theo dõi, nút Xem shop. Không có SĐT, địa chỉ. */
+function ShopBlock({ coopId }: { coopId: string }) {
+  const { state } = useStore();
+  const { openModal } = useUi();
+  const shop = coopShop(state, coopId);
+  if (!shop) return null;
+  return (
+    <div className="flex items-center gap-3 rounded-2xl border border-champagne-200 bg-white p-3">
+      <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-forest-900 text-champagne-300">
+        <Store size={18} />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-bold text-ink">{shop.name}</span>
+        <span className="flex flex-wrap items-center gap-x-1.5 text-xs text-stone-600">
+          <span>{shop.products.length} sản phẩm</span>
+          {shop.rating.average !== null && (
+            <span className="flex items-center gap-0.5">
+              · <Star size={12} aria-hidden="true" className="fill-champagne-500 text-champagne-500" /> {shop.rating.average}
+            </span>
+          )}
+          <span>· {shop.followers} người theo dõi</span>
+        </span>
+      </span>
+      <button
+        onClick={() => openModal({ type: 'coop_shop', coopId })}
+        aria-label={`Xem shop ${shop.name}`}
+        className="flex min-h-11 shrink-0 items-center gap-0.5 rounded-full border border-champagne-300 px-3 text-sm font-bold text-forest-900 hover:bg-champagne-50"
+      >
+        Xem shop <ChevronRight size={15} aria-hidden="true" />
+      </button>
+    </div>
   );
 }
 

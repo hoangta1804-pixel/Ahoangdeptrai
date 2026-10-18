@@ -26,6 +26,9 @@ const CoopProductFormSheet = lazy(lazyWithReload(() => import('../screens/coop/C
 const CoopApplySheet = lazy(lazyWithReload(() => import('../screens/coopApply/CoopApplySheet').then((m) => ({ default: m.CoopApplySheet }))));
 const CoopApplyStatusSheet = lazy(lazyWithReload(() => import('../screens/coopApply/CoopApplyStatusSheet').then((m) => ({ default: m.CoopApplyStatusSheet }))));
 const ChatSheet = lazy(lazyWithReload(() => import('../components/ChatSheet').then((m) => ({ default: m.ChatSheet }))));
+const CoopShopSheet = lazy(lazyWithReload(() => import('../screens/customer/CoopShopSheet').then((m) => ({ default: m.CoopShopSheet }))));
+const FavoritesSheet = lazy(lazyWithReload(() => import('../screens/customer/FavoritesSheet').then((m) => ({ default: m.FavoritesSheet }))));
+const VoucherWalletSheet = lazy(lazyWithReload(() => import('../screens/customer/VoucherWalletSheet').then((m) => ({ default: m.VoucherWalletSheet }))));
 const CoopVariantFormSheet = lazy(lazyWithReload(() => import('../screens/coop/CoopVariantFormSheet').then((m) => ({ default: m.CoopVariantFormSheet }))));
 
 /** Hiển thị đúng một sheet đang mở. Sheet nhận mã bản ghi và đọc dữ liệu mới nhất từ store. */
@@ -96,6 +99,12 @@ function ModalContent() {
       return <CoopVariantFormSheet key={modal.productId} productId={modal.productId} onClose={closeModal} />;
     case 'notifications':
       return <NotificationsSheet onClose={closeModal} />;
+    case 'coop_shop':
+      return <CoopShopSheet key={modal.coopId} coopId={modal.coopId} onClose={closeModal} />;
+    case 'favorites':
+      return <FavoritesSheet onClose={closeModal} />;
+    case 'voucher_wallet':
+      return <VoucherWalletSheet onClose={closeModal} />;
     case 'chat':
       return <ChatSheet key={`${modal.withId ?? ''}-${modal.productId ?? ''}`} withId={modal.withId} productId={modal.productId} onClose={closeModal} />;
   }

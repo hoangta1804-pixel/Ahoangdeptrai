@@ -4,9 +4,11 @@
  * Thông báo được sinh bằng cách so dữ liệu trước và sau mỗi thao tác (deriveNotifications), nên mọi đường thay đổi
  * (người dùng bấm, tác vụ theo giờ, cổng thanh toán mô phỏng) đều sinh thông báo giống nhau.
  * Các sự kiện: đổi trạng thái đơn, kết quả duyệt, ticket, tồn thấp (tối đa 1 lần/ngày/sản phẩm), mời đánh giá,
- * tin nhắn / cuộc gọi trong đơn giữa khách và HTX, tin nhắn chung (nút chat nổi), HTX xác nhận thu hoạch.
+ * tin nhắn / cuộc gọi trong đơn giữa khách và HTX, tin nhắn chung (nút chat nổi), HTX xác nhận thu hoạch,
+ * HTX khách theo dõi có sản phẩm mới.
  */
 import { generateId } from './ids';
+import { followerIdsOf } from './marketplace';
 import { formatMoney } from './pricing';
 import { formatDateKey, iso, remainingFor, toDateKey } from './state';
 import { shipperLabel } from './tracking';
@@ -243,6 +245,12 @@ export function deriveNotifications(prev: DemoState, next: DemoState, at: Date):
           body: c.status === 'approved' ? name : `${name}: ${c.rejectReason}`,
           link,
         });
+        // Sản phẩm mới (không phải quy cách thêm) được duyệt → khách theo dõi HTX (domain/marketplace.ts).
+        const product = next.products.find((p) => p.id === c.productId);
+        if (c.status === 'approved' && c.type === 'new_product' && product && !product.variantOf && product.status === 'active') {
+          const coopName = next.coops.find((x) => x.id === c.coopId)?.name ?? 'HTX';
+          drafts.push({ userIds: followerIdsOf(next, c.coopId).flatMap((id) => usersOfCustomer(next, id)), title: `${coopName} có sản phẩm mới`, body: name, link });
+        }
       }
     }
   }

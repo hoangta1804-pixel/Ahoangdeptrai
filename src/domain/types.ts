@@ -835,4 +835,10 @@ export interface DemoState {
   demoAccess?: DemoAccess;
   /** Phiếu nộp tiền thu hộ của shipper (domain/shipper.ts). Không bắt buộc, như orderMessages. */
   codRemittances?: CodRemittance[];
+  /** Sản phẩm yêu thích theo mã khách: mã nhóm quy cách, mới thêm trước (domain/marketplace.ts). Không bắt buộc, như orderMessages. */
+  favorites?: Record<string, string[]>;
+  /** HTX khách theo dõi theo mã khách (domain/marketplace.ts). Không bắt buộc, như orderMessages. */
+  follows?: Record<string, string[]>;
+  /** Kho voucher: mã ưu đãi khách đã lưu theo mã khách (domain/marketplace.ts). Không bắt buộc, như orderMessages. */
+  savedVouchers?: Record<string, string[]>;
 }

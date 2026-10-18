@@ -14,6 +14,7 @@ import { defaultAddressOf } from '../../domain/address';
 import { acceptCurrentPrices, deliveryWindow, revalidateLines, type RevalidationNotice } from '../../domain/cart';
 import { evaluateVoucherFor, groupKey, placeCheckout, planCheckout, type GroupOptions, type PlannedOrder } from '../../domain/checkout';
 import { generateId } from '../../domain/ids';
+import { isVoucherSaved, savedFirst } from '../../domain/marketplace';
 import { formatMoney, type PaymentMethod } from '../../domain/pricing';
 import { findProduct, formatDateKey, snapshotAddress } from '../../domain/state';
 import { PHONE_RULE } from '../../domain/phone';
@@ -274,9 +275,11 @@ export function CheckoutSheet({ source, preferredAddressId, onClose }: { source:
             </form>
             <p className="text-sm text-stone-600">Hoặc bấm chọn một mã bên dưới:</p>
             <ul className="space-y-2">
-              {state.vouchers.map((v) => {
+              {/* Mã trong Kho voucher của khách lên đầu, có nhãn "Đã lưu" (domain/marketplace.ts). */}
+              {savedFirst(state, customerId, state.vouchers).map((v) => {
                 const ev = evaluateVoucherFor(state, v, customerId, lines, at);
                 const selected = voucherId === v.id;
+                const saved = isVoucherSaved(state, customerId, v.id);
                 return (
                   <li key={v.id}>
                     {/* Mã chưa đủ điều kiện vẫn bấm được để xem lý do (BR-KM: không chọn được và phải hiện lý do). */}
@@ -293,7 +296,10 @@ export function CheckoutSheet({ source, preferredAddressId, onClose }: { source:
                         {selected && <Check size={12} />}
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block font-bold text-ink">{v.code}</span>
+                        <span className="flex flex-wrap items-center gap-1.5 font-bold text-ink">
+                          {v.code}
+                          {saved && <span className="rounded-full bg-forest-50 px-2 py-0.5 text-xs font-semibold text-forest-800">Đã lưu</span>}
+                        </span>
                         <span className="block text-stone-700">{v.title}</span>
                         <span className={`block text-xs ${ev.ok ? 'text-forest-700' : 'text-rose-700'}`}>
                           {ev.ok ? (selected ? `Đang áp dụng · giảm ${formatMoney(ev.value.discount)}` : `Bấm để dùng · giảm ${formatMoney(ev.value.discount)}`) : `Chưa dùng được: ${ev.error}`}

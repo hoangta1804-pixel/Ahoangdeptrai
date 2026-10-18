@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Bell, ChevronRight, ClipboardCheck, LogOut, MapPin, MessageCircle, MessageSquareWarning, Package, ShoppingBag, Sprout, Star, Truck, UserRound, type LucideIcon } from 'lucide-react';
+import { Bell, ChevronRight, ClipboardCheck, Heart, LogOut, MapPin, MessageCircle, MessageSquareWarning, Package, ShoppingBag, Sprout, Star, TicketPercent, Truck, UserRound, type LucideIcon } from 'lucide-react';
 import { useUi } from '../../app/UiContext';
 import { PAGE_X } from '../../app/layout';
 import { BrocadeBand } from '../../components/Brand';
@@ -11,6 +11,7 @@ import { listOrdersFor } from '../../domain/access';
 import { loginIdentityLabel } from '../../domain/auth';
 import { totalUnread } from '../../domain/coopChat';
 import { isTicketOpen } from '../../domain/complaint';
+import { favoriteItems, followedCoops, voucherWallet } from '../../domain/marketplace';
 import { ordersAwaitingReview, tabCounts, type OrderTabKey } from '../../domain/orderTabs';
 import { useStore } from '../../store/AppDataContext';
 import { BankLinkSection } from './BankLinkSection';
@@ -18,7 +19,7 @@ import { OrdersSection } from './OrdersSection';
 
 /**
  * Tài khoản của khách: thông tin cá nhân (FR-TK-03); "Đơn mua" gồm biểu tượng trạng thái và danh sách đơn (FR-DH-01),
- * "Tiện ích của tôi" (theo video mẫu của chủ repo); liên kết ngân hàng nhận hoàn (mô phỏng); sổ địa chỉ (FR-TK-04); đăng xuất.
+ * "Tiện ích của tôi" (theo video mẫu của chủ repo; thêm Yêu thích, Kho voucher kiểu sàn TMĐT); liên kết ngân hàng nhận hoàn (mô phỏng); sổ địa chỉ (FR-TK-04); đăng xuất.
  */
 export function AccountTab() {
   const { state, run } = useStore();
@@ -210,8 +211,11 @@ function OrdersBlock() {
 
 /** Tiện ích của tôi: các mục hay dùng của khách, mở đúng sheet. */
 function Utilities({ addressCount }: { addressCount: number }) {
-  const { state } = useStore();
+  const { state, now } = useStore();
   const { customerActor, user, openModal } = useUi();
+  const favorites = favoriteItems(state, customerActor.id!).length;
+  const follows = followedCoops(state, customerActor.id!).length;
+  const usableSaved = voucherWallet(state, customerActor.id!, now()).saved.filter((e) => e.status === 'usable').length;
   const cartCount = (state.carts[customerActor.id!] ?? []).reduce((s, l) => s + l.quantity, 0);
   const unread = user ? state.notifications.filter((n) => n.userId === user.id && !n.read).length : 0;
   const chats = totalUnread(state, customerActor);
@@ -221,6 +225,13 @@ function Utilities({ addressCount }: { addressCount: number }) {
   const items: { label: string; sub: string; icon: LucideIcon; count?: number; open: () => void }[] = [
     { label: 'Sổ địa chỉ', sub: `${addressCount}/10 địa chỉ`, icon: MapPin, open: () => openModal({ type: 'address_book' }) },
     { label: 'Giỏ hàng', sub: cartCount > 0 ? `${cartCount} sản phẩm` : 'Đang trống', icon: ShoppingBag, count: cartCount, open: () => openModal({ type: 'cart' }) },
+    {
+      label: 'Yêu thích',
+      sub: favorites + follows > 0 ? `${favorites} sản phẩm · ${follows} HTX` : 'Sản phẩm và HTX đã lưu',
+      icon: Heart,
+      open: () => openModal({ type: 'favorites' }),
+    },
+    { label: 'Kho voucher', sub: usableSaved > 0 ? `${usableSaved} mã dùng được` : 'Lưu mã ưu đãi', icon: TicketPercent, open: () => openModal({ type: 'voucher_wallet' }) },
     { label: 'Thông báo', sub: unread > 0 ? `${unread} chưa đọc` : 'Đã đọc hết', icon: Bell, count: unread, open: () => openModal({ type: 'notifications' }) },
     { label: 'Tin nhắn', sub: chats > 0 ? `${chats} tin chưa đọc` : 'Hỏi HTX', icon: MessageCircle, count: chats, open: () => openModal({ type: 'chat' }) },
     {

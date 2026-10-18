@@ -45,7 +45,13 @@ export type ModalState =
   | { type: 'coop_apply'; applicationId?: string }
   /** HTX tra cứu hồ sơ đăng ký; `phone`: tra sẵn số này (vừa nộp xong). */
   | { type: 'coop_apply_status'; phone?: string }
-  | { type: 'demo_panel' };
+  | { type: 'demo_panel' }
+  /** Trang shop công khai của HTX: sản phẩm đang bán, đánh giá, theo dõi (không có SĐT, địa chỉ). */
+  | { type: 'coop_shop'; coopId: string }
+  /** Sản phẩm yêu thích và HTX đang theo dõi của khách. */
+  | { type: 'favorites' }
+  /** Kho voucher: mã khách đã lưu và mã đang phát hành. */
+  | { type: 'voucher_wallet' };
 
 const NO_ACTOR: Actor = { kind: 'system', name: 'Chưa đăng nhập' };
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useUi } from '../app/UiContext';
 import { markNotificationsRead, notificationsOf } from '../domain/notifications';
-import type { AppNotification } from '../domain/types';
+import type { AppNotification, NotificationLink } from '../domain/types';
 import { useStore } from '../store/AppDataContext';
 import { BottomSheet } from './BottomSheet';
 import { EmptyState } from './EmptyState';
@@ -20,8 +20,16 @@ export function NotificationsSheet({ onClose }: { onClose: () => void }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /** Thông báo bấm được: khách mở đơn, khiếu nại, tin nhắn, sản phẩm đang bán; HTX mở đơn, khiếu nại, tin nhắn; shipper mở đơn. */
+  const canOpen = (link: NotificationLink): boolean => {
+    if (user?.role === 'customer') return link.type !== 'product' || state.products.some((p) => p.id === link.id && p.status === 'active');
+    if (user?.role === 'coop') return link.type !== 'product';
+    return user?.role === 'shipper' && link.type === 'order';
+  };
+
   const open = (n: AppNotification) => {
-    if (!n.link || !user) return;
+    if (!n.link || !user || !canOpen(n.link)) return;
+    if (n.link.type === 'product') return openModal({ type: 'product_detail', productId: n.link.id });
     if (n.link.type === 'chat') {
       if (user.role === 'customer' || user.role === 'coop') openModal({ type: 'chat', withId: n.link.id });
       return;
@@ -40,7 +48,7 @@ export function NotificationsSheet({ onClose }: { onClose: () => void }) {
       ) : (
         <ul className="space-y-2">
           {list.map((n) => {
-            const clickable = !!n.link && (user?.role === 'customer' || user?.role === 'coop') && n.link.type !== 'product';
+            const clickable = !!n.link && canOpen(n.link);
             return (
               <li key={n.id}>
                 <button
