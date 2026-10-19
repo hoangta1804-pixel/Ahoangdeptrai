@@ -9,6 +9,7 @@
  */
 import { isOrderableIn, revalidateLines, validateDeliveryDate, type RevalidationNotice } from './cart';
 import { generateId, generateOrderCode } from './ids';
+import { normalizeInvoice, validateInvoice } from './invoice';
 import { initialStatus } from './orderStateMachine';
 import { isValidPhone, normalizePhone, PHONE_RULE } from './phone';
 import { snapshotParams } from './params';
@@ -29,6 +30,7 @@ import {
   type AddressSnapshot,
   type CartLine,
   type Checkout,
+  type CompanyInvoice,
   type DemoState,
   type GiftOption,
   type GiftRecipient,
@@ -62,6 +64,8 @@ export interface CheckoutInput {
   note: string;
   /** Tuỳ chọn theo từng đơn, khoá là groupKey(). */
   groupOptions: Record<string, GroupOptions>;
+  /** Yêu cầu xuất hoá đơn công ty (mô phỏng, domain/invoice.ts); áp cho mọi đơn của lần đặt. */
+  invoice?: CompanyInvoice;
 }
 
 export interface PlannedOrder {
@@ -304,6 +308,10 @@ export function planCheckout(state: DemoState, input: CheckoutInput, at: Date): 
     });
   }
 
+  if (input.invoice) {
+    const inv = validateInvoice(input.invoice);
+    if (!inv.ok) errors.push(inv.error);
+  }
   if (input.lines.length === 0) errors.push('Chưa có sản phẩm nào để đặt.');
   // Xếp đơn: mua sẵn trước, đặt trước sau; theo HTX.
   orders.sort((a, b) => (a.kind === b.kind ? a.coopName.localeCompare(b.coopName) : a.kind === 'ready' ? -1 : 1));
@@ -328,6 +336,8 @@ export interface PlaceInput extends CheckoutInput {
   confirmedPriceIncrease: boolean;
   /** Đặt từ giỏ thì bỏ các dòng đã đặt khỏi giỏ. */
   fromCart: boolean;
+  /** Lưu thông tin hoá đơn làm mặc định cho lần sau. */
+  saveInvoiceAsDefault?: boolean;
 }
 
 export type PlaceResult =
@@ -368,6 +378,7 @@ export function placeCheckout(state: DemoState, input: PlaceInput, actor: Actor,
   }
 
   const checkoutId = generateId('CK');
+  const invoice = input.invoice ? normalizeInvoice(input.invoice) : undefined;
   const existingCodes = state.orders.map((o) => o.id);
   const params = snapshotParams(state.params);
   const orders: Order[] = plan.orders.map((p) => {
@@ -393,6 +404,7 @@ export function placeCheckout(state: DemoState, input: PlaceInput, actor: Actor,
       address: p.address,
       note: input.note.trim(),
       gift: p.gift,
+      invoice,
       voucherCode: plan.voucher && p.pricing.discount > 0 ? plan.voucher.code : undefined,
       params,
       cancelPolicy: p.cancelPolicy,
@@ -456,6 +468,7 @@ export function placeCheckout(state: DemoState, input: PlaceInput, actor: Actor,
     transactions: transaction ? [transaction, ...state.transactions] : state.transactions,
     voucherUsages: usage ? [usage, ...state.voucherUsages] : state.voucherUsages,
     carts: input.fromCart ? { ...state.carts, [input.customerId]: cart.filter((l) => !orderedIds.has(l.productId)) } : state.carts,
+    customers: invoice && input.saveInvoiceAsDefault ? state.customers.map((c) => (c.id === input.customerId ? { ...c, invoiceDefault: invoice } : c)) : state.customers,
   };
   return { ok: true, state: next, checkout, transaction, notices: re.notices, reused: false };
 }

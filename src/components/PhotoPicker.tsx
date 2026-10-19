@@ -4,8 +4,8 @@ import { Camera, X } from 'lucide-react';
 const MAX_PHOTOS = 5;
 const MAX_SIDE = 320;
 
-/** Thu nhỏ ảnh còn cạnh dài tối đa 320px để lưu được trong localStorage. */
-function downscale(file: File): Promise<string> {
+/** Thu nhỏ ảnh còn cạnh dài tối đa 320px để lưu được trong localStorage. Dùng chung cho ảnh tin nhắn (MessagePhotos.tsx). */
+export function downscale(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onerror = () => reject(new Error('Không đọc được ảnh'));

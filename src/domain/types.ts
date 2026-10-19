@@ -229,6 +229,17 @@ export interface Customer {
   name: string;
   phone: string;
   refundAccount?: BankAccount;
+  /** Thông tin xuất hoá đơn công ty khách lưu làm mặc định (domain/invoice.ts, Giai đoạn 8). */
+  invoiceDefault?: CompanyInvoice;
+}
+
+/** Yêu cầu xuất hoá đơn công ty (mô phỏng, chưa phát hành hoá đơn điện tử). */
+export interface CompanyInvoice {
+  companyName: string;
+  /** Mã số thuế: 10 chữ số, hoặc 10 chữ số + "-" + 3 chữ số. */
+  taxCode: string;
+  address: string;
+  email: string;
 }
 
 /** Phường/xã giao hàng (danh sách cấu hình). Không dùng quận/huyện (bỏ cấp này từ 1/7/2025). */
@@ -435,6 +446,8 @@ export interface Order {
   address: AddressSnapshot;
   note: string;
   gift?: GiftOption;
+  /** Bản chốt thông tin xuất hoá đơn công ty lúc đặt (mô phỏng); khách đổi thông tin mặc định sau đó không ảnh hưởng. */
+  invoice?: CompanyInvoice;
   voucherCode?: string;
   /** Bản chốt tham số lúc tạo đơn (BR-DAT-06). */
   params: Params;
@@ -504,6 +517,8 @@ export interface OrderMessage {
   senderName: string;
   kind: 'text' | 'call';
   text: string;
+  /** Ảnh kèm tin (đã thu nhỏ), tối đa NEW-04 ảnh. */
+  photos?: string[];
   /** Chỉ có với cuộc gọi. */
   callOutcome?: CallOutcome;
   at: string;
@@ -521,6 +536,8 @@ export interface DirectMessage {
   /** Khách hỏi về một sản phẩm: mã và tên kèm quy cách lúc gửi. */
   productId?: string;
   productLabel?: string;
+  /** Ảnh kèm tin (đã thu nhỏ), tối đa NEW-04 ảnh. */
+  photos?: string[];
 }
 
 export interface Checkout {
@@ -841,4 +858,8 @@ export interface DemoState {
   follows?: Record<string, string[]>;
   /** Kho voucher: mã ưu đãi khách đã lưu theo mã khách (domain/marketplace.ts). Không bắt buộc, như orderMessages. */
   savedVouchers?: Record<string, string[]>;
+  /** "Báo tôi khi vào mùa": sản phẩm đặt trước khách theo dõi, theo mã khách (mã nhóm quy cách; domain/seasonWatch.ts). */
+  seasonWatches?: Record<string, string[]>;
+  /** Đợt đặt trước đã báo cho từng khách, theo "mã khách|mã nhóm quy cách" → khoảng ngày giao của đợt; để không báo lặp. */
+  seasonAlerts?: Record<string, string>;
 }

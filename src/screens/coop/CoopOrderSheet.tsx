@@ -14,6 +14,7 @@ import { formatMoney } from '../../domain/pricing';
 import { formatDateKey } from '../../domain/state';
 import { ORDER_KIND_LABEL, ORDER_STATUS_LABEL } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
+import { InvoiceSummary } from '../../components/InvoiceFields';
 import { CoopContactCard } from './CoopContactCard';
 import { HarvestForm } from './HarvestForm';
 
@@ -96,6 +97,13 @@ export function CoopOrderSheet({ orderId, onClose }: { orderId: string; onClose:
               {order.note && <p>Ghi chú của khách: {order.note}</p>}
               {!hidePrice && order.pricing.payOnDelivery > 0 && <p className="font-semibold">Thu khi giao: {formatMoney(order.pricing.payOnDelivery)}</p>}
             </section>
+
+            {order.invoice && (
+              <section aria-label="Hoá đơn công ty" className="space-y-1 rounded-2xl border border-stone-200 p-3">
+                <h4 className="text-sm font-bold text-ink">Khách yêu cầu xuất hoá đơn công ty</h4>
+                <InvoiceSummary invoice={order.invoice} />
+              </section>
+            )}
 
             {order.cancelRequest?.status === 'pending' && (
               <section className="space-y-2 rounded-2xl border border-rose-200 bg-rose-50 p-3 text-sm">

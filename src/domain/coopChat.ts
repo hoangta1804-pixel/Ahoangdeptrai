@@ -7,6 +7,7 @@
  * - HTX chỉ nhắn cho khách đã nhắn cho HTX hoặc đã đặt đơn của HTX (không nhắn tin quảng cáo cho người lạ).
  * - Không hiện SĐT của hai bên. Dữ liệu dùng chung nên hai máy cùng thấy (app hỏi dữ liệu mới mỗi 10 giây).
  */
+import { messagePhotosError } from './dataBudget';
 import { generateId } from './ids';
 import { MESSAGE_MAX_LENGTH, markOrderChatRead, messagesOf, unreadCount, type ChatSide } from './orderContact';
 import { findProduct, iso } from './state';
@@ -34,6 +35,7 @@ export interface ThreadItem {
   /** Tin hỏi về một sản phẩm: mã và tên kèm quy cách lúc gửi. */
   productId?: string;
   productLabel?: string;
+  photos?: string[];
 }
 
 const directOf = (state: DemoState, customerId: string, coopId: string): DirectMessage[] => (state.directMessages ?? []).filter((m) => m.customerId === customerId && m.coopId === coopId);
@@ -53,10 +55,13 @@ export function threadItems(state: DemoState, customerId: string, coopId: string
     text: m.text,
     productId: m.productId,
     productLabel: m.productLabel,
+    photos: m.photos,
   }));
   const inOrders: ThreadItem[] = state.orders
     .filter((o) => o.customerId === customerId && o.coopId === coopId)
-    .flatMap((o) => messagesOf(state, o.id).map((m) => ({ id: m.id, at: m.at, sender: m.sender, senderName: m.senderName, kind: m.kind, text: m.text, callOutcome: m.callOutcome, orderId: o.id })));
+    .flatMap((o) =>
+      messagesOf(state, o.id).map((m) => ({ id: m.id, at: m.at, sender: m.sender, senderName: m.senderName, kind: m.kind, text: m.text, photos: m.photos, callOutcome: m.callOutcome, orderId: o.id })),
+    );
   return [...direct, ...inOrders].sort((a, b) => a.at.localeCompare(b.at) || a.id.localeCompare(b.id));
 }
 
@@ -78,7 +83,14 @@ export interface Conversation {
   unread: number;
 }
 
-export const previewOf = (item: ThreadItem): string => (item.kind === 'call' ? `Cuộc gọi: ${CALL_OUTCOME_LABEL[item.callOutcome ?? 'scheduled']}` : item.text);
+export const previewOf = (item: ThreadItem): string => (item.kind === 'call' ? `Cuộc gọi: ${CALL_OUTCOME_LABEL[item.callOutcome ?? 'scheduled']}` : messagePreview(item));
+
+/** Nội dung ngắn của tin: chữ, kèm số ảnh nếu có (tin chỉ có ảnh thì là "[N ảnh]"). */
+export function messagePreview(m: { text: string; photos?: string[] }): string {
+  const n = m.photos?.length ?? 0;
+  if (n === 0) return m.text;
+  return m.text ? `${m.text} · [${n} ảnh]` : `[${n} ảnh]`;
+}
 
 function conversation(state: DemoState, customerId: string, coopId: string, side: ChatSide): Conversation {
   const items = threadItems(state, customerId, coopId);
@@ -124,7 +136,7 @@ export function coopMayMessage(state: DemoState, coopId: string, customerId: str
 }
 
 /** Gửi tin chung cho bên kia. Khách có thể kèm sản phẩm đang hỏi. */
-export function sendDirectMessage(state: DemoState, actor: Actor, otherId: string, text: string, at: Date, productId?: string): Result<DemoState> {
+export function sendDirectMessage(state: DemoState, actor: Actor, otherId: string, text: string, at: Date, productId?: string, photos: string[] = []): Result<DemoState> {
   const p = parties(actor, otherId);
   if (!p.ok) return p;
   const { side, customerId, coopId } = p.value;
@@ -134,8 +146,11 @@ export function sendDirectMessage(state: DemoState, actor: Actor, otherId: strin
   if (!customer) return fail('Không tìm thấy khách hàng.');
   if (side === 'coop' && !coopMayMessage(state, coopId, customerId)) return fail('HTX chỉ nhắn cho khách đã nhắn cho HTX hoặc đã đặt đơn của HTX.');
   const body = text.trim();
-  if (!body) return fail('Vui lòng nhập nội dung tin nhắn.');
+  if (!body && photos.length === 0) return fail('Vui lòng nhập nội dung tin nhắn.');
   if (body.length > MESSAGE_MAX_LENGTH) return fail(`Tin nhắn tối đa ${MESSAGE_MAX_LENGTH.toLocaleString('vi-VN')} ký tự.`);
+  // Ảnh kèm tin: tối đa NEW-04 ảnh, chặn khi dữ liệu dùng chung gần đầy (domain/dataBudget.ts).
+  const photoErr = messagePhotosError(state, photos, state.params.messagePhotoMax);
+  if (photoErr) return fail(photoErr);
   let product: { productId: string; productLabel: string } | undefined;
   if (productId) {
     const found = findProduct(state, productId);
@@ -151,6 +166,7 @@ export function sendDirectMessage(state: DemoState, actor: Actor, otherId: strin
     text: body,
     at: iso(at),
     ...product,
+    ...(photos.length > 0 ? { photos } : {}),
   };
   const key = threadKey(customerId, coopId);
   // Người gửi coi như đã đọc hết tin chung trước đó.

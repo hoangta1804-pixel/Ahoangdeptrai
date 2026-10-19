@@ -4,6 +4,7 @@ import { useUi } from '../app/UiContext';
 import { chatClosedReason, markOrderChatRead, MESSAGE_MAX_LENGTH, messagesOf, sendOrderMessage, unreadCount, type ChatSide } from '../domain/orderContact';
 import { CALL_OUTCOME_LABEL, type Order } from '../domain/types';
 import { useStore } from '../store/AppDataContext';
+import { AttachPhotoButton, MessagePhotoGrid, PendingPhotos, useMessagePhotos } from './MessagePhotos';
 
 /**
  * Trao đổi theo đơn giữa khách và HTX của đơn (chủ repo yêu cầu): nhắn tin qua lại, cuộc gọi HTX ghi lại cũng hiện ở đây.
@@ -26,6 +27,7 @@ export function OrderChat({
   const { customerActor, coopActor, showToast } = useUi();
   const actor = side === 'customer' ? customerActor : coopActor;
   const [text, setText] = useState('');
+  const photos = useMessagePhotos();
   const titleId = useId();
   const listRef = useRef<HTMLDivElement>(null);
   const ownInput = useRef<HTMLTextAreaElement>(null);
@@ -51,10 +53,12 @@ export function OrderChat({
     input.current?.focus();
   }, [prefill, input]);
 
+  // Gửi không được (vd. dữ liệu gần đầy) thì giữ nguyên chữ và ảnh đang soạn.
   const send = () => {
-    const r = run((s, at) => sendOrderMessage(s, order.id, actor, text, at));
+    const r = run((s, at) => sendOrderMessage(s, order.id, actor, text, at, photos.photos));
     if (!r.ok) return showToast(r.error);
     setText('');
+    photos.clear();
   };
 
   const time = (iso: string) => new Date(iso).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
@@ -65,7 +69,13 @@ export function OrderChat({
       <h4 id={titleId} className="font-display text-lg font-semibold text-ink">
         Trao đổi với {other}
       </h4>
-      <div ref={listRef} role="log" aria-label={`Tin nhắn trong đơn ${order.id}`} aria-live="polite" className="max-h-80 space-y-2 overflow-y-auto overscroll-contain rounded-2xl bg-champagne-50/60 p-2.5">
+      <div
+        ref={listRef}
+        role="log"
+        aria-label={`Tin nhắn trong đơn ${order.id}`}
+        aria-live="polite"
+        className="max-h-80 space-y-2 overflow-y-auto overscroll-contain rounded-2xl bg-champagne-50/60 p-2.5"
+      >
         {messages.length === 0 && (
           <p className="py-3 text-center text-sm text-muted">{side === 'customer' ? 'Chưa có tin nhắn. Bạn có thể hỏi HTX về đơn này.' : 'Chưa có tin nhắn. Nhắn cho khách về đơn này.'}</p>
         )}
@@ -87,7 +97,8 @@ export function OrderChat({
             <div key={m.id} className={`flex ${own ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${own ? 'rounded-br-md bg-forest-900 text-white' : 'rounded-bl-md border border-champagne-200 bg-white text-ink'}`}>
                 {!own && <span className="block text-xs font-semibold text-champagne-800">{m.senderName}</span>}
-                <span className="whitespace-pre-line break-words">{m.text}</span>
+                {m.text && <span className="whitespace-pre-line break-words">{m.text}</span>}
+                <MessagePhotoGrid photos={m.photos} label={`Tin của ${m.senderName}`} />
                 <span className={`block text-right text-xs ${own ? 'text-forest-100' : 'text-muted'}`}>{time(m.at)}</span>
               </div>
             </div>
@@ -97,34 +108,38 @@ export function OrderChat({
       {closed ? (
         <p className="text-sm text-stone-600">{closed}</p>
       ) : (
-        <div className="flex items-end gap-2">
-          <label className="min-w-0 flex-1">
-            <span className="sr-only">Nội dung tin nhắn</span>
-            <textarea
-              ref={input}
-              rows={2}
-              maxLength={MESSAGE_MAX_LENGTH}
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  send();
-                }
-              }}
-              placeholder={side === 'customer' ? 'Nhắn cho HTX…' : 'Nhắn cho khách…'}
-              className="min-h-11 w-full resize-none rounded-2xl border border-stone-300 bg-white px-3 py-2.5 text-base text-ink focus:border-forest-600 focus:outline-none focus:ring-2 focus:ring-forest-600/20 md:text-sm"
-            />
-          </label>
-          <button
-            type="button"
-            onClick={send}
-            disabled={!text.trim()}
-            aria-label="Gửi tin nhắn"
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-forest-900 text-champagne-200 ring-1 ring-champagne-400/60 hover:bg-forest-700 disabled:bg-stone-300 disabled:text-stone-600 disabled:ring-0"
-          >
-            <Send size={18} aria-hidden="true" />
-          </button>
+        <div className="space-y-2">
+          <PendingPhotos state={photos} />
+          <div className="flex flex-wrap items-end gap-2">
+            <AttachPhotoButton state={photos} />
+            <label className="min-w-0 flex-1">
+              <span className="sr-only">Nội dung tin nhắn</span>
+              <textarea
+                ref={input}
+                rows={2}
+                maxLength={MESSAGE_MAX_LENGTH}
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    send();
+                  }
+                }}
+                placeholder={side === 'customer' ? 'Nhắn cho HTX…' : 'Nhắn cho khách…'}
+                className="min-h-11 w-full resize-none rounded-2xl border border-stone-300 bg-white px-3 py-2.5 text-base text-ink focus:border-forest-600 focus:outline-none focus:ring-2 focus:ring-forest-600/20 md:text-sm"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={send}
+              disabled={!text.trim() && photos.photos.length === 0}
+              aria-label="Gửi tin nhắn"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-forest-900 text-champagne-200 ring-1 ring-champagne-400/60 hover:bg-forest-700 disabled:bg-stone-300 disabled:text-stone-600 disabled:ring-0"
+            >
+              <Send size={18} aria-hidden="true" />
+            </button>
+          </div>
         </div>
       )}
     </section>

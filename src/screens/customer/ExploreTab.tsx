@@ -29,7 +29,21 @@ import { PreorderProgress } from '../../components/PreorderProgress';
 import { ProductImage } from '../../components/ProductImage';
 import { QuantityStepper } from '../../components/QuantityStepper';
 import { isOrderableIn } from '../../domain/cart';
-import { coopShop, familyPrice, familyRating, favoriteItems, inPriceBand, PRICE_BANDS, SORT_LABEL, sortProducts, voucherWallet, type PriceBand, type SortKey } from '../../domain/marketplace';
+import {
+  coopShop,
+  familyPrice,
+  familyRating,
+  favoriteItems,
+  inPriceBand,
+  inPriceRange,
+  parsePriceInput,
+  PRICE_BANDS,
+  SORT_LABEL,
+  sortProducts,
+  voucherWallet,
+  type PriceBand,
+  type SortKey,
+} from '../../domain/marketplace';
 import { formatMoney } from '../../domain/pricing';
 import { isSamplePrice, regionsOf, remainingFor } from '../../domain/state';
 import { matchesSearch } from '../../domain/text';
@@ -37,6 +51,7 @@ import { CATEGORY_LABEL, type Category, type DemoState, type Product } from '../
 import { familyKey, groupFamilies, listedFamilyOf, priceRange } from '../../domain/variants';
 import { useStore } from '../../store/AppDataContext';
 import { clearViewerList, pushViewerList, useViewerList } from '../../store/viewerPrefs';
+import { CoopNameButton } from './CoopNameButton';
 import { FavoriteButton } from './FavoriteButton';
 import { useCartActions } from './useCartActions';
 import { useMarketplace } from './useMarketplace';
@@ -74,7 +89,13 @@ export function ExploreTab() {
   const [region, setRegion] = useState<string>(ALL);
   const [category, setCategory] = useState<Category | typeof ALL>(ALL);
   const [sort, setSort] = useState<SortKey>('relevant');
-  const [band, setBand] = useState<PriceBand>('all');
+  // Khoảng giá: các mức có sẵn, hoặc khách tự nhập từ / đến (Giai đoạn 8).
+  const [band, setBand] = useState<PriceBand | 'custom'>('all');
+  const [priceFrom, setPriceFrom] = useState('');
+  const [priceTo, setPriceTo] = useState('');
+  const customMin = parsePriceInput(priceFrom);
+  const customMax = parsePriceInput(priceTo);
+  const inBand = (price: number) => (band === 'custom' ? inPriceRange(price, customMin, customMax) : inPriceBand(price, band));
 
   const listed = state.products.filter((p) => p.status === 'active');
   // Bộ lọc vùng sinh từ dữ liệu sản phẩm, cùng một cấp (L9). Sản phẩm ghi nhiều địa danh thì có ở từng địa danh.
@@ -89,16 +110,18 @@ export function ExploreTab() {
       .filter((p) => matchesSearch(query, [p.name, p.region, p.unit, coopNameOf(state, p)])),
   )
     .map((family) => representative(state, family))
-    .filter((p) => inPriceBand(familyPrice(state, p), band));
+    .filter((p) => inBand(familyPrice(state, p)));
   const visible = sortProducts(state, matched, sort);
   const familyCount = groupFamilies(listed).length;
 
-  const filtering = query.trim() !== '' || region !== ALL || category !== ALL || band !== 'all';
+  const filtering = query.trim() !== '' || region !== ALL || category !== ALL || (band === 'custom' ? customMin !== undefined || customMax !== undefined : band !== 'all');
   const clearFilters = () => {
     setQuery('');
     setRegion(ALL);
     setCategory(ALL);
     setBand('all');
+    setPriceFrom('');
+    setPriceTo('');
   };
 
   const coopCount = new Set(listed.map((p) => p.coopId)).size;
@@ -225,7 +248,7 @@ export function ExploreTab() {
               <span className="whitespace-nowrap font-medium">Khoảng giá</span>
               <select
                 value={band}
-                onChange={(e) => setBand(e.target.value as PriceBand)}
+                onChange={(e) => setBand(e.target.value as PriceBand | 'custom')}
                 className="min-h-11 rounded-full bg-transparent pr-2 text-sm font-semibold text-forest-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-champagne-400/50"
               >
                 {PRICE_BANDS.map((b) => (
@@ -233,8 +256,17 @@ export function ExploreTab() {
                     {b.label}
                   </option>
                 ))}
+                <option value="custom">Tự nhập khoảng giá</option>
               </select>
             </label>
+            {band === 'custom' && (
+              <div role="group" aria-label="Khoảng giá tự nhập" className="flex items-center gap-1.5 text-sm text-stone-700">
+                <PriceInput label="Giá từ (đồng)" placeholder="Từ" value={priceFrom} onChange={setPriceFrom} />
+                <span aria-hidden="true">–</span>
+                <PriceInput label="Giá đến (đồng)" placeholder="Đến" value={priceTo} onChange={setPriceTo} />
+                <span className="text-xs text-muted">đ</span>
+              </div>
+            )}
             {category !== ALL && (
               <button onClick={() => setCategory(ALL)} className="flex min-h-11 items-center gap-1 rounded-full bg-forest-900 px-4 text-sm font-semibold text-champagne-100" aria-label={`Bỏ lọc nhóm hàng ${CATEGORY_LABEL[category]}`}>
                 {CATEGORY_LABEL[category]} <X size={14} aria-hidden="true" />
@@ -707,7 +739,7 @@ function RecentlyViewed() {
  * Dùng lại ở "Có thể bạn cũng thích" của Đơn mua và trang shop HTX.
  * Sản phẩm có nhiều quy cách: thẻ hiện các quy cách và giá "từ …"; nút + mở trang chi tiết để chọn quy cách.
  */
-export function ProductCard({ product: p }: { product: Product }) {
+export function ProductCard({ product: p, showCoop = true }: { product: Product; showCoop?: boolean }) {
   const { state } = useStore();
   const { openModal } = useUi();
   const { add, cart, update, remove } = useCartActions();
@@ -740,7 +772,6 @@ export function ProductCard({ product: p }: { product: Product }) {
         <div className="flex w-full flex-1 flex-col items-center gap-1 px-1.5 pt-3 pb-1">
           <span className="w-full truncate text-xs font-semibold uppercase tracking-[0.14em] text-champagne-700">{p.region}</span>
           <h3 className="line-clamp-2 font-display text-[1.05rem] font-semibold leading-snug text-ink">{p.name}</h3>
-          <span className="w-full truncate text-xs text-muted">{coop?.name}</span>
           {rating.average !== null && (
             <span className="flex items-center gap-1 text-xs text-stone-700">
               <Star size={12} aria-hidden="true" className="fill-champagne-500 text-champagne-500" />
@@ -756,6 +787,8 @@ export function ProductCard({ product: p }: { product: Product }) {
         </div>
       </button>
       <FavoriteButton product={p} className="absolute top-0.5 right-0.5 z-10" />
+      {/* Tên HTX nằm ngoài nút "Xem" để bấm riêng mở trang HTX. */}
+      {showCoop && coop && <CoopNameButton coopId={coop.id} name={coop.name} className="mx-auto justify-center px-1 text-xs" />}
       <div className={`mt-1 space-y-2 border-t border-champagne-200/80 pt-2 pb-0.5 ${inCart ? 'px-0' : 'px-0.5 min-[360px]:px-1.5'}`}>
         <div className="flex min-h-11 items-center justify-between gap-1 min-[360px]:gap-2">
           <div className="min-w-0">
@@ -782,6 +815,23 @@ export function ProductCard({ product: p }: { product: Product }) {
         {inCart && <QuantityStepper value={inCart.quantity} max={remaining} onChange={(quantity) => update(p.id, { quantity })} onRemove={() => remove(p.id)} itemName={p.name} compact />}
       </div>
     </article>
+  );
+}
+
+/** Ô nhập giá cho khoảng giá tự nhập: chỉ nhận số, hiện dấu chấm phân cách nghìn. */
+function PriceInput({ label, placeholder, value, onChange }: { label: string; placeholder: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <input
+      aria-label={label}
+      placeholder={placeholder}
+      inputMode="numeric"
+      value={value}
+      onChange={(e) => {
+        const digits = e.target.value.replace(/\D/g, '').slice(0, 9);
+        onChange(digits ? Number(digits).toLocaleString('vi-VN') : '');
+      }}
+      className="min-h-11 w-28 rounded-full border border-champagne-300/80 bg-white px-3 text-base tabular-nums text-ink focus:border-forest-600 focus:outline-none focus:ring-2 focus:ring-forest-600/20 md:text-sm"
+    />
   );
 }
 

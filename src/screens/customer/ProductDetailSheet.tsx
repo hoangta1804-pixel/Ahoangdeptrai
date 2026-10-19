@@ -18,6 +18,7 @@ import { familyKey, listedFamilyOf } from '../../domain/variants';
 import { useStore } from '../../store/AppDataContext';
 import { pushViewerList } from '../../store/viewerPrefs';
 import { FavoriteButton } from './FavoriteButton';
+import { SeasonWatchButton } from './SeasonWatchButton';
 import { useCartActions } from './useCartActions';
 
 export function ProductDetailSheet({ productId, onClose }: { productId: string; onClose: () => void }) {
@@ -101,6 +102,7 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
               <QuantityStepper value={qty} max={remaining} onChange={setQuantity} itemName={product.name} />
             </div>
           )}
+          {blocked && <SeasonWatchButton product={product} />}
           <div className="grid grid-cols-2 gap-2">
             <button
               disabled={!!blocked}

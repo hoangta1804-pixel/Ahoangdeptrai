@@ -51,7 +51,11 @@ export type ModalState =
   /** Sản phẩm yêu thích và HTX đang theo dõi của khách. */
   | { type: 'favorites' }
   /** Kho voucher: mã khách đã lưu và mã đang phát hành. */
-  | { type: 'voucher_wallet' };
+  | { type: 'voucher_wallet' }
+  /** Sản phẩm đặt trước khách theo dõi "Báo tôi khi vào mùa". */
+  | { type: 'season_watch' }
+  /** Thông tin xuất hoá đơn công ty mặc định của khách (mô phỏng). */
+  | { type: 'invoice_default' };
 
 const NO_ACTOR: Actor = { kind: 'system', name: 'Chưa đăng nhập' };
 

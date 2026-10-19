@@ -62,6 +62,8 @@ export interface Params {
   commissionPercent: number;
   /** OI-08 chưa chốt: có hoàn phí giao khi lỗi không do khách hay không */
   refundShippingWhenNotCustomerFault: boolean;
+  /** NEW-04 Số ảnh tối đa mỗi tin nhắn (nhắn tin riêng và trao đổi theo đơn) */
+  messagePhotoMax: number;
 }
 
 export type ParamKey = keyof Params;
@@ -107,6 +109,7 @@ export const DEFAULT_PARAMS: Params = {
   ],
   commissionPercent: 5,
   refundShippingWhenNotCustomerFault: false,
+  messagePhotoMax: 2,
 };
 
 /** Danh mục tham số hiển thị ở màn Tham số, kèm cột "Tình trạng". */
@@ -137,6 +140,7 @@ export const PARAM_CATALOG: ParamMeta[] = [
   { key: 'expressTiers', code: 'FEE-02', label: 'Phụ phí hoả tốc theo khoảng cách', unit: 'đ', status: 'Demo' },
   { key: 'commissionPercent', code: 'COM-01', label: 'Hoa hồng sàn trên tiền hàng thực giữ lại', unit: '%', status: 'Giả định' },
   { key: 'refundShippingWhenNotCustomerFault', code: 'OI-08', label: 'Hoàn phí giao khi lỗi không do khách', unit: '', status: 'Chờ nhóm chốt (OI-08)' },
+  { key: 'messagePhotoMax', code: 'NEW-04', label: 'Số ảnh tối đa mỗi tin nhắn', unit: 'ảnh', status: 'Demo' },
 ];
 
 export interface ParamChange {

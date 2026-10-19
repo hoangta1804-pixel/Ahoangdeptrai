@@ -26,6 +26,8 @@ import { findProduct, formatDateKey, fromDateKey, snapshotAddress } from '../../
 import { PHONE_RULE } from '../../domain/phone';
 import { ORDER_KIND_LABEL, ORDER_STATUS_LABEL, REFUND_SOURCE_LABEL } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
+import { InvoiceSummary } from '../../components/InvoiceFields';
+import { CoopNameButton } from './CoopNameButton';
 
 const CANCEL_REASONS = ['Đặt nhầm sản phẩm', 'Muốn đổi địa chỉ / thời gian', 'Tìm được nơi khác', 'Không còn nhu cầu', 'Lý do khác'];
 
@@ -96,11 +98,15 @@ export function OrderDetailSheet({ orderId, onClose }: { orderId: string; onClos
         left={
           <>
             <section className="space-y-1 text-sm">
-              <p>
-                <strong>{order.coopName}</strong> · {ORDER_KIND_LABEL[order.kind]}
-                {order.deliveryDate ? ` · giao ngày ${formatDateKey(order.deliveryDate)}` : ''}
-                {order.shipping === 'express' ? ' · hoả tốc' : ''}
-              </p>
+              {/* Tên HTX mở trang HTX công khai (Giai đoạn 8). */}
+              <div className="flex flex-wrap items-center gap-x-1.5">
+                <CoopNameButton coopId={order.coopId} name={order.coopName} className="font-bold text-ink" />
+                <span>
+                  · {ORDER_KIND_LABEL[order.kind]}
+                  {order.deliveryDate ? ` · giao ngày ${formatDateKey(order.deliveryDate)}` : ''}
+                  {order.shipping === 'express' ? ' · hoả tốc' : ''}
+                </span>
+              </div>
               <p className="text-stone-600">
                 Giao tới: {order.address.receiverName} · {order.address.text}
               </p>
@@ -113,6 +119,13 @@ export function OrderDetailSheet({ orderId, onClose }: { orderId: string; onClos
                 </p>
               )}
             </section>
+
+            {order.invoice && (
+              <section aria-label="Hoá đơn công ty" className="space-y-1 rounded-2xl border border-stone-200 p-3">
+                <h4 className="text-sm font-bold text-ink">Yêu cầu xuất hoá đơn công ty</h4>
+                <InvoiceSummary invoice={order.invoice} />
+              </section>
+            )}
 
             <OrderJourney order={order} />
             <TrackingTimeline order={order} />

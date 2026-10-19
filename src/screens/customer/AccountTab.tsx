@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Bell, ChevronRight, ClipboardCheck, Heart, LogOut, MapPin, MessageCircle, MessageSquareWarning, Package, ShoppingBag, Sprout, Star, TicketPercent, Truck, UserRound, type LucideIcon } from 'lucide-react';
+import { Bell, BellRing, ChevronRight, ClipboardCheck, FileText, Heart, LogOut, MapPin, MessageCircle, MessageSquareWarning, Package, ShoppingBag, Sprout, Star, TicketPercent, Truck, UserRound, type LucideIcon } from 'lucide-react';
 import { useUi } from '../../app/UiContext';
 import { PAGE_X } from '../../app/layout';
 import { BrocadeBand } from '../../components/Brand';
@@ -13,6 +13,7 @@ import { totalUnread } from '../../domain/coopChat';
 import { isTicketOpen } from '../../domain/complaint';
 import { favoriteItems, followedCoops, voucherWallet } from '../../domain/marketplace';
 import { ordersAwaitingReview, tabCounts, type OrderTabKey } from '../../domain/orderTabs';
+import { seasonWatchItems } from '../../domain/seasonWatch';
 import { useStore } from '../../store/AppDataContext';
 import { BankLinkSection } from './BankLinkSection';
 import { OrdersSection } from './OrdersSection';
@@ -216,6 +217,9 @@ function Utilities({ addressCount }: { addressCount: number }) {
   const favorites = favoriteItems(state, customerActor.id!).length;
   const follows = followedCoops(state, customerActor.id!).length;
   const usableSaved = voucherWallet(state, customerActor.id!, now()).saved.filter((e) => e.status === 'usable').length;
+  const watches = seasonWatchItems(state, customerActor.id!, now());
+  const inSeason = watches.filter((w) => w.open).length;
+  const invoice = state.customers.find((c) => c.id === customerActor.id)?.invoiceDefault;
   const cartCount = (state.carts[customerActor.id!] ?? []).reduce((s, l) => s + l.quantity, 0);
   const unread = user ? state.notifications.filter((n) => n.userId === user.id && !n.read).length : 0;
   const chats = totalUnread(state, customerActor);
@@ -232,6 +236,14 @@ function Utilities({ addressCount }: { addressCount: number }) {
       open: () => openModal({ type: 'favorites' }),
     },
     { label: 'Kho voucher', sub: usableSaved > 0 ? `${usableSaved} mã dùng được` : 'Lưu mã ưu đãi', icon: TicketPercent, open: () => openModal({ type: 'voucher_wallet' }) },
+    {
+      label: 'Báo khi vào mùa',
+      sub: inSeason > 0 ? `${inSeason} sản phẩm đã vào mùa` : watches.length > 0 ? `Đang chờ ${watches.length} sản phẩm` : 'Hàng đặt trước chưa mở',
+      icon: BellRing,
+      count: inSeason,
+      open: () => openModal({ type: 'season_watch' }),
+    },
+    { label: 'Hoá đơn công ty', sub: invoice ? invoice.companyName : 'Thông tin xuất hoá đơn', icon: FileText, open: () => openModal({ type: 'invoice_default' }) },
     { label: 'Thông báo', sub: unread > 0 ? `${unread} chưa đọc` : 'Đã đọc hết', icon: Bell, count: unread, open: () => openModal({ type: 'notifications' }) },
     { label: 'Tin nhắn', sub: chats > 0 ? `${chats} tin chưa đọc` : 'Hỏi HTX', icon: MessageCircle, count: chats, open: () => openModal({ type: 'chat' }) },
     {
