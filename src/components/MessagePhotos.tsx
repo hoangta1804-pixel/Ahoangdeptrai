@@ -49,7 +49,8 @@ export function AttachPhotoButton({ state: ps, disabled = false }: { state: Mess
         <ImagePlus size={19} aria-hidden="true" />
       </button>
       <input ref={input} type="file" accept="image/*" multiple className="hidden" onChange={(e) => onFiles(e.target.files)} />
-      {error && (
+      {/* Lỗi chọn ảnh chỉ hiện khi đang soạn ảnh; gửi xong (bỏ hết ảnh) thì ẩn. */}
+      {error && ps.photos.length > 0 && (
         <p role="alert" className="basis-full text-sm font-semibold text-rose-700">
           {error}
         </p>

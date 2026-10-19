@@ -18,6 +18,7 @@ export const PHONES = {
   customer1: '0900000001',
   customer2: '0900000002',
   coopBacHa: '0900000101',
+  coopTuLe: '0900000106',
   ops: '0900000201',
   quality: '0900000202',
   cskh: '0900000203',

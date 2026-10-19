@@ -11,7 +11,7 @@ Tài liệu này cập nhật sau mỗi giai đoạn của `PROMPT_SUA_APP.md` (
 | 5 | Nội dung và dữ liệu mẫu | **Xong** |
 | 6 | Giao diện | **Xong** |
 | 7 | Chế độ trình diễn an toàn, kiểm thử trình duyệt trong repo (đề bài bản 2) | **Xong** |
-| 8 | Bổ sung cho khách hàng | Chưa làm |
+| 8 | Bổ sung cho khách hàng | **Xong** |
 | 9 | Bổ sung cho HTX và Admin | Chưa làm |
 | 10 | Cài lên màn hình chính, đo tốc độ | Chưa làm |
 | Sau 7 | Vai trò Shipper, theo dõi vận chuyển (đợt 1); trang chủ kiểu sàn, Shop HTX, Kho voucher (đợt 2) | **Xong** |
@@ -29,15 +29,133 @@ npm run e2e      # kiểm thử trình duyệt (Playwright): tự build, chạy 
 
 Lần đầu chạy `npm run e2e` trên máy mới: `npx playwright install chromium` để tải trình duyệt.
 
-### Kết quả lần chạy cuối (đợt 2 kiểu sàn, 18/10/2026)
+### Kết quả lần chạy cuối (Giai đoạn 8, 19/10/2026)
 
 | Lệnh | Kết quả |
 |---|---|
 | `npm run lint` | Không lỗi |
-| `npm test` | 34 file, 240 test, tất cả đạt (có T1–T29) |
-| `npm run build` | Thành công, không cảnh báo. Phần chung 445 kB (gzip 133 kB); màn HTX, Admin, QLNN, Shipper và các sheet ít mở (shop HTX, yêu thích, kho voucher…) tải riêng |
-| `npm run e2e` | 18 kịch bản, tất cả đạt (khoảng 3 phút): Luồng 1–6, Luồng Shipper, Luồng sàn, chế độ trình diễn, 3 tình huống lỗi của bản web, giao diện ở 320 / 390 / 768 / 1.280 / 1.920px. Không lỗi JS ngoài lỗi có chủ đích của từng kịch bản |
-| Kiểm tra giao diện trong `npm run e2e` (axe-core 4.10 + đo vùng bấm, cỡ chữ, tràn ngang) | 0 lỗi axe, 0 vùng bấm dưới 44×44, 0 chữ dưới 12px, không tràn ngang (có trang chủ mới, gợi ý tìm kiếm, shop HTX, yêu thích, kho voucher) |
+| `npm test` | 35 file, 251 test, tất cả đạt (có T1–T34) |
+| `npm run build` | Thành công, không cảnh báo. Phần chung 444 kB (gzip 132 kB); màn HTX, Admin, QLNN, Shipper và các sheet ít mở (shop HTX, yêu thích, kho voucher, báo khi vào mùa, hoá đơn công ty…) tải riêng |
+| `npm run e2e` | 19 kịch bản, tất cả đạt (khoảng 3 phút): Luồng 1–7, Luồng Shipper, Luồng sàn, chế độ trình diễn, 3 tình huống lỗi của bản web, giao diện ở 320 / 390 / 768 / 1.280 / 1.920px. Không lỗi JS ngoài lỗi có chủ đích của từng kịch bản |
+| Kiểm tra giao diện trong `npm run e2e` (axe-core 4.10 + đo vùng bấm, cỡ chữ, tràn ngang) | 0 lỗi axe, 0 vùng bấm dưới 44×44, 0 chữ dưới 12px, không tràn ngang (có các màn mới của Giai đoạn 8: báo khi vào mùa, trang HTX, tin nhắn kèm ảnh, hoá đơn công ty, khoảng giá tự nhập) |
+
+---
+
+## Giai đoạn 8 – Bổ sung cho khách hàng
+
+Theo `PROMPT_SUA_APP.md` bản 2, mục 9. Nghiệm thu: T30–T34 (unit test) và Luồng 7 (`e2e/luong7.e2e.ts`) đều đạt.
+
+| Việc (mục của đề bài) | Tình trạng | Ghi chú |
+|---|---|---|
+| 9.1 Trang HTX công khai | **Đã làm** | Mở từ tên HTX ở thẻ sản phẩm, tab Vụ mùa, trang chi tiết, chi tiết đơn, hộp tin nhắn. Có chứng nhận đã xác minh, nhãn dữ liệu mẫu. Không SĐT, không địa chỉ |
+| 9.2 "Báo tôi khi vào mùa" | **Đã làm** | Mỗi khách theo dõi nhận đúng 1 thông báo cho mỗi đợt; danh sách ở Tài khoản |
+| 9.3 Yêu thích và theo dõi HTX | **Đã làm** | Đã có từ đợt 2 kiểu sàn |
+| 9.4 Sắp xếp và lọc giá | **Đã làm** | Đã có từ đợt 2; thêm khoảng giá tự nhập từ / đến |
+| 9.5 Ảnh trong tin nhắn | **Đã làm** | Tối đa NEW-04 ảnh mỗi tin, cả nhắn tin riêng và trao đổi theo đơn. Dung lượng dữ liệu chung là ước lượng (giả định 110) |
+| 9.6 Yêu cầu xuất hoá đơn công ty | **Mô phỏng** | Ghi rõ "Mô phỏng – chưa phát hành hoá đơn điện tử"; không gửi email, không kết nối hệ thống hoá đơn |
+
+### Trang HTX công khai
+
+- **Mở từ:**
+  - tên HTX ở thẻ sản phẩm (nút riêng, cao 44px, nằm ngoài nút "Xem" của thẻ);
+  - tên HTX ở thẻ tab Vụ mùa;
+  - khối shop ở trang chi tiết sản phẩm;
+  - tên HTX ở chi tiết đơn của khách;
+  - nút "Trang HTX" ở đầu cuộc trò chuyện.
+- **Nội dung thêm so với đợt 2:**
+  - "Chứng nhận đã xác minh": chứng nhận Admin – Chất lượng đã duyệt, còn hiệu lực, của các sản phẩm đang bán. Cùng tên và nơi cấp thì gộp một dòng, ghi tên các sản phẩm.
+  - Nhãn "Dữ liệu mẫu – chờ HTX xác nhận" với HTX mẫu (tên có "mẫu" hoặc sản phẩm có ghi chú mẫu).
+- **Không có SĐT, địa chỉ HTX:** `coopShop()` chỉ trả các trường công khai. Luồng 7 kiểm trên màn: không có số 0900 000 46x của HTX mẫu Tú Lệ, không có địa chỉ mẫu.
+
+### "Báo tôi khi vào mùa"
+
+- **Nút hiện khi:** sản phẩm đặt trước đang hiển thị nhưng chưa đặt được (chưa mở, hết suất, hết thời gian nhận đặt, HTX tạm khoá quyền bán).
+  - Ở trang chi tiết (chân trang, trên nút đặt) và ở thẻ tab Vụ mùa.
+  - Bấm để theo dõi; bấm lần nữa ("Đã bật báo khi vào mùa · bấm để tắt") để bỏ.
+  - Sản phẩm đang nhận đặt trước thì không hiện nút: khách đặt được ngay.
+- **Thông báo:**
+  - Khi Admin – Chất lượng duyệt "Báo thu hoạch / mở đợt đặt trước" và sản phẩm đặt được ngay, mỗi khách theo dõi nhận 1 thông báo "<sản phẩm> đã vào mùa" kèm khoảng ngày giao. Bấm vào mở trang sản phẩm.
+  - Đợt nhận diện bằng khoảng ngày giao. Duyệt thêm suất trong cùng đợt không báo lại; đợt có ngày giao khác thì báo lại.
+- **Danh sách theo dõi:** Tài khoản → Tiện ích → "Báo khi vào mùa". Mỗi dòng ghi "Đang chờ vào mùa" hoặc "Đang nhận đặt trước – đặt ngay"; có nút Tắt.
+- Theo dõi lưu theo nhóm quy cách như Yêu thích; ghi rõ bật / tắt để thao tác chạy lại sau đồng bộ (máy khác vừa ghi) vẫn đúng.
+
+### Ảnh trong tin nhắn (NEW-04)
+
+- **Đính ảnh:** nút ảnh cạnh ô nhập ở hộp tin nhắn (nút chat nổi, tab Tin nhắn của HTX) và ở phần trao đổi theo đơn.
+  - Ảnh thu nhỏ cạnh dài 320px như ảnh khiếu nại.
+  - Tối đa NEW-04 ảnh mỗi tin; chọn quá thì báo "Mỗi tin nhắn tối đa 2 ảnh." và giữ 2 ảnh đầu.
+  - Tin chỉ có ảnh gửi được. Thông báo và danh sách cuộc trò chuyện ghi "[2 ảnh]".
+- **Dữ liệu dùng chung gần đầy:**
+  - App ước lượng dung lượng sau khi nén (giả định 110).
+  - Từ 85% giới hạn 900 KB trở lên: báo ngay khi chọn ảnh, trước khi gửi, và không nhận thêm ảnh.
+  - Tin nhắn chữ không bị chặn vì dung lượng. Gửi không được thì chữ và ảnh đang soạn vẫn giữ nguyên.
+- **Tham số NEW-04** "Số ảnh tối đa mỗi tin nhắn" = 2, trạng thái Demo, sửa ở màn Tham số (Admin – Vận hành).
+
+### Yêu cầu xuất hoá đơn công ty (mô phỏng)
+
+- **Bước đặt hàng (bước 2):** tick "Xuất hoá đơn công ty" rồi nhập 4 ô:
+  - tên công ty;
+  - mã số thuế: 10 chữ số, hoặc 10 chữ số + "-" + 3 chữ số;
+  - địa chỉ;
+  - email nhận.
+- **Kiểm tra:**
+  - Ô đã nhập sai thì báo ngay dưới ô; ô còn trống báo ở chân màn.
+  - Còn lỗi thì không sang bước 3 được; `placeCheckout` kiểm tra lại.
+- **Lưu:**
+  - Thông tin được chuẩn hoá và chốt vào từng đơn của lần đặt (`order.invoice`).
+  - Tuỳ chọn "Lưu làm thông tin mặc định cho lần sau".
+  - Sửa hoặc xoá thông tin mặc định ở Tài khoản → "Hoá đơn công ty". Đơn đã đặt giữ thông tin lúc đặt.
+- **Ai thấy:**
+  - khách, trong chi tiết đơn;
+  - HTX, trong chi tiết đơn ("Khách yêu cầu xuất hoá đơn công ty");
+  - Admin – Tài chính, ở mục mới "Hoá đơn công ty" (bảng các đơn có yêu cầu).
+- Mọi chỗ ghi "Mô phỏng – chưa phát hành hoá đơn điện tử".
+
+### Khoảng giá tự nhập
+
+- Ô "Khoảng giá" ở Khám phá có thêm "Tự nhập khoảng giá": hai ô Từ / Đến (đồng), tự thêm dấu chấm phân cách nghìn.
+- Bỏ trống một đầu là không giới hạn đầu đó; nhập ngược thì tự đổi chỗ.
+- Sản phẩm nhiều quy cách tính theo giá thấp nhất của các quy cách đang bán, như sắp xếp.
+
+### Mã nguồn
+
+- **Nghiệp vụ mới:**
+  - `src/domain/seasonWatch.ts`: theo dõi vào mùa, xét sản phẩm đặt được ngay.
+  - `src/domain/invoice.ts`: kiểm tra, chuẩn hoá, lưu thông tin hoá đơn.
+  - `src/domain/dataBudget.ts`: ước lượng dung lượng, kiểm tra ảnh kèm tin.
+- **Sửa:**
+  - `notifications.ts`: thông báo vào mùa, lưu đợt đã báo ở `seasonAlerts`.
+  - `checkout.ts`: hoá đơn trong lần đặt.
+  - `coopChat.ts`, `orderContact.ts`: ảnh kèm tin.
+  - `marketplace.ts`: chứng nhận và nhãn mẫu của trang HTX, `inPriceRange`, `parsePriceInput`.
+  - `params.ts`: NEW-04.
+  - `store/normalize.ts`: trường mới đọc được từ dữ liệu cũ.
+- **Giao diện mới:**
+  - `SeasonWatchButton`, `SeasonWatchSheet`, `CoopNameButton`, `InvoiceDefaultSheet` (màn khách);
+  - `components/InvoiceFields.tsx`, `components/MessagePhotos.tsx`;
+  - `screens/admin/FinanceInvoicesTab.tsx`.
+
+### Kiểm thử
+
+- **Unit test** `src/domain/__tests__/phase8.test.ts` (10 test):
+  - **T30:** trang HTX không có SĐT, địa chỉ; điểm chỉ tính đánh giá Hiển thị; chỉ chứng nhận đã xác minh, còn hạn; nhãn HTX mẫu.
+  - **T31:** lần duyệt đầu mỗi khách theo dõi 1 thông báo (mở trang sản phẩm); duyệt thêm suất cùng đợt không báo lặp; đợt mới thì báo; bỏ theo dõi thì không báo; chỉ khách, chỉ sản phẩm đặt trước chưa đặt được; dữ liệu cũ đọc được.
+  - **T32:** sản phẩm có quy cách 135.000 và 225.000 xếp theo 135.000 và nằm trong khoảng 100.000–150.000.
+  - **T33:** quá NEW-04 ảnh bị chặn; tin chỉ có ảnh gửi được; dữ liệu gần giới hạn thì chặn ảnh, tin chữ vẫn gửi được.
+  - **T34:** mã số thuế "12345" bị chặn; đơn đã tạo giữ đúng thông tin hoá đơn lúc đặt khi khách đổi thông tin mặc định.
+- **Luồng 7** (`e2e/luong7.e2e.ts`):
+  1. Khách bật "Báo tôi khi vào mùa" cho Cốm Tú Lệ đã đóng đợt; thấy trong danh sách ở Tài khoản.
+  2. HTX mẫu Tú Lệ báo đợt mới; Admin – Chất lượng duyệt.
+  3. Khách nhận đúng 1 thông báo, bấm mở trang sản phẩm.
+  4. Từ trang sản phẩm mở trang HTX: không SĐT, không địa chỉ.
+  5. Thêm:
+     - nhắn tin kèm ảnh (chọn 3 ảnh thì giữ 2);
+     - đặt trước kèm hoá đơn (mã số thuế "12345" bị chặn);
+     - HTX và Admin – Tài chính thấy thông tin hoá đơn;
+     - duyệt thêm suất cùng đợt không báo lặp;
+     - đổi thông tin mặc định, đơn cũ giữ nguyên;
+     - lọc khoảng giá tự nhập.
+  - Mỗi màn mới đều qua kiểm tra giao diện: 0 lỗi axe, 0 vùng bấm dưới 44px, 0 chữ dưới 12px, không tràn ngang.
 
 ---
 
@@ -2141,6 +2259,14 @@ Ngoài các ca trên còn có test cho:
 103. **Tìm kiếm gần đây và đã xem gần đây lưu trên từng máy** (localStorage theo mã khách), không đồng bộ giữa các máy.
 104. **Khoảng giá và sắp xếp dùng giá "từ" của nhóm quy cách** (quy cách đang bán giá thấp nhất), như giá in trên thẻ.
 105. **Báo "có sản phẩm mới" chỉ khi Admin – Chất lượng duyệt sản phẩm mới,** không báo khi duyệt quy cách thêm, giá hay nội dung.
+106. **Đợt đặt trước nhận diện bằng khoảng ngày giao** HTX khai (Giai đoạn 8). Duyệt cùng khoảng ngày giao (thêm suất) không báo lại; khoảng ngày giao khác là đợt mới, báo lại cho khách vẫn đang theo dõi.
+107. **Thông báo vào mùa gửi lúc Admin – Chất lượng duyệt "Báo thu hoạch / mở đợt đặt trước"**, chỉ khi lúc đó sản phẩm đặt được ngay (đang mở, còn suất, còn ngày giao hợp lệ, HTX có quyền bán). Huỷ đơn làm có lại suất không gửi thông báo.
+108. **Theo dõi vào mùa vẫn giữ sau khi báo** để khách được báo đợt sau; khách tự tắt ở trang sản phẩm hoặc ở Tài khoản. Tối đa 50 sản phẩm mỗi khách.
+109. **NEW-04 = 2 ảnh mỗi tin nhắn** (trạng thái Demo, nhóm chốt sau). Ảnh thu nhỏ cạnh dài 320px như ảnh khiếu nại; mỗi ảnh đã thu nhỏ không quá 120.000 ký tự.
+110. **Ước lượng dung lượng dữ liệu dùng chung:** chữ tính 0,3 lần, ảnh tính 1 lần số ký tự (đo trên dữ liệu mẫu: chữ nén còn khoảng 0,32 lần, ảnh JPEG dạng base64 sau khi nén và mã hoá lại khoảng 1 lần). Từ 85% giới hạn 900 KB không nhận thêm ảnh. Đây là ước lượng; máy chủ vẫn là nơi quyết định (413 khi quá giới hạn).
+111. **Hoá đơn công ty áp cho mọi đơn của một lần đặt,** bắt buộc đủ 4 ô (email nhận cũng bắt buộc). Mã số thuế bỏ khoảng trắng, email viết thường trước khi lưu. Không gửi email, không phát hành hoá đơn.
+112. **Trang HTX chỉ hiện chứng nhận còn hiệu lực** theo giờ demo; cùng tên và nơi cấp gộp một dòng, lấy hạn xa nhất.
+113. **Nhãn dữ liệu mẫu ở trang HTX** khi tên HTX có chữ "mẫu" hoặc có sản phẩm thuộc danh mục mẫu của nhóm.
 
 ## Vấn đề chờ nhóm chốt
 

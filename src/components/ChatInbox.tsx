@@ -198,7 +198,7 @@ function Thread({ side, withId, productId, onClearProduct, onBack }: { side: Cha
           <button
             type="button"
             onClick={() => openModal({ type: 'coop_shop', coopId: coop.id })}
-            aria-label={`Xem trang ${coop.name}`}
+            aria-label={`Mở trang ${coop.name}`}
             className="flex min-h-11 shrink-0 items-center gap-1 rounded-full border border-champagne-300 px-3 text-sm font-bold text-forest-900 hover:bg-champagne-50"
           >
             <Store size={15} aria-hidden="true" /> Trang HTX
