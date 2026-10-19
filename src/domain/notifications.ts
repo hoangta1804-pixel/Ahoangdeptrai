@@ -5,11 +5,13 @@
  * (người dùng bấm, tác vụ theo giờ, cổng thanh toán mô phỏng) đều sinh thông báo giống nhau.
  * Các sự kiện: đổi trạng thái đơn, kết quả duyệt, ticket, tồn thấp (tối đa 1 lần/ngày/sản phẩm), mời đánh giá,
  * tin nhắn / cuộc gọi trong đơn giữa khách và HTX, tin nhắn chung (nút chat nổi), HTX xác nhận thu hoạch,
- * HTX khách theo dõi có sản phẩm mới.
+ * HTX khách theo dõi có sản phẩm mới, sản phẩm khách theo dõi "Báo tôi khi vào mùa" mở đợt đặt trước.
  */
+import { messagePreview } from './coopChat';
 import { generateId } from './ids';
 import { followerIdsOf } from './marketplace';
 import { formatMoney } from './pricing';
+import { roundKeyOf, seasonAlertKey, seasonOpen, seasonWatcherIds } from './seasonWatch';
 import { formatDateKey, iso, remainingFor, toDateKey } from './state';
 import { shipperLabel } from './tracking';
 import {
@@ -132,12 +134,12 @@ export function deriveNotifications(prev: DemoState, next: DemoState, at: Date):
       if (!order) continue;
       const link: NotificationLink = { type: 'order', id: order.id };
       if (m.sender === 'customer') {
-        drafts.push({ userIds: usersOfCoop(next, order.coopId), title: `Tin nhắn mới từ khách · đơn ${order.id}`, body: m.text.slice(0, 100), link });
+        drafts.push({ userIds: usersOfCoop(next, order.coopId), title: `Tin nhắn mới từ khách · đơn ${order.id}`, body: messagePreview(m).slice(0, 100), link });
       } else if (m.kind === 'call') {
         const outcome = CALL_OUTCOME_LABEL[m.callOutcome ?? 'scheduled'];
         drafts.push({ userIds: usersOfCustomer(next, order.customerId), title: `${order.coopName} đã gọi cho bạn`, body: `${outcome}${m.text ? ` – ${m.text}` : ''} · đơn ${order.id}`.slice(0, 160), link });
       } else {
-        drafts.push({ userIds: usersOfCustomer(next, order.customerId), title: `Tin nhắn mới từ ${order.coopName}`, body: `${m.text.slice(0, 100)} · đơn ${order.id}`, link });
+        drafts.push({ userIds: usersOfCustomer(next, order.customerId), title: `Tin nhắn mới từ ${order.coopName}`, body: `${messagePreview(m).slice(0, 100)} · đơn ${order.id}`, link });
       }
     }
   }
@@ -154,11 +156,11 @@ export function deriveNotifications(prev: DemoState, next: DemoState, at: Date):
         drafts.push({
           userIds: usersOfCoop(next, m.coopId),
           title: `Tin nhắn mới từ ${m.senderName}`,
-          body: `${m.text.slice(0, 100)}${about}`.slice(0, 160),
+          body: `${messagePreview(m).slice(0, 100)}${about}`.slice(0, 160),
           link: { type: 'chat', id: m.customerId },
         });
       } else {
-        drafts.push({ userIds: usersOfCustomer(next, m.customerId), title: `Tin nhắn mới từ ${m.senderName}`, body: m.text.slice(0, 100), link: { type: 'chat', id: m.coopId } });
+        drafts.push({ userIds: usersOfCustomer(next, m.customerId), title: `Tin nhắn mới từ ${m.senderName}`, body: messagePreview(m).slice(0, 100), link: { type: 'chat', id: m.coopId } });
       }
     }
   }
@@ -230,6 +232,7 @@ export function deriveNotifications(prev: DemoState, next: DemoState, at: Date):
   }
 
   // Kết quả duyệt sản phẩm / giá.
+  let seasonAlerts = next.seasonAlerts;
   if (prev.productChanges !== next.productChanges) {
     for (const c of next.productChanges) {
       const before = prev.productChanges.find((x) => x.id === c.id);
@@ -250,6 +253,22 @@ export function deriveNotifications(prev: DemoState, next: DemoState, at: Date):
         if (c.status === 'approved' && c.type === 'new_product' && product && !product.variantOf && product.status === 'active') {
           const coopName = next.coops.find((x) => x.id === c.coopId)?.name ?? 'HTX';
           drafts.push({ userIds: followerIdsOf(next, c.coopId).flatMap((id) => usersOfCustomer(next, id)), title: `${coopName} có sản phẩm mới`, body: name, link });
+        }
+        // Đợt đặt trước mới hoặc thêm suất được duyệt → khách theo dõi "Báo tôi khi vào mùa", mỗi khách 1 lần cho mỗi đợt.
+        if (c.status === 'approved' && c.type === 'preorder' && product?.preorder && seasonOpen(next, product, at)) {
+          const family = product.variantOf ?? product.id;
+          const round = roundKeyOf(product.preorder);
+          const due = seasonWatcherIds(next, family).filter((id) => seasonAlerts?.[seasonAlertKey(id, family)] !== round);
+          if (due.length > 0) {
+            seasonAlerts = { ...(seasonAlerts ?? {}), ...Object.fromEntries(due.map((id) => [seasonAlertKey(id, family), round])) };
+            const familyName = next.products.find((p) => p.id === family)?.name ?? name;
+            drafts.push({
+              userIds: due.flatMap((id) => usersOfCustomer(next, id)),
+              title: `${familyName} đã vào mùa`,
+              body: `Nhận đặt trước, giao từ ${formatDateKey(product.preorder.deliveryFrom)} đến ${formatDateKey(product.preorder.deliveryTo)}.`,
+              link: { type: 'product', id: product.id },
+            });
+          }
         }
       }
     }
@@ -316,8 +335,8 @@ export function deriveNotifications(prev: DemoState, next: DemoState, at: Date):
   const created: AppNotification[] = drafts.flatMap((d) =>
     [...new Set(d.userIds)].map((userId) => ({ id: generateId('TB'), userId, at: iso(at), title: d.title, body: d.body, link: d.link, read: false })),
   );
-  if (created.length === 0 && lowStockAlerts === next.lowStockAlerts) return next;
-  return { ...next, notifications: capNotifications([...created, ...next.notifications]), lowStockAlerts };
+  if (created.length === 0 && lowStockAlerts === next.lowStockAlerts && seasonAlerts === next.seasonAlerts) return next;
+  return { ...next, notifications: capNotifications([...created, ...next.notifications]), lowStockAlerts, seasonAlerts };
 }
 
 export function notificationsOf(state: DemoState, userId: string): AppNotification[] {

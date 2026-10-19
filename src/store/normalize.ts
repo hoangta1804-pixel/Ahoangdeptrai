@@ -28,6 +28,16 @@ function arrays(x: Obj, keys: string[]): Obj {
 /** Bảng "mã khách → danh sách mã" (yêu thích, theo dõi, kho voucher): bỏ phần tử không phải chuỗi. */
 const idLists = (v: unknown): Record<string, string[]> => (isObj(v) ? Object.fromEntries(Object.entries(v).map(([k, l]) => [k, list(l).filter((x): x is string => typeof x === 'string')])) : {});
 
+/** Thông tin hoá đơn công ty (Giai đoạn 8): đủ 4 trường chuỗi thì giữ, sai dạng thì bỏ. */
+const invoiceOrNone = (v: unknown): Obj | undefined => (isObj(v) && ['companyName', 'taxCode', 'address', 'email'].every((k) => typeof v[k] === 'string') ? v : undefined);
+
+/** Tin nhắn: nội dung là chuỗi, ảnh kèm (Giai đoạn 8) là mảng chuỗi. */
+function normalizeMessage(m: Obj): Obj {
+  const out: Obj = { ...m, text: typeof m.text === 'string' ? m.text : '' };
+  if (out.photos !== undefined) out.photos = list(out.photos).filter((p): p is string => typeof p === 'string');
+  return out;
+}
+
 function normalizeOrder(o: Obj): Obj | null {
   // Thiếu tiền hoặc địa chỉ thì không hiển thị được đơn: bỏ.
   if (!isObj(o.pricing) || !isObj(o.address) || typeof o.status !== 'string') return null;
@@ -35,6 +45,7 @@ function normalizeOrder(o: Obj): Obj | null {
   out.items = objects(out.items);
   out.params = { ...DEFAULT_PARAMS, ...(isObj(o.params) ? o.params : {}) };
   for (const k of ['deliveryAttempts', 'amountPaidOnline', 'codCollected']) if (typeof out[k] !== 'number') out[k] = 0;
+  if (out.invoice !== undefined) out.invoice = invoiceOrNone(out.invoice);
   return out;
 }
 
@@ -73,9 +84,11 @@ export function normalizeState(raw: unknown, fallback: () => DemoState): DemoSta
   out.carts = Object.fromEntries(Object.entries(out.carts as Obj).map(([k, v]) => [k, objects(v)]));
   if (out.harvests !== undefined) out.harvests = withId(out.harvests).map((h) => arrays(h, ['photos', 'orderIds']));
   if (out.coopApplications !== undefined) out.coopApplications = withId(out.coopApplications).map((a) => arrays(a, ['phones', 'documents', 'history']));
-  for (const k of ['orderMessages', 'directMessages']) if (out[k] !== undefined) out[k] = withId(out[k]);
+  for (const k of ['orderMessages', 'directMessages']) if (out[k] !== undefined) out[k] = withId(out[k]).map(normalizeMessage);
+  out.customers = withId(out.customers).map((c) => (c.invoiceDefault === undefined ? c : { ...c, invoiceDefault: invoiceOrNone(c.invoiceDefault) }));
   if (out.codRemittances !== undefined) out.codRemittances = withId(out.codRemittances).map((r) => arrays(r, ['orderIds']));
   if (out.chatReads !== undefined && !isObj(out.chatReads)) out.chatReads = {};
-  for (const k of ['favorites', 'follows', 'savedVouchers']) if (out[k] !== undefined) out[k] = idLists(out[k]);
+  for (const k of ['favorites', 'follows', 'savedVouchers', 'seasonWatches']) if (out[k] !== undefined) out[k] = idLists(out[k]);
+  if (out.seasonAlerts !== undefined) out.seasonAlerts = isObj(out.seasonAlerts) ? Object.fromEntries(Object.entries(out.seasonAlerts).filter(([, v]) => typeof v === 'string')) : {};
   return out as unknown as DemoState;
 }

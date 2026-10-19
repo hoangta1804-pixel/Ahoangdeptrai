@@ -8,6 +8,7 @@
  * Không có SĐT, địa chỉ cửa hàng, người đại diện (domain/coopContact.ts: chỉ Admin và HTX xem).
  */
 import { isFirstOrder, voucherUsedCount } from './checkout';
+import { toDateKey } from './state';
 import { fail, ok, type Actor, type Coop, type DemoState, type Product, type Result } from './types';
 import type { Voucher } from './voucher';
 import { familyKey, groupFamilies, priceRange } from './variants';
@@ -130,10 +131,43 @@ export interface CoopShop {
   products: Product[];
   rating: { average: number | null; count: number };
   followers: number;
+  /** Chứng nhận đã được Admin – Chất lượng xác minh của các sản phẩm đang bán, còn hiệu lực (Giai đoạn 8, mục 1). */
+  certifications: ShopCertification[];
+  /** HTX hoặc sản phẩm thuộc dữ liệu mẫu của nhóm: trang shop ghi nhãn dữ liệu mẫu. */
+  sample: boolean;
+}
+
+export interface ShopCertification {
+  id: string;
+  label: string;
+  issuer: string;
+  validUntil: string;
+  /** Tên các sản phẩm có chứng nhận này. */
+  productNames: string[];
+}
+
+/** Chứng nhận đã xác minh, còn hiệu lực tại `at`; cùng tên + nơi cấp gộp một dòng. */
+function shopCertifications(listed: Product[], at: Date): ShopCertification[] {
+  const today = toDateKey(at);
+  const byKey = new Map<string, ShopCertification>();
+  for (const p of listed) {
+    for (const c of p.certifications ?? []) {
+      if (!c.verified || c.validUntil < today) continue;
+      const key = `${c.label}|${c.issuer}`;
+      const found = byKey.get(key);
+      const name = p.name;
+      if (!found) byKey.set(key, { id: c.id, label: c.label, issuer: c.issuer, validUntil: c.validUntil, productNames: [name] });
+      else {
+        if (!found.productNames.includes(name)) found.productNames.push(name);
+        if (c.validUntil > found.validUntil) found.validUntil = c.validUntil;
+      }
+    }
+  }
+  return [...byKey.values()];
 }
 
 /** Thông tin công khai của shop HTX. Cố ý không trả SĐT, địa chỉ, người đại diện, tài khoản nhận tiền. */
-export function coopShop(state: DemoState, coopId: string): CoopShop | null {
+export function coopShop(state: DemoState, coopId: string, at: Date = new Date()): CoopShop | null {
   const coop = state.coops.find((c) => c.id === coopId);
   if (!coop) return null;
   const listed = state.products.filter((p) => p.coopId === coopId && p.status === 'active');
@@ -149,6 +183,8 @@ export function coopShop(state: DemoState, coopId: string): CoopShop | null {
       listed.map((p) => p.id),
     ),
     followers: followersOf(state, coopId),
+    certifications: shopCertifications(listed, at),
+    sample: coop.name.toLowerCase().includes('mẫu') || listed.some((p) => !!p.sample),
   };
 }
 
@@ -256,6 +292,20 @@ export const PRICE_BANDS: { key: PriceBand; label: string }[] = [
 export function familyPrice(state: DemoState, product: Product): number {
   const listed = state.products.filter((p) => familyKey(p) === familyKey(product) && p.status === 'active');
   return priceRange(listed.length > 0 ? listed : [product]).min;
+}
+
+/** Khoảng giá khách tự nhập (đồng); bỏ trống một đầu là không giới hạn đầu đó. Nhập ngược (từ > đến) thì tự đổi chỗ. */
+export function inPriceRange(price: number, min?: number, max?: number): boolean {
+  const lo = min !== undefined && max !== undefined ? Math.min(min, max) : min;
+  const hi = min !== undefined && max !== undefined ? Math.max(min, max) : max;
+  return (lo === undefined || price >= lo) && (hi === undefined || price <= hi);
+}
+
+/** Đọc ô nhập giá: bỏ dấu chấm, khoảng trắng, chữ "đ"; rỗng hoặc không phải số thì là không giới hạn. */
+export function parsePriceInput(text: string): number | undefined {
+  const digits = text.replace(/[.\s,đ₫]/gi, '');
+  if (!/^\d{1,9}$/.test(digits)) return undefined;
+  return Number(digits);
 }
 
 export function inPriceBand(price: number, band: PriceBand): boolean {

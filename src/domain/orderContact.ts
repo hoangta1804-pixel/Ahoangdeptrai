@@ -5,6 +5,7 @@
  * - Gọi điện: HTX gọi bằng điện thoại của mình (số người nhận đã có trên phiếu đóng gói), rồi ghi lại kết quả cuộc gọi.
  *   Kết quả hiện trong phần trao đổi để khách cũng thấy.
  */
+import { messagePhotosError } from './dataBudget';
 import { fullyHarvested, harvestsForOrder } from './harvest';
 import { generateId } from './ids';
 import { formatMoney } from './pricing';
@@ -49,13 +50,15 @@ function append(state: DemoState, order: Order, side: ChatSide, message: OrderMe
   return replaceOrder(next, { ...order, chatReadAt: { ...order.chatReadAt, [side]: iso(at) } });
 }
 
-/** Gửi tin nhắn trong đơn. */
-export function sendOrderMessage(state: DemoState, orderId: string, actor: Actor, text: string, at: Date): Result<DemoState> {
+/** Gửi tin nhắn trong đơn, kèm tối đa NEW-04 ảnh (domain/dataBudget.ts). Chỉ gửi ảnh, không chữ, cũng được. */
+export function sendOrderMessage(state: DemoState, orderId: string, actor: Actor, text: string, at: Date, photos: string[] = []): Result<DemoState> {
   const r = prepare(state, orderId, actor);
   if (!r.ok) return r;
   const body = text.trim();
-  if (!body) return fail('Vui lòng nhập nội dung tin nhắn.');
+  if (!body && photos.length === 0) return fail('Vui lòng nhập nội dung tin nhắn.');
   if (body.length > MESSAGE_MAX_LENGTH) return fail(`Tin nhắn tối đa ${MESSAGE_MAX_LENGTH.toLocaleString('vi-VN')} ký tự.`);
+  const photoErr = messagePhotosError(state, photos, state.params.messagePhotoMax);
+  if (photoErr) return fail(photoErr);
   const { order, side } = r.value;
   const message: OrderMessage = {
     id: generateId('TN'),
@@ -64,6 +67,7 @@ export function sendOrderMessage(state: DemoState, orderId: string, actor: Actor
     senderName: actor.name ?? (side === 'coop' ? order.coopName : 'Khách hàng'),
     kind: 'text',
     text: body,
+    photos: photos.length > 0 ? photos : undefined,
     at: iso(at),
   };
   return ok(append(state, order, side, message, at));
