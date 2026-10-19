@@ -1,7 +1,8 @@
 /**
  * Đặt hàng 3 bước (MHTT-02..05, mục 5.1–5.4).
  * 1. Giao hàng: địa chỉ, ngày giao (đặt trước), cách giao, hộp quà, ghi chú.
- * 2. Ưu đãi & thanh toán: panel chọn 1 mã nằm ngay trong màn này (L7), COD/online theo từng đơn, điều kiện huỷ đặt trước.
+ * 2. Ưu đãi & thanh toán: panel chọn 1 mã nằm ngay trong màn này (L7), COD/online theo từng đơn, điều kiện huỷ đặt trước,
+ *    yêu cầu xuất hoá đơn công ty (Giai đoạn 8, mô phỏng).
  * 3. Xác nhận: từng đơn, từng món, từng khoản phí; nút ghi đúng số tiền trả ngay (L1).
  * Mọi phép tính tiền nằm ở src/domain (planCheckout / placeCheckout).
  */
@@ -10,15 +11,17 @@ import { AlertTriangle, Check, ChevronLeft, Gift, Plus, Ticket } from 'lucide-re
 import { useUi, type CheckoutSource } from '../../app/UiContext';
 import { BottomSheet } from '../../components/BottomSheet';
 import { Field, Input, PrimaryButton, SecondaryButton, Select, Textarea } from '../../components/form';
+import { InvoiceFields, InvoiceSummary } from '../../components/InvoiceFields';
 import { defaultAddressOf } from '../../domain/address';
 import { acceptCurrentPrices, deliveryWindow, revalidateLines, type RevalidationNotice } from '../../domain/cart';
 import { evaluateVoucherFor, groupKey, placeCheckout, planCheckout, type GroupOptions, type PlannedOrder } from '../../domain/checkout';
 import { generateId } from '../../domain/ids';
+import { emptyInvoice, invoiceErrors, normalizeInvoice } from '../../domain/invoice';
 import { isVoucherSaved, savedFirst } from '../../domain/marketplace';
 import { formatMoney, type PaymentMethod } from '../../domain/pricing';
 import { findProduct, formatDateKey, snapshotAddress } from '../../domain/state';
 import { PHONE_RULE } from '../../domain/phone';
-import { ORDER_KIND_LABEL, type CartLine } from '../../domain/types';
+import { ORDER_KIND_LABEL, type CartLine, type CompanyInvoice } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
 
 type Step = 1 | 2 | 3;
@@ -63,6 +66,14 @@ export function CheckoutSheet({ source, preferredAddressId, onClose }: { source:
   const [acceptedPolicy, setAcceptedPolicy] = useState(false);
   const [confirmedPriceUp, setConfirmedPriceUp] = useState(false);
   const [placing, setPlacing] = useState(false);
+  // Hoá đơn công ty: điền sẵn thông tin mặc định khách đã lưu.
+  const savedInvoice = state.customers.find((c) => c.id === customerId)?.invoiceDefault;
+  const [wantInvoice, setWantInvoice] = useState(false);
+  const [invoice, setInvoice] = useState<CompanyInvoice>(savedInvoice ?? emptyInvoice());
+  const [saveInvoice, setSaveInvoice] = useState(false);
+  const allInvoiceErrors = wantInvoice ? invoiceErrors(invoice) : {};
+  // Chỉ báo lỗi ô đã nhập; ô còn trống báo ở chân màn.
+  const invoiceFieldErrors = Object.fromEntries(Object.entries(allInvoiceErrors).filter(([k]) => invoice[k as keyof CompanyInvoice].trim() !== ''));
   // Một lần mở màn đặt hàng = một khoá chống tạo trùng (BR-DAT-07).
   const idempotencyKey = useRef(generateId('IDEM')).current;
 
@@ -122,7 +133,11 @@ export function CheckoutSheet({ source, preferredAddressId, onClose }: { source:
 
   const stepErrors = (s: Step): string[] => {
     if (s === 1) return plan.errors;
-    if (s === 2) return plan.hasPreorder && !acceptedPolicy ? ['Vui lòng đọc và tick đồng ý điều kiện huỷ đơn đặt trước.'] : [];
+    if (s === 2) {
+      const invoiceError = Object.values(allInvoiceErrors)[0];
+      if (invoiceError) return [`Thông tin hoá đơn: ${invoiceError}`];
+      return plan.hasPreorder && !acceptedPolicy ? ['Vui lòng đọc và tick đồng ý điều kiện huỷ đơn đặt trước.'] : [];
+    }
     return priceUp && !confirmedPriceUp ? ['Vui lòng xác nhận giá mới trước khi đặt.'] : [];
   };
 
@@ -135,7 +150,16 @@ export function CheckoutSheet({ source, preferredAddressId, onClose }: { source:
       (s, t) => {
         outcome = placeCheckout(
           s,
-          { ...input, lines: placeLines, idempotencyKey, acceptedPreorderPolicy: acceptedPolicy, confirmedPriceIncrease: confirmedPriceUp, fromCart: source.type === 'cart' },
+          {
+            ...input,
+            lines: placeLines,
+            idempotencyKey,
+            acceptedPreorderPolicy: acceptedPolicy,
+            confirmedPriceIncrease: confirmedPriceUp,
+            fromCart: source.type === 'cart',
+            invoice: wantInvoice ? invoice : undefined,
+            saveInvoiceAsDefault: wantInvoice && saveInvoice,
+          },
           customerActor,
           t,
         );
@@ -328,6 +352,23 @@ export function CheckoutSheet({ source, preferredAddressId, onClose }: { source:
             </section>
           ))}
 
+          <section aria-label="Hoá đơn công ty" className="space-y-2 rounded-2xl border border-stone-200 p-3">
+            <label className="flex min-h-11 items-center gap-2 text-sm font-bold text-ink">
+              <input type="checkbox" className="h-5 w-5" checked={wantInvoice} onChange={(e) => setWantInvoice(e.target.checked)} />
+              Xuất hoá đơn công ty <span className="font-normal text-muted">(mô phỏng)</span>
+            </label>
+            {wantInvoice && (
+              <>
+                <InvoiceFields value={invoice} onChange={setInvoice} errors={invoiceFieldErrors} />
+                <p className="text-sm text-stone-600">Thông tin được chốt vào từng đơn của lần đặt này; HTX và Admin – Tài chính xem được.</p>
+                <label className="flex min-h-11 items-center gap-2 text-sm font-semibold text-stone-700">
+                  <input type="checkbox" className="h-5 w-5" checked={saveInvoice} onChange={(e) => setSaveInvoice(e.target.checked)} />
+                  {savedInvoice ? 'Cập nhật thông tin mặc định' : 'Lưu làm thông tin mặc định cho lần sau'}
+                </label>
+              </>
+            )}
+          </section>
+
           {plan.hasPreorder && (
             <section className="space-y-2 rounded-2xl border border-champagne-300 bg-champagne-50 p-3 text-sm text-champagne-950">
               <h4 className="font-bold">Điều kiện huỷ đơn đặt trước</h4>
@@ -363,6 +404,12 @@ export function CheckoutSheet({ source, preferredAddressId, onClose }: { source:
             <p className="rounded-xl bg-stone-50 p-2.5 text-sm text-stone-700">
               <strong>Ghi chú:</strong> {note}
             </p>
+          )}
+          {wantInvoice && (
+            <section aria-label="Hoá đơn công ty" className="space-y-1 rounded-xl bg-stone-50 p-2.5">
+              <h4 className="text-sm font-bold text-ink">Xuất hoá đơn công ty</h4>
+              <InvoiceSummary invoice={normalizeInvoice(invoice)} />
+            </section>
           )}
           {priceUp && (
             <label className="flex min-h-11 items-center gap-2 rounded-2xl border border-champagne-300 bg-champagne-50 p-3 text-sm font-semibold text-champagne-950">

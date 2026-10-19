@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
-import { ArrowLeft, MessageCircle, PhoneCall, Send, X } from 'lucide-react';
+import { ArrowLeft, MessageCircle, PhoneCall, Send, Store, X } from 'lucide-react';
 import { useUi } from '../app/UiContext';
 import { conversationsFor, coopMayMessage, markThreadRead, ordersBetween, previewOf, sendDirectMessage, threadItems, threadUnread, totalUnread, type Conversation } from '../domain/coopChat';
 import { chatClosedReason, MESSAGE_MAX_LENGTH, sendOrderMessage, type ChatSide } from '../domain/orderContact';
@@ -9,6 +9,7 @@ import { CALL_OUTCOME_LABEL, ORDER_STATUS_LABEL } from '../domain/types';
 import { useStore } from '../store/AppDataContext';
 import { EmptyState, ErrorState } from './EmptyState';
 import { Select } from './form';
+import { AttachPhotoButton, MessagePhotoGrid, PendingPhotos, useMessagePhotos } from './MessagePhotos';
 import { ProductImage } from './ProductImage';
 
 const time = (iso: string) => new Date(iso).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
@@ -142,6 +143,7 @@ function Thread({ side, withId, productId, onClearProduct, onBack }: { side: Cha
   const coopId = side === 'customer' ? withId : actor.id!;
   const [text, setText] = useState('');
   const [target, setTarget] = useState('');
+  const photos = useMessagePhotos();
   const titleId = useId();
   const listRef = useRef<HTMLDivElement>(null);
   const items = threadItems(state, customerId, coopId);
@@ -163,10 +165,12 @@ function Thread({ side, withId, productId, onClearProduct, onBack }: { side: Cha
     if (el) el.scrollTop = el.scrollHeight;
   }, [items.length]);
 
+  // Gửi không được (vd. dữ liệu gần đầy) thì giữ nguyên chữ và ảnh đang soạn.
   const send = () => {
-    const r = target ? run((s, at) => sendOrderMessage(s, target, actor, text, at)) : run((s, at) => sendDirectMessage(s, actor, withId, text, at, asking?.id));
+    const r = target ? run((s, at) => sendOrderMessage(s, target, actor, text, at, photos.photos)) : run((s, at) => sendDirectMessage(s, actor, withId, text, at, asking?.id, photos.photos));
     if (!r.ok) return showToast(r.error);
     setText('');
+    photos.clear();
     if (!target && asking) onClearProduct();
   };
 
@@ -182,7 +186,7 @@ function Thread({ side, withId, productId, onClearProduct, onBack }: { side: Cha
         >
           <ArrowLeft size={20} aria-hidden="true" />
         </button>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <h4 id={titleId} className="truncate font-display text-lg font-semibold text-ink">
             {title}
           </h4>
@@ -190,6 +194,16 @@ function Thread({ side, withId, productId, onClearProduct, onBack }: { side: Cha
             {side === 'customer' ? `Vùng ${coop?.region ?? '—'} · HTX trả lời trong giờ làm việc` : `${ordersBetween(state, customerId, coopId).length} đơn với HTX`}
           </p>
         </div>
+        {side === 'customer' && coop && (
+          <button
+            type="button"
+            onClick={() => openModal({ type: 'coop_shop', coopId: coop.id })}
+            aria-label={`Xem trang ${coop.name}`}
+            className="flex min-h-11 shrink-0 items-center gap-1 rounded-full border border-champagne-300 px-3 text-sm font-bold text-forest-900 hover:bg-champagne-50"
+          >
+            <Store size={15} aria-hidden="true" /> Trang HTX
+          </button>
+        )}
       </div>
 
       <div
@@ -235,7 +249,8 @@ function Thread({ side, withId, productId, onClearProduct, onBack }: { side: Cha
               <div className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${own ? 'rounded-br-md bg-forest-900 text-white' : 'rounded-bl-md border border-champagne-200 bg-white text-ink'}`}>
                 {!own && <span className="block text-xs font-semibold text-champagne-800">{m.senderName}</span>}
                 {tag && <span className={`block text-xs font-semibold ${own ? 'text-champagne-200' : 'text-forest-800'}`}>{tag}</span>}
-                <span className="whitespace-pre-line break-words">{m.text}</span>
+                {m.text && <span className="whitespace-pre-line break-words">{m.text}</span>}
+                <MessagePhotoGrid photos={m.photos} label={`Tin của ${m.senderName}`} />
                 <span className={`block text-right text-xs ${own ? 'text-forest-100' : 'text-muted'}`}>{time(m.at)}</span>
               </div>
             </div>
@@ -275,7 +290,9 @@ function Thread({ side, withId, productId, onClearProduct, onBack }: { side: Cha
               </Select>
             </label>
           )}
-          <div className="flex items-end gap-2">
+          <PendingPhotos state={photos} />
+          <div className="flex flex-wrap items-end gap-2">
+            <AttachPhotoButton state={photos} />
             <label className="min-w-0 flex-1">
               <span className="sr-only">Nội dung tin nhắn</span>
               <textarea
@@ -296,7 +313,7 @@ function Thread({ side, withId, productId, onClearProduct, onBack }: { side: Cha
             <button
               type="button"
               onClick={send}
-              disabled={!text.trim()}
+              disabled={!text.trim() && photos.photos.length === 0}
               aria-label="Gửi tin nhắn"
               className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-forest-900 text-champagne-200 ring-1 ring-champagne-400/60 hover:bg-forest-700 disabled:bg-stone-300 disabled:text-stone-600 disabled:ring-0"
             >

@@ -8,6 +8,7 @@ import { AdminAccountsTab } from './AdminAccountsTab';
 import { AdminAuditTab } from './AdminAuditTab';
 import { AdminCoopsTab } from './AdminCoopsTab';
 import { FinanceCodTab } from './FinanceCodTab';
+import { FinanceInvoicesTab } from './FinanceInvoicesTab';
 import { FinanceLedgerTab } from './FinanceLedgerTab';
 import { AdminOrdersTab } from './AdminOrdersTab';
 import { AdminOverviewTab } from './AdminOverviewTab';
@@ -61,6 +62,7 @@ const TABS: Record<AdminSubGroup, TabDef[]> = {
     { key: 'settlement', label: 'Đối soát HTX', render: () => <FinanceSettlementTab /> },
     { key: 'ledger', label: 'Sổ giao dịch', render: () => <FinanceLedgerTab /> },
     { key: 'cod', label: 'Thu hộ COD', render: () => <FinanceCodTab /> },
+    { key: 'invoices', label: 'Hoá đơn công ty', render: () => <FinanceInvoicesTab /> },
     COOP_LIST,
   ],
   root: [

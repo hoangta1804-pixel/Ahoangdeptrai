@@ -14,6 +14,8 @@ import { isSamplePrice, remainingFor } from '../../domain/state';
 import { useStore } from '../../store/AppDataContext';
 import { VariantPicker } from '../../components/VariantPicker';
 import { groupFamilies } from '../../domain/variants';
+import { CoopNameButton } from './CoopNameButton';
+import { SeasonWatchButton } from './SeasonWatchButton';
 
 /** Tab Vụ mùa: danh sách hàng đặt trước (chuyển từ bản index.html cũ). */
 export function SeasonTab() {
@@ -72,7 +74,7 @@ export function SeasonTab() {
                   <div className="min-w-0">
                     <span className="text-xs font-semibold uppercase tracking-[0.14em] text-champagne-700">{p.region}</span>
                     <h3 className="font-display text-xl font-semibold leading-snug text-ink">{p.name}</h3>
-                    <p className="truncate text-sm text-muted">{coop?.name}</p>
+                    {coop && <CoopNameButton coopId={coop.id} name={coop.name} />}
                     <p className="mt-1 text-sm">
                       <span className="font-display text-lg font-semibold tabular-nums text-forest-900">
                         {formatMoney(p.price)}/{p.unit}
@@ -114,6 +116,7 @@ export function SeasonTab() {
                       {blocked ?? 'Đặt trước'}
                     </button>
                   </div>
+                  {blocked && <SeasonWatchButton product={p} />}
                 </div>
               </article>
             );
