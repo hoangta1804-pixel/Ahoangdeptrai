@@ -10,6 +10,7 @@ import { ORDER_STATUSES, type ComplaintReason, type DemoState, type OrderStatus 
 export interface AggregateStats {
   coopsActive: number;
   productsActive: number;
+  productsVerified: number;
   ordersTotal: number;
   ordersByStatus: Record<OrderStatus, number>;
   deliveredGoodsValue: number;
@@ -19,7 +20,7 @@ export interface AggregateStats {
   byCoop: { coopName: string; orders: number; deliveredGoodsValue: number }[];
 }
 
-export function aggregateStats(state: DemoState): AggregateStats {
+export function aggregateStats(state: DemoState,at=new Date(Date.now()+(state.clockOffsetMs??0))): AggregateStats {
   const ordersByStatus = Object.fromEntries(ORDER_STATUSES.map((s) => [s, 0])) as Record<OrderStatus, number>;
   const region = new Map<string, { orders: number; deliveredGoodsValue: number }>();
   const coop = new Map<string, { orders: number; deliveredGoodsValue: number }>();
@@ -37,6 +38,7 @@ export function aggregateStats(state: DemoState): AggregateStats {
   return {
     coopsActive: state.coops.filter((c) => c.status === 'active').length,
     productsActive: state.products.filter((p) => p.status === 'active').length,
+    productsVerified:state.products.filter(p=>p.status==='active'&&p.certifications?.some(c=>c.verified&&c.validUntil>=at.toLocaleDateString('en-CA',{timeZone:'Asia/Ho_Chi_Minh'}))).length,
     ordersTotal: state.orders.length,
     ordersByStatus,
     deliveredGoodsValue,

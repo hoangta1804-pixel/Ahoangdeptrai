@@ -1,3 +1,4 @@
+import { AppImage } from '../../components/AppImage';
 import { useState } from 'react';
 import { ArrowRight, MapPin } from 'lucide-react';
 import { useUi } from '../../app/UiContext';
@@ -15,7 +16,7 @@ import {
   qualitySetCheck,
   type ApplicationStatus,
   type CoopApplication,
-} from '../../domain/coopApplication';
+} from '../../store/commands/coopApplication';
 import { formatPhone } from '../../domain/phone';
 import { useStore } from '../../store/AppDataContext';
 
@@ -129,8 +130,8 @@ function ApplicationDetail({ application: a }: { application: CoopApplication })
   const { run } = useStore();
   const { adminActor, showToast } = useUi();
   const [note, setNote] = useState('');
-  const act = (op: Parameters<typeof run>[0], success: string) => {
-    const r = run(op);
+  const act = async (op: Parameters<typeof run>[0], success: string) => {
+    const r = await run(op);
     showToast(r.ok ? success : r.error);
     if (r.ok) setNote('');
   };
@@ -173,7 +174,7 @@ function ApplicationDetail({ application: a }: { application: CoopApplication })
           <ul className="flex flex-wrap gap-2">
             {a.documents.map((src, i) => (
               <li key={i}>
-                <img src={src} alt={`Giấy tờ ${i + 1} của ${a.coopName}`} className="h-28 rounded-xl border border-stone-200 object-cover" />
+                <AppImage src={src} alt={`Giấy tờ ${i + 1} của ${a.coopName}`} className="h-28 rounded-xl border border-stone-200 object-cover" />
               </li>
             ))}
           </ul>

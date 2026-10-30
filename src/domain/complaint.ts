@@ -39,6 +39,7 @@ import {
 } from './types';
 
 export interface ComplaintInput {
+  resolution?: 'check' | 'refund' | 'exchange' | 'resupply';
   orderId: string;
   productIds: string[];
   reason: ComplaintReason | '';
@@ -57,17 +58,22 @@ export function returnDeadline(order: Order, productIds?: string[]): Date | null
 }
 
 export function submitComplaint(state: DemoState, actor: Actor, input: ComplaintInput, at: Date): Result<{ state: DemoState; ticket: Ticket }> {
+  if (typeof input.description !== 'string' || !input.description.trim()) return fail('Vui lòng nhập mô tả vấn đề.');
+  if (input.description.length > 5000) return fail('Mô tả tối đa 5.000 ký tự.');
   if (!input.orderId) return fail('Vui lòng chọn đơn hàng.');
   const order = findOrder(state, input.orderId);
   if (!order) return fail('Không tìm thấy đơn.');
   if (actor.kind !== 'customer' || actor.id !== order.customerId) return fail('Bạn chỉ gửi khiếu nại cho đơn của mình.');
-  if (order.status !== 'delivered') return fail('Chỉ gửi khiếu nại, trả hàng cho đơn Đã giao.');
-  if (input.productIds.length === 0) return fail('Vui lòng chọn sản phẩm cần khiếu nại.');
+  const general=['order_question','late_delivery','cancel_request','other'].includes(input.reason);
+  if (!general&&order.status !== 'delivered') return fail('Chỉ gửi khiếu nại, trả hàng cho đơn Đã giao.');
+  if (general&&input.requestRefund)return fail('Yêu cầu hoàn tiền cần chọn vấn đề hàng hóa và sản phẩm liên quan.');
+  if (!general&&input.productIds.length === 0) return fail('Vui lòng chọn sản phẩm cần khiếu nại.');
   if (!input.productIds.every((id) => order.items.some((i) => i.productId === id))) return fail('Sản phẩm không thuộc đơn đã chọn.');
   if (!input.reason) return fail('Vui lòng chọn lý do.');
-  if (input.photos.length === 0) return fail('Vui lòng thêm ít nhất 1 ảnh.');
+  if (!general&&input.photos.length === 0) return fail('Vui lòng thêm ít nhất 1 ảnh.');
+  if(input.photos.length>5)return fail('Tối đa 5 ảnh minh chứng.');
   const deadline = returnDeadline(order, input.productIds);
-  if (!deadline || at.getTime() > deadline.getTime()) {
+  if (!general&&(!deadline || at.getTime() > deadline.getTime())) {
     return fail(`Đã quá hạn gửi khiếu nại, trả hàng (hạn đến ${deadline?.toLocaleString('vi-VN') ?? '—'}).`);
   }
   if (input.requestRefund && input.reason === 'changed_mind') {
@@ -78,6 +84,8 @@ export function submitComplaint(state: DemoState, actor: Actor, input: Complaint
   }
 
   const ticket: Ticket = {
+    resolution:input.resolution??(input.requestRefund?'refund':'check'),
+    ...((input.resolution==='exchange'||input.resolution==='resupply')?{fulfillment:{kind:input.resolution,status:'requested' as const,updatedAt:iso(at)}}:{}),
     id: generateId('TK'),
     orderId: order.id,
     coopId: order.coopId,
@@ -168,6 +176,7 @@ export function cskhUpdateTicket(
   if ((status === 'rejected' || status === 'resolved') && !note.trim()) return fail('Vui lòng ghi kết luận.');
   const approved = status === 'resolved' && refundApproved && ticket.requestRefund;
   const updated: Ticket = {
+    ...(status==='processing'?{assignedUserId:actor.userId??actor.id}:{}),
     ...ticket,
     status,
     history: [

@@ -28,25 +28,8 @@ export function RegulatorScreen() {
         <p className="text-sm text-forest-100">Số liệu tính từ dữ liệu demo hiện có. Không có dữ liệu cá nhân của khách hàng.</p>
         <div aria-hidden="true" className="brocade-dark absolute inset-x-0 bottom-0 h-2" />
       </div>
-      <ExportButtons />
       <StatsPanel />
-      {!rows.ok ? (
-        <ErrorState>{rows.error}</ErrorState>
-      ) : rows.value.length === 0 ? (
-        <EmptyState>Chưa có đơn hàng nào.</EmptyState>
-      ) : (
-        <AdminTable caption="Đơn hàng (ẩn danh, không có thông tin khách)" columns={['Ngày', 'HTX', 'Vùng', 'Trạng thái', { label: 'Tiền hàng', align: 'right' }]} minWidth={560}>
-          {rows.value.map((r, i) => (
-            <tr key={i}>
-              <Td>{r.createdDate.split('-').reverse().join('/')}</Td>
-              <Td>{r.coopName}</Td>
-              <Td>{r.region}</Td>
-              <Td>{ORDER_STATUS_LABEL[r.status]}</Td>
-              <Td className="text-right tabular-nums">{formatMoney(r.itemsTotal)}</Td>
-            </tr>
-          ))}
-        </AdminTable>
-      )}
+      <p className="text-sm text-stone-600">Báo cáo được tổng hợp trên máy chủ. Tài khoản giám sát không truy cập dữ liệu đơn hàng cá nhân.</p>
     </div>
   );
 }

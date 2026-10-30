@@ -1,5 +1,6 @@
 import { useUi } from '../../app/UiContext';
-import { rootSetAdminGroup } from '../../domain/account';
+import {OpsAccountsTab} from './OpsAccountsTab';
+import { rootSetAdminGroup } from '../../store/commands/account';
 import { loginIdentityLabel } from '../../domain/auth';
 import { ACCOUNT_ROLE_LABEL, ADMIN_GROUP_LABEL, type AdminSubGroup } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
@@ -10,7 +11,8 @@ export function AdminAccountsTab() {
   const { adminActor, showToast } = useUi();
   return (
     <div className="space-y-2">
-      <p className="text-sm text-stone-600">Đổi nhóm quyền của tài khoản Admin ở cột "Đơn vị / nhóm quyền". Cấp và khoá tài khoản do Admin – Vận hành thực hiện.</p>
+      <OpsAccountsTab createOnly/>
+      <p className="text-sm text-stone-600">Root tạo tài khoản Admin và phân quyền. Vận hành cấp tài khoản HTX, QLNN, Shipper và xử lý khóa tài khoản.</p>
       <div className="overflow-x-auto rounded-2xl border border-stone-200 bg-white">
         <table className="w-full min-w-[640px] text-left text-sm">
           <thead className="bg-stone-50 text-xs text-muted">
@@ -40,8 +42,8 @@ export function AdminAccountsTab() {
                     <select
                       aria-label={`Nhóm quyền của ${u.name}`}
                       value={u.adminGroup}
-                      onChange={(e) => {
-                        const r = run((s, at) => rootSetAdminGroup(s, adminActor, u.id, e.target.value as AdminSubGroup, at));
+                      onChange={async (e) => {
+                        const r = await run((s, at) => rootSetAdminGroup(s, adminActor, u.id, e.target.value as AdminSubGroup, at));
                         showToast(r.ok ? 'Đã đổi nhóm quyền.' : r.error);
                       }}
                       className="min-h-11 rounded-xl border border-stone-300 px-2"

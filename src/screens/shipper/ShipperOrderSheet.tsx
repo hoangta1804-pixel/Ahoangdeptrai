@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import {PickupPointPanel} from '../../components/PickupPointPanel';
 import { MapPin, Phone } from 'lucide-react';
 import { useUi } from '../../app/UiContext';
 import { BottomSheet, SheetColumns } from '../../components/BottomSheet';
@@ -10,7 +11,7 @@ import { TrackingTimeline } from '../../components/TrackingTimeline';
 import { getOrderFor } from '../../domain/access';
 import { formatPhone } from '../../domain/phone';
 import { formatMoney } from '../../domain/pricing';
-import { DELIVERY_FAIL_REASONS, lastFailure, MAX_PROOF_PHOTOS, shipperDelivered, shipperFailed, shipperPickUp, shipperRefused, shipperStep } from '../../domain/shipper';
+import { DELIVERY_FAIL_REASONS, lastFailure, MAX_PROOF_PHOTOS, shipperDelivered, shipperFailed, shipperPickUp, shipperRefused, shipperStep } from '../../store/commands/shipper';
 import type { Order, Result } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
 import { ShipperStepBadge } from './ShipperStepBadge';
@@ -47,6 +48,7 @@ export function ShipperOrderSheet({ orderId, onClose }: { orderId: string; onClo
         left={
           <>
             <CollectBox order={o} />
+            <PickupPointPanel order={o}/>
             <Recipient order={o} />
             <Goods order={o} />
           </>
@@ -139,8 +141,8 @@ function Actions({ order: o }: { order: Order }) {
   const [error, setError] = useState<string | null>(null);
   const step = shipperStep(o);
 
-  const act = (op: Parameters<typeof run>[0], done: string) => {
-    const r = run(op) as Result<unknown>;
+  const act = async (op: Parameters<typeof run>[0], done: string) => {
+    const r = await run(op) as Result<unknown>;
     if (!r.ok) return setError(r.error);
     setError(null);
     setMode(null);

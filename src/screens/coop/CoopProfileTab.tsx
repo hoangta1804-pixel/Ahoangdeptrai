@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useUi } from '../../app/UiContext';
 import { Field, Input, PrimaryButton, Textarea } from '../../components/form';
-import { ADDRESS_MAX_LENGTH, CONTACT_PHONE_RULE, COOP_PHONE_COUNT, coopAddressOf, coopPhonesOf, coopSetAddress, coopSetPhones, formatContactPhone, isSampleAddress } from '../../domain/coopContact';
-import { coopSubmitProfile } from '../../domain/coopProfile';
+import { ADDRESS_MAX_LENGTH, CONTACT_PHONE_RULE, COOP_PHONE_COUNT, coopAddressOf, coopPhonesOf, coopSetAddress, coopSetPhones, formatContactPhone, isSampleAddress } from '../../store/commands/coopContact';
+import { coopSubmitProfile } from '../../store/commands/coopProfile';
 import { useStore } from '../../store/AppDataContext';
 
 const STATUS = { approved: 'Đã duyệt', pending: 'Chờ duyệt', rejected: 'Bị từ chối' } as const;
@@ -34,8 +34,8 @@ export function CoopProfileTab() {
     setPhones((p) => p.map((x, j) => (j === i ? v : x)));
   };
   const savedAddress = coopAddressOf(coop);
-  const saveContact = () => {
-    const r = run((s, at) => {
+  const saveContact = async () => {
+    const r = await run((s, at) => {
       const withPhones = coopSetPhones(s, coopActor, phones, at);
       // HTX mẫu chưa nhập địa chỉ thật thì giữ địa chỉ mẫu, vẫn lưu được SĐT.
       if (!withPhones.ok || (!address.trim() && isSampleAddress(savedAddress))) return withPhones;
@@ -117,8 +117,8 @@ export function CoopProfileTab() {
         <PrimaryButton
           className="w-full"
           disabled={coop.profileStatus === 'pending'}
-          onClick={() => {
-            const r = run((s, at) => coopSubmitProfile(s, coopActor, form, at));
+          onClick={async () => {
+            const r = await run((s, at) => coopSubmitProfile(s, coopActor, form, at));
             showToast(r.ok ? 'Đã gửi hồ sơ. Trạng thái: Chờ duyệt.' : r.error);
           }}
         >

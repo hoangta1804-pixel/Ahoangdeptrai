@@ -32,7 +32,7 @@ export function BottomSheet({ title, onClose, children, footer, closeLabel = 'Đ
 
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col items-center justify-end bg-black/60 md:justify-center md:p-6"
+      className="app-sheet-overlay fixed inset-0 z-50 flex flex-col items-center justify-end bg-black/60 md:justify-center md:p-6"
       onClick={onClose}
       role="presentation"
     >
@@ -41,13 +41,13 @@ export function BottomSheet({ title, onClose, children, footer, closeLabel = 'Đ
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className={`relative flex max-h-[min(90dvh,calc(100dvh-3.5rem))] w-full max-w-[640px] flex-col overflow-hidden rounded-t-[32px] bg-white shadow-2xl md:rounded-[32px] ${wide ? 'lg:max-w-5xl xl:max-w-6xl' : ''}`}
+        className={`app-sheet relative flex min-h-0 min-w-0 w-full max-w-[640px] flex-col overflow-hidden rounded-t-[32px] bg-white shadow-2xl md:rounded-[32px] ${wide ? 'lg:max-w-5xl xl:max-w-6xl' : ''}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Viền vàng mảnh và hoa văn ở mép trên của sheet. */}
-        <div aria-hidden="true" className="brocade-light h-2 opacity-80" />
-        <div className="flex items-start justify-between gap-3 border-b border-champagne-200/70 px-5 pt-2 pb-2">
-          <div id={titleId} className="min-w-0 flex-1 pt-2 font-display text-xl font-semibold leading-snug text-ink">{title}</div>
+        <div aria-hidden="true" className="brocade-light h-2 shrink-0 opacity-80" />
+        <div className="app-sheet-header flex shrink-0 items-start justify-between gap-3 border-b border-champagne-200/70 px-5 pt-2 pb-2">
+          <div id={titleId} className="app-sheet-title min-w-0 flex-1 pt-2 font-display text-xl font-semibold leading-snug text-ink">{title}</div>
           <button
             type="button"
             onClick={onClose}
@@ -57,9 +57,9 @@ export function BottomSheet({ title, onClose, children, footer, closeLabel = 'Đ
             <X size={20} />
           </button>
         </div>
-        <div className="flex-1 space-y-4 overflow-y-auto overscroll-contain px-5 pt-3 pb-5">{children}</div>
+        <div className="app-sheet-body min-h-0 min-w-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-5 pt-3 pb-5">{children}</div>
         {footer && (
-          <div className="border-t border-champagne-200/70 bg-champagne-50/60 px-5 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]">{footer}</div>
+          <div className="app-sheet-footer shrink-0 border-t border-champagne-200/70 bg-champagne-50/60 px-5 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]">{footer}</div>
         )}
       </div>
     </div>
@@ -73,8 +73,8 @@ export function BottomSheet({ title, onClose, children, footer, closeLabel = 'Đ
 export function SheetColumns({ left, right }: { left: ReactNode; right: ReactNode }) {
   return (
     <div className="space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6 lg:space-y-0">
-      <div className="space-y-4">{left}</div>
-      <div className="space-y-4">{right}</div>
+      <div className="min-w-0 space-y-4">{left}</div>
+      <div className="min-w-0 space-y-4">{right}</div>
     </div>
   );
 }

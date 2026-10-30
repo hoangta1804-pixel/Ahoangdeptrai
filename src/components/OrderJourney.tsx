@@ -1,6 +1,7 @@
+import { AppImage } from './AppImage';
 import { useId } from 'react';
 import { Check, Minus, X } from 'lucide-react';
-import { orderJourney, type StepState } from '../domain/orderContact';
+import { orderJourney, type StepState } from '../store/commands/orderContact';
 import type { Order } from '../domain/types';
 import { useStore } from '../store/AppDataContext';
 
@@ -56,7 +57,7 @@ export function OrderJourney({ order }: { order: Order }) {
                   <ul className="mt-1.5 flex gap-2" aria-label="Ảnh lô hàng HTX chụp">
                     {s.photos.map((src, j) => (
                       <li key={j}>
-                        <img src={src} alt={`Ảnh lô hàng ${j + 1}`} className="h-16 w-16 rounded-xl border border-champagne-200 object-cover" />
+                        <AppImage src={src} alt={`Ảnh lô hàng ${j + 1}`} className="h-16 w-16 rounded-xl border border-champagne-200 object-cover" />
                       </li>
                     ))}
                   </ul>

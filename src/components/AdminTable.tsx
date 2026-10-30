@@ -16,7 +16,7 @@ export function AdminTable({
   children: ReactNode;
 }) {
   return (
-    <div className="overflow-x-auto rounded-2xl border border-stone-200 bg-white">
+    <div role="region" aria-label={typeof caption==='string'?caption:'Bảng dữ liệu, cuộn ngang để xem thêm'} tabIndex={0} className="relative min-w-0 max-w-full overflow-x-auto overscroll-x-contain rounded-2xl border border-stone-200 bg-white focus-visible:outline-2 focus-visible:outline-forest-600">
       <table className="w-full text-left text-sm" style={{ minWidth }}>
         {caption && <caption className="px-3 pt-3 pb-1 text-left text-base font-bold text-ink">{caption}</caption>}
         <thead className="bg-stone-50 text-xs text-muted">

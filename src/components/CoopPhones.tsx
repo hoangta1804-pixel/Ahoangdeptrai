@@ -1,5 +1,5 @@
 import { Phone } from 'lucide-react';
-import { formatContactPhone, isSamplePhone } from '../domain/coopContact';
+import { formatContactPhone, isSamplePhone } from '../store/commands/coopContact';
 
 /** 2 nút gọi SĐT của HTX cho Admin: bấm là mở ứng dụng gọi của máy (`tel:`). Không dùng ở màn của khách. */
 export function CoopCallLinks({ name, phones }: { name: string; phones: string[] }) {

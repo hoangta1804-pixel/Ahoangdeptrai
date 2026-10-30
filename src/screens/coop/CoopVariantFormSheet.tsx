@@ -4,7 +4,7 @@ import { BottomSheet } from '../../components/BottomSheet';
 import { Field, Input, PrimaryButton } from '../../components/form';
 import { formatMoney } from '../../domain/pricing';
 import { findProduct, formatDateKey } from '../../domain/state';
-import { coopAddVariant, familyOf, MAX_VARIANTS } from '../../domain/variants';
+import { coopAddVariant, familyOf, MAX_VARIANTS } from '../../store/commands/variants';
 import { PRODUCT_STATUS_LABEL } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
 
@@ -26,8 +26,8 @@ export function CoopVariantFormSheet({ productId, onClose }: { productId: string
     setForm((f) => ({ ...f, ...patch }));
   };
 
-  const save = () => {
-    const r = run(
+  const save = async () => {
+    const r = await run(
       (s, at) => coopAddVariant(s, coopActor, product.id, { unit: form.unit, price: Number(form.price), quantity: Number(form.quantity || 0) }, at),
       (v) => v.state,
     );

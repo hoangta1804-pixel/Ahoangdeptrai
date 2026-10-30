@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { placeCheckout } from '../checkout';
 import { addMs, DAY_MS } from '../state';
-import { periodStats } from '../stats';
+import { aggregateStats,periodStats } from '../stats';
 import type { DemoState } from '../types';
 import { CUSTOMER, keyX, keyY, line, makeState, placeInput, T0 } from './fixtures';
 
@@ -21,6 +21,12 @@ function withOrders(): DemoState {
 }
 
 describe('Số liệu biểu đồ ở Tổng quan', () => {
+  it('chỉ đếm chứng nhận đã xác minh còn hiệu lực cho sản phẩm đang bán',()=>{
+    const state=makeState();state.products[0].certifications=[{id:'CN-1',label:'OCOP',issuer:'Đơn vị cấp',verified:true,validUntil:'2026-10-14'}];
+    state.products[1].certifications=[{id:'CN-2',label:'OCOP',issuer:'Đơn vị cấp',verified:true,validUntil:'2026-10-13'}];
+    expect(aggregateStats(state,T0).productsVerified).toBe(1);
+    expect(aggregateStats(state,addMs(T0,DAY_MS)).productsVerified).toBe(0);
+  });
   it('T28: 7 ngày: mỗi ngày một cột kể cả ngày trống; tiền hàng không tính đơn huỷ; theo HTX, trạng thái', () => {
     const p = periodStats(withOrders(), '7d', addMs(T0, 60_000));
     expect(p.daily).toHaveLength(7);

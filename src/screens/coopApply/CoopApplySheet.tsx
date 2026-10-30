@@ -6,12 +6,14 @@ import { SimBadge } from '../../components/EmptyState';
 import { Field, Input, PrimaryButton, SecondaryButton, Textarea } from '../../components/form';
 import { PhotoPicker } from '../../components/PhotoPicker';
 import { DEMO_OTP } from '../../domain/auth';
-import { resubmitCoopApplication, submitCoopApplication, type ApplicationInput, type CoopApplication } from '../../domain/coopApplication';
-import { ADDRESS_MAX_LENGTH, CONTACT_PHONE_RULE, formatContactPhone } from '../../domain/coopContact';
+import { resubmitCoopApplication, submitCoopApplication, type ApplicationInput, type CoopApplication } from '../../store/commands/coopApplication';
+import { ADDRESS_MAX_LENGTH, CONTACT_PHONE_RULE, formatContactPhone } from '../../store/commands/coopContact';
 import { formatPhone, PHONE_RULE } from '../../domain/phone';
 import { useStore } from '../../store/AppDataContext';
+import { api } from '../../store/backend';
+import { applicationCache } from '../../store/applicationCache';
 
-const EMPTY: ApplicationInput = { coopName: '', region: '', address: '', representative: '', loginPhone: '', phones: ['', ''], payoutAccount: '', description: '', products: '', documents: [] };
+const EMPTY: ApplicationInput = { taxCode:'', coopName: '', region: '', address: '', representative: '', loginPhone: '', phones: ['', ''], payoutAccount: '', description: '', products: '', documents: [] };
 
 /**
  * HTX đăng ký bán hàng trên sàn (bước 1 của quy trình phê duyệt HTX, domain/coopApplication.ts), mở từ màn đăng nhập.
@@ -20,10 +22,11 @@ const EMPTY: ApplicationInput = { coopName: '', region: '', address: '', represe
 export function CoopApplySheet({ applicationId, onClose }: { applicationId?: string; onClose: () => void }) {
   const { state, run } = useStore();
   const { openModal } = useUi();
-  const existing = applicationId ? state.coopApplications?.find((a) => a.id === applicationId) : undefined;
+  const existing = applicationId ? applicationCache.get(applicationId) ?? state.coopApplications?.find((a) => a.id === applicationId) : undefined;
   const [form, setForm] = useState<ApplicationInput>(() =>
     existing
       ? {
+          taxCode:existing.taxCode??'',
           coopName: existing.coopName,
           region: existing.region,
           address: existing.address,
@@ -40,24 +43,20 @@ export function CoopApplySheet({ applicationId, onClose }: { applicationId?: str
   const [otp, setOtp] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<CoopApplication | null>(null);
+  const [challengeId, setChallengeId] = useState('');
+  const [demo, setDemo] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const sendOtp = async () => { try { const r = await api('/api/v1/auth/otp', {phone:form.loginPhone,purpose:'application'}); setChallengeId(r.challengeId);setDemo(r.demo);setError(null); } catch(e) {setError(e instanceof Error?e.message:'Không gửi được OTP.');} };
   const set = (patch: Partial<ApplicationInput>) => {
     setError(null);
     setForm((f) => ({ ...f, ...patch }));
   };
 
-  const submit = () => {
-    if (existing) {
-      const r = run((s, at) => resubmitCoopApplication(s, existing.id, form, otp, at));
-      if (!r.ok) return setError(r.error);
-      setDone(r.value.coopApplications!.find((a) => a.id === existing.id)!);
-      return;
-    }
-    const r = run(
-      (s, at) => submitCoopApplication(s, form, otp, at),
-      (v) => v.state,
-    );
-    if (!r.ok) return setError(r.error);
-    setDone(r.value.application);
+  const submit = async () => {
+    if(busy)return;setBusy(true);
+    try {const r=await api('/api/v1/applications',{challengeId,otp,input:form,applicationId:existing?.id});applicationCache.set(r.application.id,r.application);setDone(r.application);}
+    catch(e){setError(e instanceof Error?e.message:'Không nộp được hồ sơ.');}
+    finally{setBusy(false);}
   };
 
   if (done) {
@@ -81,7 +80,7 @@ export function CoopApplySheet({ applicationId, onClose }: { applicationId?: str
       onClose={onClose}
       wide
       footer={
-        <PrimaryButton className="w-full lg:ml-auto lg:block lg:w-auto lg:px-8" onClick={submit}>
+        <PrimaryButton disabled={busy} className="w-full lg:ml-auto lg:block lg:w-auto lg:px-8" onClick={submit}>
           {existing ? 'Nộp lại hồ sơ' : 'Nộp hồ sơ'}
         </PrimaryButton>
       }
@@ -95,6 +94,7 @@ export function CoopApplySheet({ applicationId, onClose }: { applicationId?: str
         Quy trình: nộp hồ sơ → Admin – Chất lượng tiếp nhận → thẩm định → duyệt / yêu cầu bổ sung / từ chối → tạo tài khoản HTX. SĐT, địa chỉ, tài khoản của HTX chỉ Admin xem, không hiện cho khách.
       </p>
       <div className="grid gap-x-5 gap-y-3 lg:grid-cols-2">
+        <Field label="Mã số thuế HTX"><Input required value={form.taxCode??''} maxLength={14} onChange={e=>set({taxCode:e.target.value})} placeholder="10 số hoặc mã chi nhánh"/></Field>
         <Field label="Tên HTX">
           <Input value={form.coopName} onChange={(e) => set({ coopName: e.target.value })} placeholder="Ví dụ: HTX Nông sản …" />
         </Field>
@@ -134,11 +134,12 @@ export function CoopApplySheet({ applicationId, onClose }: { applicationId?: str
       </fieldset>
       <div className="space-y-2 rounded-2xl border border-dashed border-champagne-500 bg-champagne-50 p-3">
         <p className="flex flex-wrap items-center gap-2 text-sm text-ink">
-          <SimBadge /> Xác nhận SĐT người đại diện bằng OTP mô phỏng, mã luôn là <strong className="font-mono">{DEMO_OTP}</strong>
+          Xác nhận SĐT người đại diện bằng mã OTP. {demo && <>Mã demo: <strong className="font-mono">{DEMO_OTP}</strong></>}
         </p>
         <div className="flex gap-2">
           <Input aria-label="Mã OTP (6 số)" inputMode="numeric" maxLength={6} value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))} placeholder="Mã OTP" className="flex-1" />
-          <SecondaryButton onClick={() => setOtp(DEMO_OTP)}>Điền OTP mô phỏng</SecondaryButton>
+          <SecondaryButton onClick={sendOtp}>Nhận OTP</SecondaryButton>
+          {demo && <SecondaryButton onClick={() => setOtp(DEMO_OTP)}>Điền OTP mô phỏng</SecondaryButton>}
         </div>
       </div>
       {error && (

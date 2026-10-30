@@ -20,7 +20,7 @@ const PHOTO_RE = /"data:image\/[^"]*"/g;
 /** Số byte ước lượng sau khi nén của dữ liệu (cộng thêm ảnh sắp gửi). */
 export function estimateSharedBytes(state: DemoState, extraPhotos: string[] = []): number {
   const json = JSON.stringify(state);
-  const storedPhotoChars = (json.match(PHOTO_RE) ?? []).reduce((s, m) => s + m.length, 0);
+  const storedPhotoChars = Array.from(json.match(PHOTO_RE) ?? []).reduce<number>((s, m) => s + m.length, 0);
   const extraChars = extraPhotos.reduce((s, p) => s + p.length, 0);
   return Math.round((json.length - storedPhotoChars) * TEXT_RATIO + (storedPhotoChars + extraChars) * PHOTO_RATIO);
 }
@@ -47,6 +47,6 @@ export const PHOTO_BUDGET_FULL_MESSAGE =
 export function messagePhotosError(state: DemoState, photos: string[], max: number): string | null {
   if (photos.length === 0) return null;
   if (photos.length > max) return `Mỗi tin nhắn tối đa ${max} ảnh.`;
-  if (photos.some((p) => !p.startsWith('data:image/') || p.length > MESSAGE_PHOTO_MAX_CHARS)) return 'Ảnh không hợp lệ hoặc quá lớn. Vui lòng chọn lại ảnh.';
+  if (photos.some((p) => !(p.startsWith('data:image/') || /^sb:\/\/app-images\/[A-Za-z\d_-]+\/[a-f\d-]{36}\.(jpg|png|webp)$/.test(p)) || p.length > MESSAGE_PHOTO_MAX_CHARS)) return 'Ảnh không hợp lệ hoặc quá lớn. Vui lòng chọn lại ảnh.';
   return photoBudget(state, photos).photosAllowed ? null : PHOTO_BUDGET_FULL_MESSAGE;
 }

@@ -56,6 +56,7 @@ interface TokenInfo {
 }
 
 const invalid: ApiResult = { status: 401, body: { error: 'Không xác minh được đăng nhập Google. Vui lòng thử lại.' } };
+const unavailable: ApiResult = {status:503,body:{error:'Máy chủ chưa kết nối được Google để xác minh đăng nhập. Vui lòng thử lại sau.'}};
 
 export async function handleGoogleAuthRequest(req: { method?: string; body?: unknown }, deps: GoogleAuthDeps): Promise<ApiResult> {
   if (req.method !== 'POST') return { status: 405, body: { error: 'Chỉ hỗ trợ POST.' } };
@@ -71,13 +72,17 @@ export async function handleGoogleAuthRequest(req: { method?: string; body?: unk
   const credential = typeof body === 'object' && body !== null ? (body as { credential?: unknown }).credential : undefined;
   if (typeof credential !== 'string' || credential.length < 20 || credential.length > 5000) return { status: 400, body: { error: 'Thiếu thông tin đăng nhập Google.' } };
 
-  const res = await deps.fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`);
+  let res: Awaited<ReturnType<FetchLike>>;
+  try {res = await deps.fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`);}
+  catch {return unavailable;}
+  if(res.status===429||res.status>=500)return unavailable;
   if (!res.ok) return invalid;
   const info = (await res.json().catch(() => null)) as TokenInfo | null;
   if (!info) return invalid;
   const now = deps.now?.() ?? Date.now();
   const verified = info.email_verified === true || info.email_verified === 'true';
-  if (info.aud !== deps.clientId || !ISSUERS.includes(info.iss ?? '') || !info.sub || !info.email || !verified || Number(info.exp) * 1000 <= now) return invalid;
+  const expiresAt=Number(info.exp)*1000;
+  if (info.aud !== deps.clientId || !ISSUERS.includes(info.iss ?? '') || !info.sub || !info.email || !verified || !Number.isFinite(expiresAt) || expiresAt <= now) return invalid;
 
   const name = (info.name || [info.given_name, info.family_name].filter(Boolean).join(' ') || 'Khách Google').trim().slice(0, 60);
   return { status: 200, body: { id: hashGoogleSub(info.sub), name, emailMasked: maskEmail(info.email) } };

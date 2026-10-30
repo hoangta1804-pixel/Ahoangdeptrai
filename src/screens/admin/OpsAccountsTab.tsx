@@ -1,17 +1,18 @@
 import { useState } from 'react';
 import { useUi } from '../../app/UiContext';
 import { DangerButton, Field, Input, PrimaryButton, SecondaryButton, Select } from '../../components/form';
-import { opsCreateAccount, opsSetAccountLocked, type NewAccountInput } from '../../domain/account';
+import { opsCreateAccount, opsSetAccountLocked, type NewAccountInput } from '../../store/commands/account';
 import { loginIdentityLabel } from '../../domain/auth';
 import { PHONE_RULE } from '../../domain/phone';
 import { ACCOUNT_ROLE_LABEL, ADMIN_GROUP_LABEL, type AdminSubGroup, type UserAccount } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
 
 /** Admin – Vận hành cấp tài khoản HTX / Admin / QLNN và khoá / mở khoá tài khoản (FR-TK-10, 12). */
-export function OpsAccountsTab() {
+export function OpsAccountsTab({createOnly=false}:{createOnly?:boolean}={}) {
   const { state, run } = useStore();
   const { adminActor, showToast } = useUi();
-  const [form, setForm] = useState<NewAccountInput>({ name: '', phone: '', role: 'coop', coopId: state.coops[0]?.id, adminGroup: 'operations' });
+  const isRoot=adminActor.adminGroup==='root';
+  const [form, setForm] = useState<NewAccountInput>({ name: '', phone: '', role: isRoot?'admin':'coop', coopId: state.coops[0]?.id, adminGroup: 'operations',expiresAt:'' });
   const set = (patch: Partial<NewAccountInput>) => setForm((f) => ({ ...f, ...patch }));
   return (
     <div className="space-y-4">
@@ -26,10 +27,7 @@ export function OpsAccountsTab() {
           </Field>
           <Field label="Vai trò">
             <Select value={form.role} onChange={(e) => set({ role: e.target.value as NewAccountInput['role'] })}>
-              <option value="coop">HTX</option>
-              <option value="admin">Admin</option>
-              <option value="regulator">Cơ quan QLNN</option>
-              <option value="shipper">Shipper (giao vận)</option>
+              {isRoot?<option value="admin">Admin</option>:<><option value="coop">HTX</option><option value="regulator">Cơ quan QLNN</option><option value="shipper">Shipper (giao vận)</option></>}
             </Select>
           </Field>
           {form.role === 'coop' && (
@@ -54,21 +52,22 @@ export function OpsAccountsTab() {
               </Select>
             </Field>
           )}
+          {form.role==='regulator'&&<Field label="Tài khoản giám sát có hạn đến"><Input required type="date" value={form.expiresAt??''} onChange={e=>set({expiresAt:e.target.value})}/></Field>}
         </div>
         <PrimaryButton
-          onClick={() => {
-            const r = run(
+          onClick={async () => {
+            const r = await run(
               (s, at) => opsCreateAccount(s, adminActor, form, at),
               (v) => v.state,
             );
-            showToast(r.ok ? 'Đã cấp tài khoản. Người dùng đăng nhập bằng SĐT + OTP mô phỏng.' : r.error);
+            showToast(r.ok ? 'Đã cấp tài khoản. Cấp liên kết đặt mật khẩu trong mục Bảo mật tài khoản.' : r.error);
             if (r.ok) set({ name: '', phone: '' });
           }}
         >
           Cấp tài khoản
         </PrimaryButton>
       </section>
-      <AccountTable users={state.users} />
+      {!createOnly&&<AccountTable users={state.users} />}
     </div>
   );
 }
@@ -107,8 +106,8 @@ function LockRow({ user: u }: { user: UserAccount }) {
   const { run } = useStore();
   const { adminActor, showToast } = useUi();
   const [reason, setReason] = useState('');
-  const act = (locked: boolean) => {
-    const r = run((s, at) => opsSetAccountLocked(s, adminActor, u.id, locked, reason, at));
+  const act = async (locked: boolean) => {
+    const r = await run((s, at) => opsSetAccountLocked(s, adminActor, u.id, locked, reason, at));
     showToast(r.ok ? (locked ? 'Đã khoá tài khoản. Phiên đang mở sẽ bị đăng xuất.' : 'Đã mở khoá tài khoản.') : r.error);
     if (r.ok) setReason('');
   };
@@ -117,9 +116,9 @@ function LockRow({ user: u }: { user: UserAccount }) {
       <td className="px-3 py-2">{u.name}</td>
       <td className="px-3 py-2 font-mono">{loginIdentityLabel(u)}</td>
       <td className="px-3 py-2">{u.role === 'admin' && u.adminGroup ? `Admin – ${ADMIN_GROUP_LABEL[u.adminGroup]}` : ACCOUNT_ROLE_LABEL[u.role]}</td>
-      <td className="px-3 py-2">{u.status === 'active' ? 'Đang hoạt động' : 'Đang khoá'}</td>
+      <td className="px-3 py-2">{u.accessClosedAt?'Đã đóng quyền truy cập':u.status === 'active' ? 'Đang hoạt động' : 'Đang khoá'}</td>
       <td className="px-3 py-2">
-        {u.status === 'active' ? (
+        {u.accessClosedAt?<span>Đóng theo yêu cầu của chủ tài khoản</span>:u.status === 'active' ? (
           <div className="flex gap-1">
             <Input aria-label={`Lý do khoá ${u.name}`} placeholder="Lý do khoá" value={reason} onChange={(e) => setReason(e.target.value)} />
             <DangerButton onClick={() => act(true)}>Khoá</DangerButton>

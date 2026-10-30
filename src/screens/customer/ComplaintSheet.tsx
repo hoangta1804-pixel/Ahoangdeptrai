@@ -3,7 +3,7 @@ import { useUi } from '../../app/UiContext';
 import { BottomSheet } from '../../components/BottomSheet';
 import { Field, PrimaryButton, Select, Textarea } from '../../components/form';
 import { PhotoPicker } from '../../components/PhotoPicker';
-import { isTicketOpen, returnDeadline, submitComplaint } from '../../domain/complaint';
+import { isTicketOpen, returnDeadline, submitComplaint } from '../../store/commands/complaint';
 import { COMPLAINT_REASON_LABEL, type ComplaintReason } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
 
@@ -17,21 +17,22 @@ export function ComplaintSheet({ orderId, onClose }: { orderId?: string; onClose
   const at = now();
   const eligible = state.orders.filter((o) => {
     const d = returnDeadline(o);
-    return o.customerId === customerActor.id && o.status === 'delivered' && d && at.getTime() <= d.getTime() && !state.tickets.some((t) => t.orderId === o.id && isTicketOpen(t));
+    return o.customerId === customerActor.id && !state.tickets.some((t) => t.orderId === o.id && isTicketOpen(t));
   });
   const [selectedOrder, setSelectedOrder] = useState(orderId ?? '');
   const [productIds, setProductIds] = useState<string[]>([]);
   const [reason, setReason] = useState<ComplaintReason | ''>('');
+  const [resolution,setResolution]=useState<'check'|'refund'|'exchange'|'resupply'>('check');
   const [description, setDescription] = useState('');
   const [photos, setPhotos] = useState<string[]>([]);
   const [requestRefund, setRequestRefund] = useState(false);
   const order = state.orders.find((o) => o.id === selectedOrder);
   const deadline = order ? returnDeadline(order, productIds) : null;
 
-  const submit = () => {
+  const submit = async () => {
     let ticketId = '';
-    const r = run(
-      (s, t) => submitComplaint(s, customerActor, { orderId: selectedOrder, productIds, reason, description, photos, requestRefund }, t),
+    const r = await run(
+      (s, t) => submitComplaint(s, customerActor, { orderId: selectedOrder, productIds, reason, description, photos, requestRefund, resolution }, t),
       (v) => {
         ticketId = v.ticket.id;
         return v.state;
@@ -45,7 +46,7 @@ export function ComplaintSheet({ orderId, onClose }: { orderId?: string; onClose
 
   return (
     <BottomSheet
-      title="Khiếu nại / Yêu cầu trả hàng"
+      title="Hỗ trợ / Khiếu nại đơn hàng"
       onClose={onClose}
       footer={
         <PrimaryButton className="w-full" onClick={submit}>
@@ -53,7 +54,7 @@ export function ComplaintSheet({ orderId, onClose }: { orderId?: string; onClose
         </PrimaryButton>
       }
     >
-      <Field label="Đơn hàng (đơn Đã giao, còn trong hạn)">
+      <Field label="Đơn hàng cần hỗ trợ">
         <Select
           value={selectedOrder}
           onChange={(e) => {
@@ -69,7 +70,7 @@ export function ComplaintSheet({ orderId, onClose }: { orderId?: string; onClose
           ))}
         </Select>
       </Field>
-      {eligible.length === 0 && <p className="text-sm text-stone-600">Không có đơn Đã giao nào còn trong hạn gửi khiếu nại.</p>}
+      {eligible.length === 0 && <p className="text-sm text-stone-600">Không có đơn nào có thể tạo yêu cầu mới.</p>}
 
       {order && (
         <fieldset className="space-y-1">
@@ -99,6 +100,7 @@ export function ComplaintSheet({ orderId, onClose }: { orderId?: string; onClose
           ))}
         </Select>
       </Field>
+      <Field label="Phương án mong muốn"><Select value={resolution} onChange={e=>setResolution(e.target.value as typeof resolution)}><option value="check">Kiểm tra và hỗ trợ</option><option value="exchange">Đổi hàng</option><option value="resupply">Giao bù</option><option value="refund">Xem xét hoàn tiền</option></Select></Field>
       <Field label="Mô tả">
         <Textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Mô tả tình trạng sản phẩm khi nhận…" />
       </Field>

@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import {PickupPointPanel} from '../../components/PickupPointPanel';
 import { useUi } from '../../app/UiContext';
 import { BottomSheet, SheetColumns } from '../../components/BottomSheet';
 import { OrderChat } from '../../components/OrderChat';
@@ -7,9 +8,9 @@ import { TrackingTimeline } from '../../components/TrackingTimeline';
 import { DangerButton, PrimaryButton, ReasonPrompt, SecondaryButton } from '../../components/form';
 import { OrderStatusBadge, PaymentStatusBadge } from '../../components/StatusBadge';
 import { getOrderFor } from '../../domain/access';
-import { harvestsForOrder, ordersAwaitingHarvest } from '../../domain/harvest';
-import { readyMessageTemplate } from '../../domain/orderContact';
-import { coopCannotSupply, coopConfirm, coopDecideCancelRequest, coopHandover, coopReceiveReturn, coopReject, coopReportReady } from '../../domain/orders';
+import { harvestsForOrder, ordersAwaitingHarvest } from '../../store/commands/harvest';
+import { readyMessageTemplate } from '../../store/commands/orderContact';
+import { coopCannotSupply, coopConfirm, coopDecideCancelRequest, coopHandover, coopReceiveReturn, coopReject, coopReportReady } from '../../store/commands/orders';
 import { formatMoney } from '../../domain/pricing';
 import { formatDateKey } from '../../domain/state';
 import { ORDER_KIND_LABEL, ORDER_STATUS_LABEL } from '../../domain/types';
@@ -35,8 +36,8 @@ export function CoopOrderSheet({ orderId, onClose }: { orderId: string; onClose:
   if (!found.ok) return null;
   const order = found.value;
 
-  const act = (op: Parameters<typeof run>[0], ok: string) => {
-    const r = run(op);
+  const act = async (op: Parameters<typeof run>[0], ok: string) => {
+    const r = await run(op);
     showToast(r.ok ? ok : r.error);
     if (r.ok) {
       setPending(null);
@@ -229,6 +230,7 @@ export function CoopOrderSheet({ orderId, onClose }: { orderId: string; onClose:
           <>
             <OrderChat order={order} side="coop" prefill={prefill} inputRef={chatInput} />
             <OrderJourney order={order} />
+              <PickupPointPanel order={order}/>
             <TrackingTimeline order={order} />
 
             <details className="group space-y-1">

@@ -2,7 +2,7 @@ import { useId, useState } from 'react';
 import { MessageCircle, Phone } from 'lucide-react';
 import { useUi } from '../../app/UiContext';
 import { PrimaryButton, SecondaryButton, Textarea } from '../../components/form';
-import { CALL_NOTE_MAX_LENGTH, chatClosedReason, contactForCoop, logCoopCall, needsReadyContact } from '../../domain/orderContact';
+import { CALL_NOTE_MAX_LENGTH, chatClosedReason, contactForCoop, logCoopCall, needsReadyContact } from '../../store/commands/orderContact';
 import { formatPhone } from '../../domain/phone';
 import { CALL_OUTCOME_LABEL, type CallOutcome, type Order } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
@@ -22,8 +22,8 @@ export function CoopContactCard({ order, onMessage, onTemplate }: { order: Order
   const contact = contactForCoop(state, order);
   const needs = needsReadyContact(state, order);
 
-  const save = () => {
-    const r = run((s, at) => logCoopCall(s, order.id, coopActor, outcome, note, at));
+  const save = async () => {
+    const r = await run((s, at) => logCoopCall(s, order.id, coopActor, outcome, note, at));
     showToast(r.ok ? 'Đã ghi lại cuộc gọi. Khách thấy trong phần trao đổi của đơn.' : r.error);
     if (r.ok) {
       setLogging(false);

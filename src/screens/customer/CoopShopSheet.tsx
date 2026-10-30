@@ -1,9 +1,10 @@
 import { useState } from 'react';
+import {CoopReviewsPanel} from '../../components/CoopReviewsPanel';
 import { BadgeCheck, Bell, BellRing, MessageCircle, Star } from 'lucide-react';
 import { useUi } from '../../app/UiContext';
 import { BottomSheet } from '../../components/BottomSheet';
 import { EmptyState, ErrorState } from '../../components/EmptyState';
-import { coopShop, SORT_LABEL, sortProducts, type SortKey } from '../../domain/marketplace';
+import { coopShop, SORT_LABEL, sortProducts, type SortKey } from '../../store/commands/marketplace';
 import { formatDateKey } from '../../domain/state';
 import { useStore } from '../../store/AppDataContext';
 import { ProductCard } from './ExploreTab';
@@ -84,7 +85,7 @@ export function CoopShopSheet({ coopId, onClose }: { coopId: string; onClose: ()
               <dd className="font-display text-lg font-semibold text-champagne-200">{shop.products.length}</dd>
             </div>
             <div className="flex flex-col-reverse px-2 py-2">
-              <dt className="text-xs text-forest-100">{shop.rating.count > 0 ? `${shop.rating.count} đánh giá` : 'Đánh giá'}</dt>
+              <dt className="text-xs text-forest-100">{shop.rating.count > 0 ? `${shop.rating.count} đánh giá sản phẩm` : 'Đánh giá sản phẩm'}</dt>
               <dd className="flex items-center justify-center gap-1 font-display text-lg font-semibold text-champagne-200">
                 {shop.rating.average !== null ? (
                   <>
@@ -143,6 +144,7 @@ export function CoopShopSheet({ coopId, onClose }: { coopId: string; onClose: ()
           )}
         </section>
 
+        <CoopReviewsPanel coopId={coopId}/>
         <section aria-labelledby="san-pham-shop" className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h3 id="san-pham-shop" className="font-display text-xl font-semibold text-ink">

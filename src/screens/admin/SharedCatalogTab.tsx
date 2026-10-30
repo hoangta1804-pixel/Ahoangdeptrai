@@ -1,8 +1,10 @@
+import {CategoryManager} from '../../components/CategoryManager';
+import {CatalogDictionaryManager} from './ContentManagementTab';
 import { useState } from 'react';
 import { useUi } from '../../app/UiContext';
 import { AdminTable, Td } from '../../components/AdminTable';
 import { DangerButton, Input, PrimaryButton, SecondaryButton } from '../../components/form';
-import { GIFT_BOX_MAX, GIFT_BOX_MIN, opsDeleteGiftBox, opsDeleteWard, opsSaveGiftBox, opsSaveWard, opsUpdateParam } from '../../domain/adminConfig';
+import { GIFT_BOX_MAX, GIFT_BOX_MIN, opsDeleteGiftBox, opsDeleteWard, opsSaveGiftBox, opsSaveWard, opsUpdateParam } from '../../store/commands/adminConfig';
 import { formatMoney } from '../../domain/pricing';
 import type { ExpressTier } from '../../domain/params';
 import type { GiftBoxType, Ward } from '../../domain/types';
@@ -13,6 +15,7 @@ export function SharedCatalogTab() {
   const { state } = useStore();
   return (
     <div className="space-y-6">
+      <CategoryManager/><CatalogDictionaryManager/>
       <section className="space-y-2">
         <h3 className="text-base font-bold">Phường/xã giao hàng (Hà Nội)</h3>
         <p className="text-sm text-stone-600">Danh sách mẫu, ghi "(mẫu)" cho tới khi nhóm nạp danh mục chính thức. Không dùng cấp quận/huyện. Khoảng cách dùng để tính phụ phí hoả tốc.</p>
@@ -68,8 +71,8 @@ function WardRow({ ward }: { ward?: Ward }) {
       </Td>
       <Td className="space-x-2 whitespace-nowrap">
         <SecondaryButton
-          onClick={() => {
-            const r = run((s, at) => opsSaveWard(s, adminActor, { id: ward?.id, name, distanceKm: Number(km) }, at));
+          onClick={async () => {
+            const r = await run((s, at) => opsSaveWard(s, adminActor, { id: ward?.id, name, distanceKm: Number(km) }, at));
             showToast(r.ok ? 'Đã lưu phường/xã.' : r.error);
             if (r.ok && !ward) {
               setName('');
@@ -81,8 +84,8 @@ function WardRow({ ward }: { ward?: Ward }) {
         </SecondaryButton>
         {ward && (
           <DangerButton
-            onClick={() => {
-              const r = run((s, at) => opsDeleteWard(s, adminActor, ward.id, at));
+            onClick={async () => {
+              const r = await run((s, at) => opsDeleteWard(s, adminActor, ward.id, at));
               showToast(r.ok ? 'Đã xoá.' : r.error);
             }}
           >
@@ -113,8 +116,8 @@ function GiftRow({ box }: { box?: GiftBoxType }) {
       </Td>
       <Td className="space-x-2 whitespace-nowrap">
         <SecondaryButton
-          onClick={() => {
-            const r = run((s, at) => opsSaveGiftBox(s, adminActor, { id: box?.id, name, fee: Number(fee), description: desc }, at));
+          onClick={async () => {
+            const r = await run((s, at) => opsSaveGiftBox(s, adminActor, { id: box?.id, name, fee: Number(fee), description: desc }, at));
             showToast(r.ok ? 'Đã lưu hộp quà.' : r.error);
           }}
         >
@@ -122,8 +125,8 @@ function GiftRow({ box }: { box?: GiftBoxType }) {
         </SecondaryButton>
         {box && (
           <DangerButton
-            onClick={() => {
-              const r = run((s, at) => opsDeleteGiftBox(s, adminActor, box.id, at));
+            onClick={async () => {
+              const r = await run((s, at) => opsDeleteGiftBox(s, adminActor, box.id, at));
               showToast(r.ok ? 'Đã xoá.' : r.error);
             }}
           >
@@ -161,8 +164,8 @@ function ExpressTiers() {
           <Input aria-label="Lý do sửa bậc phí" placeholder="Lý do" value={reason} onChange={(e) => setReason(e.target.value)} />
         </div>
         <PrimaryButton
-          onClick={() => {
-            const r = run((s, at) => opsUpdateParam(s, adminActor, 'expressTiers', tiers, reason, at));
+          onClick={async () => {
+            const r = await run((s, at) => opsUpdateParam(s, adminActor, 'expressTiers', tiers, reason, at));
             showToast(r.ok ? 'Đã sửa bậc phụ phí. Áp cho đơn tạo từ bây giờ.' : r.error);
           }}
         >

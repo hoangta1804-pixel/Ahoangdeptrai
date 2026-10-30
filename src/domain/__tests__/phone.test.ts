@@ -47,7 +47,7 @@ describe('Dùng SĐT 9 số trong các chức năng', () => {
   });
 
   it('Admin cấp tài khoản bằng 9 số', () => {
-    const r = opsCreateAccount(makeState(), ADMIN_OPS, { name: 'HTX mới', phone: '911222333', role: 'coop', coopId: 'coop-x' }, T0);
+    const r = opsCreateAccount(makeState(), ADMIN_OPS, { name: 'Shipper mới', phone: '911222333', role: 'shipper' }, T0);
     expect(r.ok && r.value.user.phone).toBe('0911222333');
   });
 

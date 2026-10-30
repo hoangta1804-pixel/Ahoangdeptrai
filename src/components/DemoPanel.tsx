@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useUi } from '../app/UiContext';
-import { canUseDemoTools, DEMO_TOOLS_ROLES, demoCodeIsSet, demoGatewaySuccess } from '../domain/demoAccess';
+import { canUseDemoTools, DEMO_TOOLS_ROLES, demoCodeIsSet, demoGatewaySuccess } from '../store/commands/demoAccess';
 import { DAY_MS, HOUR_MS, MINUTE_MS } from '../domain/state';
 import { generateId } from '../domain/ids';
-import { GATEWAY_OUTCOME_MESSAGE } from '../domain/payment';
+import { GATEWAY_OUTCOME_MESSAGE } from '../store/commands/payment';
 import { formatMoney } from '../domain/pricing';
 import { TRANSACTION_STATUS_LABEL } from '../domain/types';
 import { useNow, useStore } from '../store/AppDataContext';
@@ -28,10 +28,10 @@ export function DemoPanel({ onClose }: { onClose: () => void }) {
   const [dupTx, setDupTx] = useState('');
   const [confirmReset, setConfirmReset] = useState(false);
 
-  const gateway = (txId: string) => {
+  const gateway = async (txId: string) => {
     if (!txId) return showToast('Chọn giao dịch trước.');
     let msg = '';
-    const r = run(
+    const r = await run(
       (s, t) => demoGatewaySuccess(s, actor, txId, generateId('GW'), t),
       (v) => {
         msg = GATEWAY_OUTCOME_MESSAGE[v.outcome];
@@ -41,8 +41,8 @@ export function DemoPanel({ onClose }: { onClose: () => void }) {
     showToast(r.ok ? msg : r.error);
   };
 
-  const shift = (ms: number, label: string) => {
-    const r = advanceClock(actor, ms);
+  const shift = async (ms: number, label: string) => {
+    const r = await advanceClock(actor, ms);
     showToast(r.ok ? `Đã tua thời gian ${label}. Các tác vụ theo giờ đã chạy.` : r.error);
   };
 
@@ -76,8 +76,8 @@ export function DemoPanel({ onClose }: { onClose: () => void }) {
             {state.clockOffsetMs !== 0 && (
               <SecondaryButton
                 className="w-full"
-                onClick={() => {
-                  const r = resetClock(actor);
+                onClick={async () => {
+                  const r = await resetClock(actor);
                   showToast(r.ok ? 'Đồng hồ demo về giờ thật.' : r.error);
                 }}
               >
@@ -174,8 +174,8 @@ export function DemoPanel({ onClose }: { onClose: () => void }) {
               <div className="grid grid-cols-2 gap-2">
                 <SecondaryButton onClick={() => setConfirmReset(false)}>Huỷ</SecondaryButton>
                 <DangerButton
-                  onClick={() => {
-                    const r = resetDemoData(actor);
+                  onClick={async () => {
+                    const r = await resetDemoData(actor);
                     if (!r.ok) return showToast(r.error);
                     closeModal();
                     showToast('Đã khôi phục dữ liệu mẫu.');

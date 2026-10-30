@@ -7,8 +7,8 @@ import { ProductImage } from '../../components/ProductImage';
 import { OrderStatusBadge, PaymentStatusBadge } from '../../components/StatusBadge';
 import { SwipeTabs } from '../../components/SwipeTabs';
 import { listOrdersFor } from '../../domain/access';
-import { fullyHarvested, ordersAwaitingHarvest, quantityIn } from '../../domain/harvest';
-import { needsReadyContact, unreadCount } from '../../domain/orderContact';
+import { fullyHarvested, ordersAwaitingHarvest, quantityIn } from '../../store/commands/harvest';
+import { needsReadyContact, unreadCount } from '../../store/commands/orderContact';
 import {
   filterOrders,
   isOrderFilterActive,
@@ -21,7 +21,7 @@ import {
   type OrderFilter,
   type OrderTabKey,
   type PaymentFilterKey,
-} from '../../domain/orderTabs';
+} from '../../store/commands/orderTabs';
 import { formatMoney } from '../../domain/pricing';
 import { formatDateKey } from '../../domain/state';
 import { ORDER_KIND_LABEL, type Order, type OrderKind } from '../../domain/types';
@@ -54,7 +54,7 @@ export function CoopOrdersTab() {
     <div className="space-y-3">
       {(tab === 'all' || tab === 'harvest') && <HarvestQueue />}
       <FilterBar filter={filter} onChange={set} onClear={() => setFilter(NO_ORDER_FILTER)} shown={filtered.length} total={listed.value.length} />
-      <SwipeTabs
+      <SwipeTabs<OrderTabKey>
         label="Đơn theo tình trạng"
         tabs={ORDER_TABS.map((t) => ({ key: t.key, label: t.label, count: counts[t.key] }))}
         active={tab}

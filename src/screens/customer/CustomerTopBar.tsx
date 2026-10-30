@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { MapPin, ShoppingBag, User } from 'lucide-react';
 import { useUi } from '../../app/UiContext';
 import { PAGE_X } from '../../app/layout';
-import { defaultAddressOf } from '../../domain/address';
+import { defaultAddressOf } from '../../store/commands/address';
 import { snapshotAddress } from '../../domain/state';
 import { useStore } from '../../store/AppDataContext';
 

@@ -80,6 +80,7 @@ export function unlinkRefundAccount(state: DemoState, actor: Actor): Result<Demo
 }
 
 export interface NewAccountInput {
+  expiresAt?: string;
   name: string;
   phone: string;
   role: 'coop' | 'admin' | 'regulator' | 'shipper';
@@ -89,12 +90,16 @@ export interface NewAccountInput {
 
 /** Admin – Vận hành cấp tài khoản HTX, Admin, Cơ quan QLNN, Shipper (FR-TK-10). Khách hàng tự đăng ký. */
 export function opsCreateAccount(state: DemoState, actor: Actor, input: NewAccountInput, at: Date): Result<{ state: DemoState; user: UserAccount }> {
-  if (actor.kind !== 'admin' || actor.adminGroup !== 'operations') return fail('Chỉ Admin – Vận hành được cấp tài khoản.');
+  if (actor.kind !== 'admin' || !['operations','root'].includes(actor.adminGroup??'')) return fail('Chỉ Root hoặc Admin – Vận hành được cấp tài khoản.');
+  if(input.role==='admin'&&actor.adminGroup!=='root')return fail('Chỉ Quản trị gốc được tạo tài khoản Admin.');
+  if(actor.adminGroup==='root'&&input.role!=='admin')return fail('Root chỉ tạo tài khoản Admin; Vận hành cấp tài khoản HTX, QLNN và Shipper.');
   const phone = normalizePhone(input.phone);
   if (!input.name.trim()) return fail('Vui lòng nhập tên tài khoản.');
   if (!isValidPhone(phone)) return fail(`Số điện thoại không hợp lệ. ${PHONE_RULE}`);
   if (state.users.some((u) => u.phone === phone)) return fail('Số điện thoại đã có tài khoản.');
   if (input.role === 'coop' && !state.coops.some((c) => c.id === input.coopId)) return fail('Vui lòng chọn HTX.');
+  if(input.role==='coop'&&state.users.some(u=>u.role==='coop'&&u.coopId===input.coopId))return fail('HTX đã có tài khoản đại diện. Không cấp thêm tài khoản cho cùng HTX/MST.');
+  if(input.role==='regulator'&&(!input.expiresAt||!/^\d{4}-\d{2}-\d{2}$/.test(input.expiresAt)||!Number.isFinite(Date.parse(input.expiresAt))||new Date(input.expiresAt).toISOString().slice(0,10)!==input.expiresAt||new Date(input.expiresAt+'T23:59:59.999+07:00').getTime()<=at.getTime()))return fail('Tài khoản QLNN cần ngày hết hạn hợp lệ trong tương lai.');
   if (input.role === 'admin' && !input.adminGroup) return fail('Vui lòng chọn nhóm quyền.');
   if (input.role === 'admin' && input.adminGroup === 'root') return fail('Tài khoản Quản trị gốc không cấp qua màn này.');
   const user: UserAccount = {
@@ -106,6 +111,7 @@ export function opsCreateAccount(state: DemoState, actor: Actor, input: NewAccou
     adminGroup: input.role === 'admin' ? input.adminGroup : undefined,
     status: 'active',
     createdAt: iso(at),
+    ...(input.role==='regulator'?{expiresAt:new Date(input.expiresAt+'T23:59:59.999+07:00').toISOString()}:{}),
   };
   return ok({ state: audit({ ...state, users: [...state.users, user] }, actor, 'Cấp tài khoản', user.name, at, `${user.role} · ${phone}`), user });
 }
@@ -116,6 +122,7 @@ export function opsSetAccountLocked(state: DemoState, actor: Actor, userId: stri
   if (actor.userId === userId) return fail('Không thể tự khoá tài khoản của chính mình.');
   const user = state.users.find((u) => u.id === userId);
   if (!user) return fail('Không tìm thấy tài khoản.');
+  if (user.accessClosedAt) return fail('Tài khoản đã đóng quyền truy cập theo yêu cầu xóa; không mở lại bằng thao tác mở khóa thông thường.');
   if (user.role === 'admin' && user.adminGroup === 'root') return fail('Không khoá tài khoản Quản trị gốc qua màn này.');
   if (locked && !reason.trim()) return fail('Khoá tài khoản phải ghi lý do.');
   const next = { ...state, users: state.users.map((u) => (u.id === userId ? { ...u, status: locked ? ('locked' as const) : ('active' as const) } : u)) };

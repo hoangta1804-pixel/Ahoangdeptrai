@@ -23,6 +23,7 @@ const must = <T>(r: Result<T>): T => {
 };
 
 const INPUT: ApplicationInput = {
+  taxCode:'0123456789',
   coopName: 'HTX mẫu Mới',
   region: 'Bát Xát',
   address: 'Thôn mẫu, xã mẫu, tỉnh Lào Cai',
@@ -43,6 +44,11 @@ function submitted(): { s: DemoState; id: string } {
 const keys = (s: DemoState, id: string) => applicationSteps(s.coopApplications!.find((a) => a.id === id)!).map((x) => `${x.key}:${x.state}`);
 
 describe('Quy trình phê duyệt HTX mới', () => {
+  it('bắt buộc MST và ngăn dùng MST đã đăng ký',()=>{
+    expect(submitCoopApplication(makeState(),{...INPUT,taxCode:''},'123456',T0).ok).toBe(false);
+    const state=makeState();state.coops[0].taxCode=INPUT.taxCode;
+    expect(submitCoopApplication(state,INPUT,'123456',T0).ok).toBe(false);
+  });
   it('nộp hồ sơ: kiểm tra đủ thông tin, OTP, SĐT chưa có tài khoản; chỉ lưu tài khoản chi trả dạng che', () => {
     const s = makeState();
     expect(submitCoopApplication(s, INPUT, '000000', T0)).toEqual({ ok: false, error: 'Mã OTP không đúng.' });

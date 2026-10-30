@@ -1,5 +1,5 @@
 import { Bell, BellRing } from 'lucide-react';
-import { canWatchSeason, seasonOpen } from '../../domain/seasonWatch';
+import { canWatchSeason, seasonOpen } from '../../store/commands/seasonWatch';
 import type { Product } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
 import { useMarketplace } from './useMarketplace';

@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react';
+import {ContentManagementTab} from './ContentManagementTab';
 import { useUi } from '../../app/UiContext';
 import { PAGE_X } from '../../app/layout';
 import { ListBoundary } from '../../components/ListBoundary';
@@ -40,6 +41,7 @@ const TABS: Record<AdminSubGroup, TabDef[]> = {
     { key: 'accounts', label: 'Cấp & khoá tài khoản', render: () => <OpsAccountsTab /> },
     { key: 'params', label: 'Tham số', render: () => <AdminParamsTab /> },
     { key: 'catalog', label: 'Danh mục dùng chung', render: () => <SharedCatalogTab /> },
+    { key:'content',label:'Nội dung trang chủ',render:()=> <ContentManagementTab/> },
     { key: 'vouchers', label: 'Mã ưu đãi', render: () => <VouchersTab /> },
     COOP_LIST,
   ],
@@ -66,12 +68,9 @@ const TABS: Record<AdminSubGroup, TabDef[]> = {
     COOP_LIST,
   ],
   root: [
-    OVERVIEW,
     { key: 'accounts', label: 'Phân quyền', render: () => <AdminAccountsTab /> },
     { key: 'audit', label: 'Nhật ký', render: () => <AdminAuditTab /> },
-    // Quản trị gốc xem tham số và đặt mã trình diễn NEW-01 (Giai đoạn 7); chỉ Admin – Vận hành sửa tham số.
-    { key: 'params', label: 'Tham số', render: () => <AdminParamsTab /> },
-    COOP_LIST,
+    { key:'params',label:'Tham số (chỉ xem)',render:()=> <AdminParamsTab/> },
   ],
 };
 

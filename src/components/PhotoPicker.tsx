@@ -1,5 +1,7 @@
+import { AppImage } from './AppImage';
 import { useRef, useState } from 'react';
 import { Camera, X } from 'lucide-react';
+import {storePhoto} from '../store/media';
 
 const MAX_PHOTOS = 5;
 const MAX_SIDE = 320;
@@ -18,7 +20,7 @@ export function downscale(file: File): Promise<string> {
         canvas.width = Math.round(img.width * scale);
         canvas.height = Math.round(img.height * scale);
         canvas.getContext('2d')?.drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL('image/jpeg', 0.7));
+        void storePhoto(canvas.toDataURL('image/jpeg', 0.7)).then(resolve,reject);
       };
       img.src = String(reader.result);
     };
@@ -51,7 +53,7 @@ export function PhotoPicker({ photos, onChange, max = MAX_PHOTOS }: { photos: st
       <div className="flex flex-wrap gap-2">
         {photos.map((src, i) => (
           <div key={i} className="relative h-20 w-20 overflow-hidden rounded-xl border border-stone-200">
-            <img src={src} alt={`Ảnh ${i + 1}`} className="h-full w-full object-cover" />
+            <AppImage src={src} alt={`Ảnh ${i + 1}`} className="h-full w-full object-cover" />
             <button
               type="button"
               onClick={() => onChange(photos.filter((_, j) => j !== i))}
@@ -76,7 +78,7 @@ export function PhotoPicker({ photos, onChange, max = MAX_PHOTOS }: { photos: st
         )}
       </div>
       <input ref={input} type="file" accept="image/*" multiple className="hidden" onChange={(e) => onFiles(e.target.files)} />
-      <p className="text-sm text-stone-600">Ảnh được thu nhỏ và lưu cùng dữ liệu demo (mô phỏng tải ảnh), tối đa {max} ảnh.</p>
+      <p className="text-sm text-stone-600">Ảnh được thu nhỏ trước khi lưu, tối đa {max} ảnh.</p>
       {error && <p className="text-sm font-semibold text-rose-700">{error}</p>}
     </div>
   );

@@ -5,9 +5,12 @@ import { BottomSheet } from '../../components/BottomSheet';
 import { SimBadge } from '../../components/EmptyState';
 import { Field, Input, PrimaryButton, SecondaryButton } from '../../components/form';
 import { DEMO_OTP } from '../../domain/auth';
-import { lookupCoopApplications } from '../../domain/coopApplication';
+import { lookupCoopApplications } from '../../store/commands/coopApplication';
 import { PHONE_RULE } from '../../domain/phone';
 import { useStore } from '../../store/AppDataContext';
+import { api } from '../../store/backend';
+import { applicationCache } from '../../store/applicationCache';
+import type { CoopApplication } from '../../domain/coopApplication';
 
 /** HTX tra cứu hồ sơ đăng ký bằng SĐT người đại diện + OTP mô phỏng: các bước, kết quả, bổ sung hồ sơ khi Admin yêu cầu. */
 export function CoopApplyStatusSheet({ phone: initialPhone, onClose }: { phone?: string; onClose: () => void }) {
@@ -17,12 +20,15 @@ export function CoopApplyStatusSheet({ phone: initialPhone, onClose }: { phone?:
   const [otp, setOtp] = useState(initialPhone ? DEMO_OTP : '');
   const [shown, setShown] = useState(!!initialPhone);
   const [error, setError] = useState<string | null>(null);
-  const result = shown ? lookupCoopApplications(state, phone, otp) : null;
+  const [applications, setApplications] = useState<CoopApplication[] | null>(null);
+  const [challengeId, setChallengeId] = useState('');
+  const [demo, setDemo] = useState(false);
+  const result = applications ? {ok:true as const,value:applications} : null;
+  const sendOtp = async () => {try{const r=await api('/api/v1/auth/otp',{phone,purpose:'application'});setChallengeId(r.challengeId);setDemo(r.demo);setError(null);}catch(e){setError(e instanceof Error?e.message:'Không gửi được OTP.');}};
 
-  const lookup = () => {
-    const r = lookupCoopApplications(state, phone, otp);
-    setError(r.ok ? null : r.error);
-    setShown(r.ok);
+  const lookup = async () => {
+    try{const r=await api('/api/v1/applications/lookup',{challengeId,otp});setApplications(r.applications);for(const a of r.applications)applicationCache.set(a.id,a);setError(null);}
+    catch(e){setError(e instanceof Error?e.message:'Không tra cứu được hồ sơ.');}
   };
 
   return (
@@ -33,11 +39,12 @@ export function CoopApplyStatusSheet({ phone: initialPhone, onClose }: { phone?:
             <Input type="tel" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
           </Field>
           <p className="flex flex-wrap items-center gap-2 text-sm text-ink">
-            <SimBadge /> OTP mô phỏng, mã luôn là <strong className="font-mono">{DEMO_OTP}</strong>
+            Nhận OTP để xác minh SĐT. {demo && <>Mã demo: <strong className="font-mono">{DEMO_OTP}</strong></>}
           </p>
           <div className="flex gap-2">
             <Input aria-label="Mã OTP (6 số)" inputMode="numeric" maxLength={6} value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))} placeholder="Mã OTP" className="flex-1" />
-            <SecondaryButton onClick={() => setOtp(DEMO_OTP)}>Điền OTP</SecondaryButton>
+            <SecondaryButton onClick={sendOtp}>Nhận OTP</SecondaryButton>
+            {demo && <SecondaryButton onClick={() => setOtp(DEMO_OTP)}>Điền OTP</SecondaryButton>}
           </div>
           {error && (
             <p role="alert" className="text-sm font-semibold text-rose-700">

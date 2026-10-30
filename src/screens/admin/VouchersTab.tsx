@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useUi } from '../../app/UiContext';
 import { Field, Input, PrimaryButton, SecondaryButton, Select } from '../../components/form';
-import { adminCreateVoucher, adminSetVoucherActive, type VoucherInput } from '../../domain/adminConfig';
-import { voucherUsedCount } from '../../domain/checkout';
+import { adminCreateVoucher, adminSetVoucherActive, type VoucherInput } from '../../store/commands/adminConfig';
+import { voucherUsedCount } from '../../store/commands/checkout';
 import { formatMoney } from '../../domain/pricing';
 import { CATEGORY_LABEL, type Category } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
@@ -13,7 +13,7 @@ export function VouchersTab() {
   const { adminActor, showToast } = useUi();
   const [form, setForm] = useState({ code: '', title: '', kind: 'fixed' as 'fixed' | 'percent', value: '', maxDiscount: '', minSpend: '0', category: '', coopId: '', expiresAt: '', usageLimit: '100', firstOrderOnly: false });
   const set = (patch: Partial<typeof form>) => setForm((f) => ({ ...f, ...patch }));
-  const create = () => {
+  const create = async () => {
     const input: VoucherInput = {
       code: form.code,
       title: form.title,
@@ -27,7 +27,7 @@ export function VouchersTab() {
       usageLimit: Number(form.usageLimit),
       firstOrderOnly: form.firstOrderOnly,
     };
-    const r = run((s, at) => adminCreateVoucher(s, adminActor, input, at));
+    const r = await run((s, at) => adminCreateVoucher(s, adminActor, input, at));
     showToast(r.ok ? `Đã tạo mã ${input.code.toUpperCase()}.` : r.error);
   };
   return (
@@ -92,7 +92,7 @@ export function VouchersTab() {
         </div>
         <PrimaryButton onClick={create}>Tạo mã</PrimaryButton>
       </section>
-      <div className="overflow-x-auto rounded-2xl border border-stone-200 bg-white">
+      <div className="relative min-w-0 max-w-full overflow-x-auto rounded-2xl border border-stone-200 bg-white">
         <table className="w-full min-w-[760px] text-left text-sm">
           <thead className="bg-stone-50 text-xs text-muted">
             <tr>
@@ -135,8 +135,8 @@ export function VouchersTab() {
                   <td className="px-3 py-2">{v.active === false ? 'Đã tắt' : expired ? 'Hết hạn' : 'Đang áp dụng'}</td>
                   <td className="px-3 py-2">
                     <SecondaryButton
-                      onClick={() => {
-                        const r = run((s, at) => adminSetVoucherActive(s, adminActor, v.id, v.active === false, at));
+                      onClick={async () => {
+                        const r = await run((s, at) => adminSetVoucherActive(s, adminActor, v.id, v.active === false, at));
                         showToast(r.ok ? 'Đã cập nhật mã.' : r.error);
                       }}
                     >

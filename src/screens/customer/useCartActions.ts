@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useUi } from '../../app/UiContext';
-import { addToCart, removeCartLine, setCartLine } from '../../domain/cart';
+import { addToCart, removeCartLine, setCartLine } from '../../store/commands/cart';
 import { findProduct } from '../../domain/state';
 import type { CartLine } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
@@ -12,8 +12,9 @@ export function useCartActions() {
   const customerId = customerActor.id!;
 
   const add = useCallback(
-    (productId: string, qty: number) => {
-      const r = run((s, at) => addToCart(s, customerId, productId, qty, at));
+    async (productId: string, qty: number) => {
+      if(customerActor.kind!=='customer'){showToast('Vui lòng đăng nhập để thêm vào giỏ.');window.dispatchEvent(new Event('show-login'));return false;}
+      const r = await run((s, at) => addToCart(s, customerId, productId, qty, at));
       const p = findProduct(state, productId);
       showToast(r.ok ? `Đã thêm ${qty} ${p?.unit ?? ''} ${p?.name ?? ''} vào giỏ.` : r.error);
       return r.ok;
@@ -22,15 +23,15 @@ export function useCartActions() {
   );
 
   const update = useCallback(
-    (productId: string, patch: Partial<Pick<CartLine, 'quantity' | 'deliveryDate'>>) => {
-      const r = run((s) => setCartLine(s, customerId, productId, patch));
+    async (productId: string, patch: Partial<Pick<CartLine, 'quantity' | 'deliveryDate'>>) => {
+      const r = await run((s) => setCartLine(s, customerId, productId, patch));
       if (!r.ok) showToast(r.error);
     },
     [run, customerId, showToast],
   );
 
   const remove = useCallback(
-    (productId: string) => run((s) => ({ ok: true, value: removeCartLine(s, customerId, [productId]) })),
+    async (productId: string) => await run((s) => ({ ok: true, value: removeCartLine(s, customerId, [productId]) })),
     [run, customerId],
   );
 

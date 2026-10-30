@@ -1,9 +1,10 @@
+import { AppImage } from '../../components/AppImage';
 import { useState } from 'react';
 import { useUi } from '../../app/UiContext';
 import { EmptyState, ErrorState } from '../../components/EmptyState';
 import { SecondaryButton, Textarea } from '../../components/form';
 import { listTicketsFor } from '../../domain/access';
-import { coopReplyTicket, eventKind, eventLabel } from '../../domain/complaint';
+import { coopReplyTicket, eventKind, eventLabel } from '../../store/commands/complaint';
 import { TicketProgress, TicketStatusBadge } from '../../components/TicketProgress';
 import { COMPLAINT_REASON_LABEL, type Ticket } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
@@ -54,7 +55,7 @@ function TicketCard({ ticket: t }: { ticket: Ticket }) {
       {t.photos.length > 0 && (
         <div className="flex gap-1">
           {t.photos.map((src, i) => (
-            <img key={i} src={src} alt={`Ảnh khiếu nại ${i + 1}`} className="h-14 w-14 rounded-lg object-cover" />
+            <AppImage key={i} src={src} alt={`Ảnh khiếu nại ${i + 1}`} className="h-14 w-14 rounded-lg object-cover" />
           ))}
         </div>
       )}
@@ -89,8 +90,8 @@ function TicketCard({ ticket: t }: { ticket: Ticket }) {
           <Textarea rows={2} aria-label="Phản hồi của HTX" placeholder="Nhập thông tin kiểm tra lô hàng, khâu đóng gói…" value={text} onChange={(e) => setText(e.target.value)} />
           <SecondaryButton
             className="w-full"
-            onClick={() => {
-              const r = run((s, at) => coopReplyTicket(s, t.id, coopActor, text, at, proposal || undefined));
+            onClick={async () => {
+              const r = await run((s, at) => coopReplyTicket(s, t.id, coopActor, text, at, proposal || undefined));
               showToast(r.ok ? 'Đã gửi phản hồi cho CSKH.' : r.error);
               if (r.ok) {
                 setText('');

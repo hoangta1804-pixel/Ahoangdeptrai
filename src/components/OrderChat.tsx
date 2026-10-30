@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState, type RefObject } from 'react';
 import { PhoneCall, Send } from 'lucide-react';
 import { useUi } from '../app/UiContext';
-import { chatClosedReason, markOrderChatRead, MESSAGE_MAX_LENGTH, messagesOf, sendOrderMessage, unreadCount, type ChatSide } from '../domain/orderContact';
+import { chatClosedReason, markOrderChatRead, MESSAGE_MAX_LENGTH, messagesOf, sendOrderMessage, unreadCount, type ChatSide } from '../store/commands/orderContact';
 import { CALL_OUTCOME_LABEL, type Order } from '../domain/types';
 import { useStore } from '../store/AppDataContext';
 import { AttachPhotoButton, MessagePhotoGrid, PendingPhotos, useMessagePhotos } from './MessagePhotos';
@@ -38,7 +38,7 @@ export function OrderChat({
 
   // Mở phần trao đổi (hoặc có tin mới khi đang mở) thì đánh dấu đã đọc.
   useEffect(() => {
-    if (unread > 0) run((s, at) => markOrderChatRead(s, order.id, actor, at));
+    if (unread > 0) void run((s, at) => markOrderChatRead(s, order.id, actor, at));
   }, [unread, order.id, actor, run]);
 
   // Tin mới thì cuộn xuống cuối.
@@ -54,8 +54,8 @@ export function OrderChat({
   }, [prefill, input]);
 
   // Gửi không được (vd. dữ liệu gần đầy) thì giữ nguyên chữ và ảnh đang soạn.
-  const send = () => {
-    const r = run((s, at) => sendOrderMessage(s, order.id, actor, text, at, photos.photos));
+  const send = async () => {
+    const r = await run((s, at) => sendOrderMessage(s, order.id, actor, text, at, photos.photos));
     if (!r.ok) return showToast(r.error);
     setText('');
     photos.clear();

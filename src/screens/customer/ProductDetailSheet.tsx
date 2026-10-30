@@ -1,3 +1,4 @@
+import { AppImage } from '../../components/AppImage';
 import { useEffect, useState } from 'react';
 import { BadgeCheck, ChevronRight, FileBadge, MessageCircle, Share2, Star, Store } from 'lucide-react';
 import { useUi } from '../../app/UiContext';
@@ -7,13 +8,13 @@ import { PreorderProgress } from '../../components/PreorderProgress';
 import { QuantityStepper } from '../../components/QuantityStepper';
 import { Stars } from '../../components/Stars';
 import { VariantPicker } from '../../components/VariantPicker';
-import { averageRating, matchesReviewFilter, publicReviews, REVIEW_FILTERS, type ReviewFilter } from '../../domain/reviews';
+import { averageRating, matchesReviewFilter, publicReviews, REVIEW_FILTERS, type ReviewFilter } from '../../store/commands/reviews';
 import { ProductImage } from '../../components/ProductImage';
-import { deliveryWindow, isOrderableIn } from '../../domain/cart';
+import { deliveryWindow, isOrderableIn } from '../../store/commands/cart';
 import { computeDeposit, formatMoney } from '../../domain/pricing';
 import { findProduct, formatDateKey, isSamplePrice, remainingFor } from '../../domain/state';
 import { CATEGORY_LABEL, ORDER_KIND_LABEL } from '../../domain/types';
-import { coopShop } from '../../domain/marketplace';
+import { coopShop } from '../../store/commands/marketplace';
 import { familyKey, listedFamilyOf } from '../../domain/variants';
 import { useStore } from '../../store/AppDataContext';
 import { pushViewerList } from '../../store/viewerPrefs';
@@ -25,6 +26,7 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
   const { state, now } = useStore();
   const { openModal, showToast, customerActor } = useUi();
   const { add, cart } = useCartActions();
+  const [galleryImage,setGalleryImage]=useState('');
   const [quantity, setQuantity] = useState(1);
   // Quy cách đang chọn: mở từ thẻ nào thì chọn sẵn quy cách đó.
   const [variantId, setVariantId] = useState(productId);
@@ -106,7 +108,7 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
           <div className="grid grid-cols-2 gap-2">
             <button
               disabled={!!blocked}
-              onClick={() => add(product.id, qty) && onClose()}
+              onClick={async () => { if (await add(product.id, qty)) onClose(); }}
               className="min-h-12 rounded-2xl border border-forest-800 bg-white text-sm font-bold text-forest-800 disabled:border-stone-300 disabled:text-muted"
             >
               Thêm vào giỏ
@@ -131,7 +133,7 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
         left={
           <>
             <div className="relative aspect-[4/3] max-h-80 w-full overflow-hidden rounded-3xl ring-1 ring-champagne-300/80 lg:max-h-none">
-              <ProductImage product={product} variant="cover" className="h-full w-full" />
+              {galleryImage||product.images?.[0]?<AppImage src={galleryImage||product.images![0]} alt={product.name} className="h-full w-full object-cover"/>:<ProductImage product={product} variant="cover" className="h-full w-full" />}
               <span aria-hidden="true" className="pointer-events-none absolute inset-2 rounded-[20px] border border-white/70" />
               <button
                 onClick={() => openModal({ type: 'trace_lot', productId: product.id })}
@@ -142,6 +144,8 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
               </button>
             </div>
 
+            {product.images&&<div className="flex flex-wrap gap-2">{product.images.map((src,i)=><button key={src} aria-label={'Xem ảnh sản phẩm '+(i+1)} className="h-16 w-16 overflow-hidden rounded border" onClick={()=>setGalleryImage(src)}><AppImage src={src} alt={'Ảnh '+(i+1)} className="h-full w-full object-cover"/></button>)}</div>}
+            {(product.storage||product.shelfLifeDays||product.preparationMinutes!==undefined)&&<div className="rounded-xl bg-stone-50 p-3 text-sm">{product.storage&&<p>Bảo quản: {product.storage}</p>}{product.shelfLifeDays&&<p>Hạn dùng: {product.shelfLifeDays} ngày</p>}{product.preparationMinutes!==undefined&&<p>Chuẩn bị: {product.preparationMinutes} phút</p>}</div>}
             <div className="flex items-center justify-between gap-2">
               <span className="font-display text-3xl font-semibold tabular-nums text-forest-900">
                 {formatMoney(product.price)}
@@ -290,7 +294,7 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
                     {r.photos.length > 0 && (
                       <div className="flex gap-1">
                         {r.photos.map((src, i) => (
-                          <img key={i} src={src} alt={`Ảnh đánh giá ${i + 1}`} className="h-14 w-14 rounded-lg object-cover" />
+                          <AppImage key={i} src={src} alt={`Ảnh đánh giá ${i + 1}`} className="h-14 w-14 rounded-lg object-cover" />
                         ))}
                       </div>
                     )}

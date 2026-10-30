@@ -98,7 +98,8 @@ describe('Tài khoản, hồ sơ HTX, quyền bán (FR-TK)', () => {
     expect(s.customers[0].refundAccount).toEqual({ bankCode: 'VCB', bankName: 'Vietcombank', accountNumber: '000011112222', holder: 'KHACH', linkedAt: T0.toISOString() });
 
     expect(opsCreateAccount(s, ADMIN_QA, { name: 'HTX Z', phone: '0900000555', role: 'coop', coopId: 'coop-x' }, T0).ok).toBe(false);
-    const created = must(opsCreateAccount(s, ADMIN_OPS, { name: 'HTX X 2', phone: '0900000555', role: 'coop', coopId: 'coop-x' }, T0));
+    expect(opsCreateAccount(s, ADMIN_OPS, { name: 'HTX X 2', phone: '0900000555', role: 'coop', coopId: 'coop-x' }, T0).ok).toBe(false);
+    const created = must(opsCreateAccount(s, ADMIN_OPS, { name: 'Shipper mới', phone: '0900000555', role: 'shipper' }, T0));
     s = created.state;
     expect(verifyLogin(s, '0900000555', '123456').ok).toBe(true);
     const ops = { ...ADMIN_OPS, userId: 'u-ops' };

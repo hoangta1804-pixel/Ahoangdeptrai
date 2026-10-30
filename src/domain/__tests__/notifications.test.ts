@@ -39,7 +39,7 @@ describe('Trung tâm thông báo (FR-CSKH-10)', () => {
     expect(titles).toContain('Mời bạn đánh giá sản phẩm');
     expect(titles.some((t) => t.endsWith('Đang giao'))).toBe(true);
 
-    const c = submitComplaint(s, CUSTOMER, { orderId: id, productIds: ['x-dry'], reason: 'damaged', description: '', photos: ['data:'], requestRefund: false }, T0);
+    const c = submitComplaint(s, CUSTOMER, { orderId: id, productIds: ['x-dry'], reason: 'damaged', description: 'Thông tin vấn đề hàng hóa', photos: ['data:'], requestRefund: false }, T0);
     s = step(s, c.ok ? { ok: true, state: c.value.state } : c);
     expect(notificationsOf(s, 'u-cskh')[0].title).toMatch(/^Khiếu nại mới/);
     expect(notificationsOf(s, 'u-x')[0].title).toMatch(/^Khiếu nại mới/);

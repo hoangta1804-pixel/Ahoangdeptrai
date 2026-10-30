@@ -1,3 +1,4 @@
+import { AppImage } from './AppImage';
 import { useId } from 'react';
 import { trackingEvents } from '../domain/tracking';
 import type { Order } from '../domain/types';
@@ -33,7 +34,7 @@ export function TrackingTimeline({ order }: { order: Order }) {
                 <ul className="mt-1.5 flex gap-2" aria-label="Ảnh giao hàng">
                   {e.photos.map((src, j) => (
                     <li key={j}>
-                      <img src={src} alt={`Ảnh giao hàng ${j + 1}`} className="h-20 w-20 rounded-xl border border-champagne-200 object-cover" />
+                      <AppImage src={src} alt={`Ảnh giao hàng ${j + 1}`} className="h-20 w-20 rounded-xl border border-champagne-200 object-cover" />
                     </li>
                   ))}
                 </ul>

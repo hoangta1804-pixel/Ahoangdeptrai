@@ -1,9 +1,10 @@
 import { useState } from 'react';
+import {CoopReviewsPanel} from '../../components/CoopReviewsPanel';
 import { useUi } from '../../app/UiContext';
 import { EmptyState } from '../../components/EmptyState';
 import { SecondaryButton, Textarea } from '../../components/form';
 import { Stars } from '../../components/Stars';
-import { coopReplyReview } from '../../domain/reviews';
+import { coopReplyReview } from '../../store/commands/reviews';
 import type { Review } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
 
@@ -12,13 +13,13 @@ export function CoopReviewsTab() {
   const { state } = useStore();
   const { coopId } = useUi();
   const mine = state.reviews.filter((r) => state.orders.find((o) => o.id === r.orderId)?.coopId === coopId);
-  if (mine.length === 0) return <EmptyState>Chưa có đánh giá nào.</EmptyState>;
+  if (mine.length === 0) return <><CoopReviewsPanel coopId={coopId}/><EmptyState>Chưa có đánh giá sản phẩm nào.</EmptyState></>;
   return (
-    <ul className="grid items-start gap-3 xl:grid-cols-2 2xl:grid-cols-3">
+    <><CoopReviewsPanel coopId={coopId}/><ul className="grid items-start gap-3 xl:grid-cols-2 2xl:grid-cols-3">
       {mine.map((r) => (
         <ReviewRow key={r.id} review={r} />
       ))}
-    </ul>
+    </ul></>
   );
 }
 
@@ -40,8 +41,8 @@ function ReviewRow({ review: r }: { review: Review }) {
         <>
           <Textarea rows={2} aria-label="Phản hồi đánh giá" value={text} onChange={(e) => setText(e.target.value)} placeholder="Cảm ơn hoặc giải thích cho khách…" />
           <SecondaryButton
-            onClick={() => {
-              const res = run((s, at) => coopReplyReview(s, coopActor, r.id, text, at));
+            onClick={async () => {
+              const res = await run((s, at) => coopReplyReview(s, coopActor, r.id, text, at));
               showToast(res.ok ? 'Đã phản hồi đánh giá.' : res.error);
             }}
           >

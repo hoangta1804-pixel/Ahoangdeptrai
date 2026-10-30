@@ -1,19 +1,23 @@
 import { Clock } from 'lucide-react';
+import {useState} from 'react';
+import {api} from '../../store/backend';
 import { useUi } from '../../app/UiContext';
 import { BottomSheet } from '../../components/BottomSheet';
 import { SimBadge } from '../../components/EmptyState';
 import { generateId } from '../../domain/ids';
-import { applyGatewayResult, GATEWAY_OUTCOME_MESSAGE, secondsLeft, type GatewayResult } from '../../domain/payment';
+import { applyGatewayResult, GATEWAY_OUTCOME_MESSAGE, secondsLeft, type GatewayResult } from '../../store/commands/payment';
 import { formatMoney } from '../../domain/pricing';
 import { findOrder } from '../../domain/state';
 import { ORDER_KIND_LABEL, TRANSACTION_STATUS_LABEL } from '../../domain/types';
 import { useNow, useStore } from '../../store/AppDataContext';
+import {DemoPaymentQr} from '../../components/DemoPaymentQr';
 
 /** Cổng thanh toán – MÔ PHỎNG (mục 5.4). Kết quả chỉ ghi nhận qua applyGatewayResult(). */
 export function PaymentSheet({ txId, onClose }: { txId: string; onClose: () => void }) {
-  const { state, run } = useStore();
+  const { state, run,demoMode } = useStore();
   const { showToast, openOrders } = useUi();
   const at = useNow(1000);
+  const [busy,setBusy]=useState(false),[error,setError]=useState('');
   const tx = state.transactions.find((t) => t.id === txId);
   if (!tx) return null;
 
@@ -23,9 +27,9 @@ export function PaymentSheet({ txId, onClose }: { txId: string; onClose: () => v
   const pending = tx.status === 'pending' && left > 0;
   const isRemaining = tx.kind === 'remaining';
 
-  const send = (result: GatewayResult) => {
+  const send = async (result: GatewayResult) => {
     let message = '';
-    const r = run(
+    const r = await run(
       (s, t) => applyGatewayResult(s, tx.id, result, generateId('GW'), t),
       (v) => {
         message =
@@ -46,13 +50,13 @@ export function PaymentSheet({ txId, onClose }: { txId: string; onClose: () => v
     <BottomSheet
       title={
         <span className="flex flex-wrap items-center gap-2">
-          Cổng thanh toán <SimBadge />
+          Cổng thanh toán {demoMode&&<SimBadge />}
         </span>
       }
       onClose={onClose}
       closeLabel="Đóng cổng thanh toán (giao dịch vẫn giữ, không gia hạn)"
       footer={
-        pending ? (
+        pending && !demoMode ? <div className="space-y-2"><button disabled={busy} onClick={async()=>{setBusy(true);setError('');try{const session=await api<{checkoutUrl:string}>('/api/v1/transactions/'+tx.id+'/session',{});window.location.assign(session.checkoutUrl);}catch(e){setError(e instanceof Error?e.message:'Chưa mở được cổng thanh toán.');}finally{setBusy(false);}}} className="min-h-12 w-full rounded-2xl bg-forest-600 px-4 text-sm font-bold text-white disabled:opacity-50">{busy?'Đang kết nối…':'Tiếp tục đến cổng thanh toán'}</button>{error&&<p role="alert" className="text-sm text-rose-800">{error}</p>}<p className="text-sm text-stone-600">Kết quả được xác nhận từ cổng thanh toán. Quay lại ứng dụng không tự xác nhận đã trả tiền.</p></div> : pending ? (
           <div className="space-y-2">
             <button onClick={() => send('success')} className="min-h-12 w-full rounded-2xl bg-forest-600 text-sm font-bold text-white hover:bg-forest-500">
               Thanh toán thành công
@@ -74,7 +78,7 @@ export function PaymentSheet({ txId, onClose }: { txId: string; onClose: () => v
       }
     >
       <p className="rounded-2xl border-2 border-dashed border-stone-900 bg-champagne-50 p-3 text-center text-sm font-bold text-ink">
-        Đây là cổng mô phỏng, không trừ tiền thật.
+        {demoMode?'Đây là cổng mô phỏng, không trừ tiền thật.':'Kiểm tra đúng số tiền và thông tin người nhận tại cổng thanh toán trước khi xác nhận.'}
       </p>
 
       <div className="text-center">
@@ -91,6 +95,7 @@ export function PaymentSheet({ txId, onClose }: { txId: string; onClose: () => v
         )}
       </div>
 
+      {demoMode&&pending&&<DemoPaymentQr transaction={tx}/>}
       <section className="space-y-2">
         <h4 className="text-sm font-bold text-stone-700">Các đơn trong giao dịch</h4>
         {tx.orderIds.map((id) => {

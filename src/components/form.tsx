@@ -1,11 +1,11 @@
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react';
 
 // Cao tối thiểu 44px; chữ 16px trên điện thoại để iOS không tự phóng to khi nhập.
-const fieldClass = 'min-h-11 w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-base text-ink md:text-sm focus:border-forest-600 focus:outline-none focus:ring-2 focus:ring-forest-600/20';
+const fieldClass = 'min-h-11 min-w-0 max-w-full w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-base text-ink md:text-sm focus:border-forest-600 focus:outline-none focus:ring-2 focus:ring-forest-600/20';
 
 export function Field({ label, hint, children }: { label: string; hint?: ReactNode; children: ReactNode }) {
   return (
-    <label className="block space-y-1">
+    <label className="block min-w-0 max-w-full space-y-1 [overflow-wrap:anywhere]">
       <span className="text-sm font-semibold text-stone-700">{label}</span>
       {children}
       {hint && <span className="block text-xs text-muted">{hint}</span>}

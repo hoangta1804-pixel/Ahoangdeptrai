@@ -45,6 +45,7 @@ export interface ApplicationEvent {
 }
 
 export interface CoopApplication {
+  taxCode?: string;
   id: string;
   coopName: string;
   region: string;
@@ -74,6 +75,7 @@ export interface CoopApplication {
 }
 
 export interface ApplicationInput {
+  taxCode?: string;
   coopName: string;
   region: string;
   address: string;
@@ -92,6 +94,10 @@ const applicationsOf = (state: DemoState): CoopApplication[] => state.coopApplic
 
 /** Kiểm tra nội dung hồ sơ; trả về dữ liệu đã chuẩn hoá. */
 function validate(state: DemoState, input: ApplicationInput, otp: string, ignoreId?: string): Result<Omit<CoopApplication, 'id' | 'status' | 'checks' | 'createdAt' | 'updatedAt' | 'history'>> {
+  const taxCode=input.taxCode?.trim();
+  if(!taxCode)return fail('Vui lòng nhập mã số thuế HTX.');
+  if(taxCode&&!/^\d{10}(-\d{3})?$/.test(taxCode))return fail('Mã số thuế phải gồm 10 số hoặc 10 số - 3 số chi nhánh.');
+  if(taxCode&&(state.coops.some(c=>c.taxCode===taxCode)||applicationsOf(state).some(a=>a.id!==ignoreId&&a.taxCode===taxCode&&a.status!=='rejected')))return fail('Mã số thuế đã được đăng ký.');
   const coopName = input.coopName.trim().replace(/\s+/g, ' ');
   if (!coopName) return fail('Vui lòng nhập tên HTX.');
   if (state.coops.some((c) => c.name.toLowerCase() === coopName.toLowerCase())) return fail('Tên HTX đã có trên sàn. Vui lòng kiểm tra lại.');
@@ -115,6 +121,7 @@ function validate(state: DemoState, input: ApplicationInput, otp: string, ignore
   if (input.documents.length === 0) return fail('Vui lòng thêm ảnh giấy chứng nhận đăng ký HTX.');
   if (otp.trim() !== DEMO_OTP) return fail('Mã OTP không đúng.');
   return ok({
+    taxCode,
     coopName,
     region: input.region.trim(),
     address,
@@ -243,6 +250,7 @@ export function qualityDecideApplication(state: DemoState, actor: Actor, id: str
   if (!allChecksPassed(app0)) return fail('Cần đạt đủ 4 mục thẩm định trước khi duyệt.');
   if (state.users.some((u) => u.phone === app0.loginPhone)) return fail('SĐT người đại diện đã có tài khoản; không tạo được tài khoản HTX.');
   const coop: Coop = {
+    taxCode:app0.taxCode,
     id: generateId('coop'),
     name: app0.coopName,
     region: app0.region,

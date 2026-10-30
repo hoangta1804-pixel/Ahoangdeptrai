@@ -113,9 +113,9 @@ describe('Luồng đơn, khiếu nại, hoàn tiền, đối soát', () => {
 
   it('khiếu nại ưu tiên Cao với lý do dị vật; "Đổi ý" không chọn hoàn tiền được', () => {
     const { state, id } = deliveredReadyOrder();
-    const t = must(submitComplaint(state, CUSTOMER, { orderId: id, productIds: ['x-dry'], reason: 'foreign_object', description: '', photos: ['data:'], requestRefund: false }, T0));
+    const t = must(submitComplaint(state, CUSTOMER, { orderId: id, productIds: ['x-dry'], reason: 'foreign_object', description: 'Thông tin vấn đề hàng hóa', photos: ['data:'], requestRefund: false }, T0));
     expect(t.ticket.priority).toBe('high');
-    expect(submitComplaint(state, CUSTOMER, { orderId: id, productIds: ['x-dry'], reason: 'changed_mind', description: '', photos: ['data:'], requestRefund: true }, T0).ok).toBe(false);
+    expect(submitComplaint(state, CUSTOMER, { orderId: id, productIds: ['x-dry'], reason: 'changed_mind', description: 'Thông tin vấn đề hàng hóa', photos: ['data:'], requestRefund: true }, T0).ok).toBe(false);
   });
 
   it('L12: HTX báo thu hoạch / đổi giá sang Chờ duyệt; Admin – Chất lượng duyệt hoặc từ chối (bắt buộc lý do); tồn kho có hiệu lực ngay', () => {

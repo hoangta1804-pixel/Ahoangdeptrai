@@ -3,7 +3,7 @@ import { useUi } from '../../app/UiContext';
 import { BottomSheet } from '../../components/BottomSheet';
 import { DangerButton, PrimaryButton } from '../../components/form';
 import { InvoiceFields } from '../../components/InvoiceFields';
-import { emptyInvoice, invoiceErrors, saveInvoiceDefault } from '../../domain/invoice';
+import { emptyInvoice, invoiceErrors, saveInvoiceDefault } from '../../store/commands/invoice';
 import type { CompanyInvoice } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
 
@@ -16,15 +16,15 @@ export function InvoiceDefaultSheet({ onClose }: { onClose: () => void }) {
   const [tried, setTried] = useState(false);
   const errors = tried ? invoiceErrors(value) : {};
 
-  const save = () => {
+  const save = async () => {
     setTried(true);
     if (Object.keys(invoiceErrors(value)).length > 0) return;
-    const r = run((s) => saveInvoiceDefault(s, customerActor, value));
+    const r = await run((s) => saveInvoiceDefault(s, customerActor, value));
     showToast(r.ok ? 'Đã lưu thông tin hoá đơn. Đơn đã đặt giữ thông tin lúc đặt.' : r.error);
     if (r.ok) onClose();
   };
-  const remove = () => {
-    const r = run((s) => saveInvoiceDefault(s, customerActor, null));
+  const remove = async () => {
+    const r = await run((s) => saveInvoiceDefault(s, customerActor, null));
     showToast(r.ok ? 'Đã xoá thông tin hoá đơn mặc định.' : r.error);
     if (r.ok) onClose();
   };

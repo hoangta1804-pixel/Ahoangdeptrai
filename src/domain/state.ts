@@ -64,6 +64,7 @@ export function updateOrders(state: DemoState, ids: string[], fn: (o: Order) => 
 
 /** Số còn lại có thể đặt: tồn khả dụng (mua sẵn) hoặc suất còn lại (đặt trước). */
 export function remainingFor(state: DemoState, product: Product): number {
+  if (state.availability?.[product.id] !== undefined) return state.availability[product.id];
   if (product.kind === 'preorder') return remainingSlots(product.preorder?.totalSlots ?? 0, product.id, state.orders);
   return availableStock(product.stockOnHand, product.id, state.orders);
 }

@@ -3,7 +3,7 @@ import { useUi } from '../../app/UiContext';
 import { BottomSheet } from '../../components/BottomSheet';
 import { EmptyState } from '../../components/EmptyState';
 import { ProductImage } from '../../components/ProductImage';
-import { seasonWatchItems } from '../../domain/seasonWatch';
+import { seasonWatchItems } from '../../store/commands/seasonWatch';
 import { useStore } from '../../store/AppDataContext';
 import { useMarketplace } from './useMarketplace';
 

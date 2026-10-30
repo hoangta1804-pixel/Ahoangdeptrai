@@ -1,8 +1,10 @@
 import { useUi } from '../../app/UiContext';
+import {ExportButtons} from '../../components/ExportButtons';
+import {SettlementDetails} from '../../components/SettlementDetails';
 import { EmptyState } from '../../components/EmptyState';
 import { formatMoney } from '../../domain/pricing';
 import { addMs, DAY_MS } from '../../domain/state';
-import { eligibleLines, summarize, weekStart } from '../../domain/settlement';
+import { eligibleLines, summarize, weekStart } from '../../store/commands/settlement';
 import { useStore } from '../../store/AppDataContext';
 
 /**
@@ -21,6 +23,7 @@ export function CoopWalletTab() {
 
   return (
     <div className="space-y-3 xl:grid xl:grid-cols-2 xl:items-start xl:gap-4 xl:space-y-0">
+      <div className="xl:col-span-2"><ExportButtons/></div>
       <div className="space-y-1 rounded-3xl bg-forest-900 p-4 text-white xl:col-span-2">
         <p className="text-sm text-forest-100">
           Kỳ tuần {weekStart(at).toLocaleDateString('vi-VN')} – {addMs(currentEnd, -1).toLocaleDateString('vi-VN')} (tạm tính)
@@ -61,8 +64,9 @@ export function CoopWalletTab() {
                 {new Date(p.start).toLocaleDateString('vi-VN')} – {addMs(new Date(p.end), -1).toLocaleDateString('vi-VN')} · {p.lines.length} đơn
               </p>
               <p>
-                Chi trả {formatMoney(p.payout)} · {p.status === 'paid' ? `Đã chi trả (mô phỏng) ${new Date(p.paidAt!).toLocaleString('vi-VN')}` : 'Đã chốt, chờ chi trả'}
+                Chi trả {formatMoney(p.payout)} · {p.status === 'paid' ? `Đã ghi nhận chi trả ${new Date(p.paidAt!).toLocaleString('vi-VN')}` : 'Đã chốt, chờ chi trả'}
               </p>
+              <SettlementDetails lines={p.lines}/>
             </div>
           ))
         )}

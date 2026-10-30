@@ -29,7 +29,7 @@ function lineFor(state: DemoState, order: Order, commissionPercent: number): Set
     .reduce((s, r) => s + r.amount, 0);
   const retained = Math.max(0, goods - refunded);
   const commission = Math.round((retained * commissionPercent) / 100);
-  return { orderId: order.id, deliveredAt: order.deliveredAt!, goods, refunded, retained, commission, payout: retained - commission };
+  return { orderId: order.id, deliveredAt: order.deliveredAt!, goods, refunded, retained, commission, shippingFee:order.pricing.shippingFee+order.pricing.expressSurcharge,payout: retained - commission };
 }
 
 /** Các dòng đủ điều kiện vào kỳ có giờ cắt `cutoff`. */
@@ -41,6 +41,8 @@ export function eligibleLines(state: DemoState, coopId: string, cutoff: Date): S
       (o) =>
         o.coopId === coopId &&
         o.status === 'delivered' &&
+        o.amountPaidOnline+o.codCollected>=o.pricing.total &&
+        (o.codCollected===0 || !!o.reconciledCod || (state.codRemittances??[]).some(r=>r.status==='confirmed'&&r.orderIds.includes(o.id))) &&
         o.deliveredAt &&
         new Date(o.deliveredAt).getTime() < cutoff.getTime() &&
         !settled.has(o.id) &&
@@ -63,6 +65,12 @@ export function closePeriod(state: DemoState, coopId: string, actor: Actor, cuto
   if (cutoff.getTime() > at.getTime()) return fail('Chưa đến giờ cắt kỳ.');
   const lines = eligibleLines(state, coopId, cutoff);
   if (lines.length === 0) return fail('Kỳ này không có đơn đủ điều kiện đối soát.');
+  const policy=state.params.settlementPolicy,summary=summarize(lines);
+  const payoutFee=policy?.payoutFee??0,payout=summary.payout-payoutFee;
+  if(payout<0)return fail('Phí chi trả vượt số tiền của kỳ. Chờ thêm đơn hoặc điều chỉnh chính sách cho kỳ mới.');
+  if(policy&&payout===0)return fail('Kỳ chưa có số tiền dương để chi trả sau phí.');
+  if(policy&&payout<policy.minimumPayout)return fail('Chưa đạt ngưỡng chi trả. Đơn tiếp tục được cộng dồn vào kỳ sau.');
+  const reserveAmount=Math.round(payout*(policy?.reservePercent??0)/100);
   const period: PayoutPeriod = {
     id: generateId('KY'),
     coopId,
@@ -71,6 +79,8 @@ export function closePeriod(state: DemoState, coopId: string, actor: Actor, cuto
     status: 'closed',
     lines,
     ...summarize(lines),
+    payout,
+    ...(policy?{policy:structuredClone(policy),payoutFee,reserveAmount,reserveUntil:iso(addMs(at,policy.reserveDays*DAY_MS)),disbursements:[]}:{}),
     closedAt: iso(at),
     closedBy: actor.name ?? 'Admin – Tài chính',
   };
@@ -83,6 +93,7 @@ export function recordPayout(state: DemoState, periodId: string, actor: Actor, a
   const period = state.payoutPeriods.find((p) => p.id === periodId);
   if (!period) return fail('Không tìm thấy kỳ đối soát.');
   if (period.status === 'paid') return fail('Kỳ này đã ghi nhận chi trả.');
+  if(period.policy)return fail('Kỳ có chính sách chi trả cần ghi nhận từng lần chuyển khoản bằng chứng từ.');
   const paid: PayoutPeriod = { ...period, status: 'paid', paidAt: iso(at), paidRef: generateId('CK-MP') };
   let next: DemoState = { ...state, payoutPeriods: state.payoutPeriods.map((p) => (p.id === periodId ? paid : p)) };
   next = addLedger(next, { type: 'payout_out', amount: -period.payout, coopId: period.coopId, refId: period.id, note: paid.paidRef }, at);

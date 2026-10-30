@@ -2,7 +2,7 @@ import { useUi } from '../../app/UiContext';
 import { AdminTable, Td } from '../../components/AdminTable';
 import { EmptyState, SimBadge } from '../../components/EmptyState';
 import { formatMoney } from '../../domain/pricing';
-import { codOnHand, codTotal, financeConfirmRemittance, listShippers } from '../../domain/shipper';
+import { codOnHand, codTotal, financeConfirmRemittance, listShippers } from '../../store/commands/shipper';
 import { useStore } from '../../store/AppDataContext';
 
 /**
@@ -10,20 +10,20 @@ import { useStore } from '../../store/AppDataContext';
  * Xác nhận chỉ ghi nhận trong demo, không đối chiếu ngân hàng thật.
  */
 export function FinanceCodTab() {
-  const { state, run } = useStore();
+  const { state, run,demoMode } = useStore();
   const { adminActor, showToast } = useUi();
   const remittances = state.codRemittances ?? [];
   const holding = listShippers(state)
     .map((u) => ({ user: u, orders: codOnHand(state, u.id) }))
     .filter((x) => x.orders.length > 0);
-  const confirmReceived = (id: string) => {
-    const r = run((s, t) => financeConfirmRemittance(s, adminActor, id, t));
-    showToast(r.ok ? 'Đã xác nhận nhận tiền thu hộ (mô phỏng).' : r.error);
+  const confirmReceived = async (id: string) => {
+    const r = await run((s, t) => financeConfirmRemittance(s, adminActor, id, t));
+    showToast(r.ok ? 'Đã ghi nhận Tài chính nhận tiền thu hộ.' : r.error);
   };
   return (
     <div className="space-y-6">
       <p className="flex flex-wrap items-center gap-2 text-sm text-stone-700">
-        <SimBadge /> Shipper nộp tiền thu hộ và Tài chính xác nhận là mô phỏng: không chuyển tiền, không đối chiếu ngân hàng thật.
+        {demoMode&&<SimBadge />} Shipper lập phiếu nộp, Tài chính kiểm tra tiền/chứng từ ngoài hệ thống trước khi xác nhận. Ứng dụng không tự chuyển tiền hoặc đối chiếu ngân hàng.
       </p>
       <section aria-labelledby="shipper-dang-giu" className="space-y-2">
         <h3 id="shipper-dang-giu" className="font-display text-xl font-semibold text-ink">

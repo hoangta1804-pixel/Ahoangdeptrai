@@ -4,9 +4,9 @@ import { EmptyState } from '../../components/EmptyState';
 import { OrderStatusBadge, PaymentStatusBadge } from '../../components/StatusBadge';
 import { SwipeTabs } from '../../components/SwipeTabs';
 import { TicketStatusBadge } from '../../components/TicketProgress';
-import { ticketsOfOrder } from '../../domain/complaint';
-import { unreadCount } from '../../domain/orderContact';
-import { itemsAwaitingReview, ORDER_TABS, ordersInTab, refundSummary, reorderToCart, suggestedProducts, tabOf, type OrderTabKey } from '../../domain/orderTabs';
+import { ticketsOfOrder } from '../../store/commands/complaint';
+import { unreadCount } from '../../store/commands/orderContact';
+import { itemsAwaitingReview, ORDER_TABS, ordersInTab, refundSummary, reorderToCart, suggestedProducts, tabOf, type OrderTabKey } from '../../store/commands/orderTabs';
 import { formatMoney } from '../../domain/pricing';
 import { ORDER_KIND_LABEL, type Order } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
@@ -93,8 +93,8 @@ function OrderCard({ order: o }: { order: Order }) {
   const canRebuy = REBUY_STATUSES.includes(o.status);
   const ticket = ticketsOfOrder(state, o.id)[0];
 
-  const rebuy = () => {
-    const r = run(
+  const rebuy = async () => {
+    const r = await run(
       (s, at) => reorderToCart(s, customerActor, o.id, at),
       (v) => v.state,
     );

@@ -13,6 +13,7 @@ export interface ExpressTier {
 }
 
 export interface Params {
+  settlementPolicy?: SettlementPolicy;
   /** PAR-02 Ngưỡng tồn thấp mặc định */
   lowStockThreshold: number;
   /** PAR-04 Bước làm tròn tiền cọc (làm tròn lên), đồng */
@@ -165,6 +166,8 @@ export function updateParam<K extends ParamKey>(
   reason: string,
   at: Date,
 ): Result<{ params: Params; change: ParamChange }> {
+  if(key==='settlementPolicy')return fail('Chính sách chi trả cần lưu qua quy trình xác nhận riêng.');
+  if(!PARAM_CATALOG.some(item=>item.key===key))return fail('Tham số không được hỗ trợ.');
   if (!reason.trim()) return fail('Vui lòng nhập lý do thay đổi tham số.');
   const meta = PARAM_CATALOG.find((m) => m.key === key);
   if (typeof newValue === 'number' && (!Number.isFinite(newValue) || newValue < 0)) {
@@ -182,6 +185,17 @@ export function updateParam<K extends ParamKey>(
       reason: reason.trim(),
     },
   });
+}
+
+export interface SettlementPolicy {
+  revision:number;
+  reservePercent:number;
+  reserveDays:number;
+  minimumPayout:number;
+  payoutFee:number;
+  approvalReference:string;
+  approvedBy:string;
+  approvedAt:string;
 }
 
 /** Bản chốt tham số lưu vào đơn lúc tạo (BR-DAT-06). */

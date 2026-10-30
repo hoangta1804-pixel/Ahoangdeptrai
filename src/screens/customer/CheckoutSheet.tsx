@@ -12,12 +12,12 @@ import { useUi, type CheckoutSource } from '../../app/UiContext';
 import { BottomSheet } from '../../components/BottomSheet';
 import { Field, Input, PrimaryButton, SecondaryButton, Select, Textarea } from '../../components/form';
 import { InvoiceFields, InvoiceSummary } from '../../components/InvoiceFields';
-import { defaultAddressOf } from '../../domain/address';
-import { acceptCurrentPrices, deliveryWindow, revalidateLines, type RevalidationNotice } from '../../domain/cart';
-import { evaluateVoucherFor, groupKey, placeCheckout, planCheckout, type GroupOptions, type PlannedOrder } from '../../domain/checkout';
+import { defaultAddressOf } from '../../store/commands/address';
+import { acceptCurrentPrices, deliveryWindow, revalidateLines, type RevalidationNotice } from '../../store/commands/cart';
+import { evaluateVoucherFor, groupKey, placeCheckout, planCheckout, type GroupOptions, type PlannedOrder } from '../../store/commands/checkout';
 import { generateId } from '../../domain/ids';
-import { emptyInvoice, invoiceErrors, normalizeInvoice } from '../../domain/invoice';
-import { isVoucherSaved, savedFirst } from '../../domain/marketplace';
+import { emptyInvoice, invoiceErrors, normalizeInvoice } from '../../store/commands/invoice';
+import { isVoucherSaved, savedFirst } from '../../store/commands/marketplace';
 import { formatMoney, type PaymentMethod } from '../../domain/pricing';
 import { findProduct, formatDateKey, snapshotAddress } from '../../domain/state';
 import { PHONE_RULE } from '../../domain/phone';
@@ -141,12 +141,12 @@ export function CheckoutSheet({ source, preferredAddressId, onClose }: { source:
     return priceUp && !confirmedPriceUp ? ['Vui lòng xác nhận giá mới trước khi đặt.'] : [];
   };
 
-  const place = () => {
+  const place = async () => {
     if (placing) return;
     setPlacing(true);
     const placeLines = confirmedPriceUp ? acceptCurrentPrices(state, lines) : lines;
     let outcome: ReturnType<typeof placeCheckout> | undefined;
-    run(
+    const saved = await run(
       (s, t) => {
         outcome = placeCheckout(
           s,
@@ -167,6 +167,7 @@ export function CheckoutSheet({ source, preferredAddressId, onClose }: { source:
       },
     );
     setPlacing(false);
+    if (!saved.ok) { showToast(saved.error); return; }
     if (!outcome) return;
     if (!outcome.ok) {
       if (outcome.lines) setLines(outcome.lines);

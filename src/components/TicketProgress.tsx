@@ -1,6 +1,8 @@
+import {TicketActions} from './TicketActions';
+import { AppImage } from './AppImage';
 import { useId } from 'react';
 import { AlertTriangle, Check, Minus } from 'lucide-react';
-import { ticketSteps, type TicketStep } from '../domain/complaint';
+import { ticketSteps, type TicketStep } from '../store/commands/complaint';
 import { COMPLAINT_REASON_LABEL, TICKET_STATUS_LABEL, type Ticket } from '../domain/types';
 import { useNow, useStore } from '../store/AppDataContext';
 
@@ -93,12 +95,12 @@ export function CustomerTicketCard({ ticket: t }: { ticket: Ticket }) {
         <ul className="flex gap-1.5" aria-label="Ảnh khiếu nại">
           {t.photos.map((src, i) => (
             <li key={i}>
-              <img src={src} alt={`Ảnh khiếu nại ${i + 1}`} className="h-14 w-14 rounded-xl object-cover" />
+              <AppImage src={src} alt={`Ảnh khiếu nại ${i + 1}`} className="h-14 w-14 rounded-xl object-cover" />
             </li>
           ))}
         </ul>
       )}
-      <TicketProgress ticket={t} />
+      <TicketProgress ticket={t} /><TicketActions ticket={t}/>
     </section>
   );
 }

@@ -1,8 +1,13 @@
+import {ReconciliationPanel} from '../../components/ReconciliationPanel';
+import {SettlementPolicySettings} from '../../components/SettlementPolicySettings';
+import {PayoutProgress} from '../../components/PayoutProgress';
+import {ManualPayoutForm} from '../../components/ManualPayoutForm';
+import {SettlementDetails} from '../../components/SettlementDetails';
 import { useUi } from '../../app/UiContext';
 import { SimBadge } from '../../components/EmptyState';
 import { PrimaryButton, SecondaryButton } from '../../components/form';
 import { formatMoney } from '../../domain/pricing';
-import { closePeriod, eligibleLines, recordPayout, summarize, weekStart } from '../../domain/settlement';
+import { closePeriod, eligibleLines, recordPayout, summarize, weekStart } from '../../store/commands/settlement';
 import { useStore } from '../../store/AppDataContext';
 
 /** Admin – Tài chính chốt kỳ tuần, duyệt bảng kê, ghi nhận chi trả (mô phỏng) vào tài khoản HTX (FR-DT-02..04, L13). */
@@ -11,14 +16,14 @@ export function FinanceSettlementTab() {
   const { adminActor, showToast } = useUi();
   // Kỳ gần nhất đã qua giờ cắt: thứ Hai 00:00 của tuần hiện tại.
   const cutoff = weekStart(now());
-  const act = (op: Parameters<typeof run>[0], ok: string) => {
-    const r = run(op);
+  const act = async (op: Parameters<typeof run>[0], ok: string) => {
+    const r = await run(op);
     showToast(r.ok ? ok : r.error);
   };
   return (
-    <div className="space-y-4">
+    <div className="space-y-4"><SettlementPolicySettings/><ReconciliationPanel/>
       <p className="text-sm text-stone-700">
-        Giờ cắt kỳ gần nhất: <strong>{cutoff.toLocaleString('vi-VN')}</strong>. Đơn vào kỳ khi đã Đã giao trước giờ cắt và không còn khiếu nại, trả hàng đang mở. Hoa hồng {state.params.commissionPercent}% (COM-01) trên tiền hàng thực giữ lại.
+        Giờ cắt kỳ gần nhất: <strong>{cutoff.toLocaleString('vi-VN')}</strong>. Đơn vào kỳ khi đã giao trước giờ cắt, thu đủ tiền, COD đã xác nhận nộp/đối soát và không còn khiếu nại đang mở. Hoa hồng {state.params.commissionPercent}% (COM-01) trên tiền hàng thực giữ lại.
       </p>
       <div className="overflow-x-auto rounded-2xl border border-stone-200 bg-white">
         <table className="w-full min-w-[640px] text-left text-sm">
@@ -55,7 +60,7 @@ export function FinanceSettlementTab() {
         </table>
       </div>
       <h3 className="flex items-center gap-2 text-base font-bold">
-        Kỳ đã chốt <SimBadge />
+        Kỳ đã chốt
       </h3>
       {state.payoutPeriods.length === 0 ? (
         <p className="text-sm text-stone-600">Chưa có kỳ nào được chốt. Dùng "Công cụ demo" để tua thời gian qua giờ cắt kỳ nếu cần.</p>
@@ -69,10 +74,12 @@ export function FinanceSettlementTab() {
                   {coop?.name} · {p.lines.length} đơn · chi trả <strong>{formatMoney(p.payout)}</strong> vào {coop?.payoutAccountMasked}
                   <span className="block text-xs text-muted">
                     Chốt {new Date(p.closedAt).toLocaleString('vi-VN')} bởi {p.closedBy}
-                    {p.paidAt ? ` · đã chi trả (mô phỏng) ${new Date(p.paidAt).toLocaleString('vi-VN')}, mã ${p.paidRef}` : ''}
+                    {p.paidAt ? ` · đã ghi nhận chi trả ${new Date(p.paidAt).toLocaleString('vi-VN')}, mã ${p.paidRef}` : ''}
                   </span>
                 </span>
-                {p.status === 'closed' && <PrimaryButton onClick={() => act((st, t) => recordPayout(st, p.id, adminActor, t), 'Đã ghi nhận chi trả (mô phỏng).')}>Ghi nhận chi trả (mô phỏng)</PrimaryButton>}
+                <SettlementDetails lines={p.lines}/>
+                <PayoutProgress period={p}/>
+                {p.status === 'closed' && <ManualPayoutForm period={p}/>}
               </li>
             );
           })}

@@ -1,3 +1,4 @@
+import {AccountSecuritySettings} from '../../app/PasswordTools';
 import { useEffect, useRef, useState } from 'react';
 import { Bell, BellRing, ChevronRight, ClipboardCheck, FileText, Heart, LogOut, MapPin, MessageCircle, MessageSquareWarning, Package, ShoppingBag, Sprout, Star, TicketPercent, Truck, UserRound, type LucideIcon } from 'lucide-react';
 import { useUi } from '../../app/UiContext';
@@ -6,14 +7,14 @@ import { BrocadeBand } from '../../components/Brand';
 import { ErrorState } from '../../components/EmptyState';
 import { ListBoundary } from '../../components/ListBoundary';
 import { Field, Input, PrimaryButton, SecondaryButton } from '../../components/form';
-import { updateCustomerProfile } from '../../domain/account';
+import { updateCustomerProfile } from '../../store/commands/account';
 import { listOrdersFor } from '../../domain/access';
 import { loginIdentityLabel } from '../../domain/auth';
-import { totalUnread } from '../../domain/coopChat';
-import { isTicketOpen } from '../../domain/complaint';
-import { favoriteItems, followedCoops, voucherWallet } from '../../domain/marketplace';
-import { ordersAwaitingReview, tabCounts, type OrderTabKey } from '../../domain/orderTabs';
-import { seasonWatchItems } from '../../domain/seasonWatch';
+import { totalUnread } from '../../store/commands/coopChat';
+import { isTicketOpen } from '../../store/commands/complaint';
+import { favoriteItems, followedCoops, voucherWallet } from '../../store/commands/marketplace';
+import { ordersAwaitingReview, tabCounts, type OrderTabKey } from '../../store/commands/orderTabs';
+import { seasonWatchItems } from '../../store/commands/seasonWatch';
 import { useStore } from '../../store/AppDataContext';
 import { BankLinkSection } from './BankLinkSection';
 import { OrdersSection } from './OrdersSection';
@@ -37,6 +38,7 @@ export function AccountTab() {
 
   return (
     <div className={`w-full space-y-4 pt-5 pb-8 md:pt-8 ${PAGE_X}`}>
+      <AccountSecuritySettings/>
       <section className="relative overflow-hidden rounded-[28px] bg-forest-950 px-5 pt-5 pb-8 text-white shadow-[0_20px_50px_rgb(14,37,27,0.25)]" aria-labelledby="thong-tin-ca-nhan">
         <div aria-hidden="true" className="lattice absolute inset-0" />
         <div className="relative flex items-center gap-4">
@@ -52,7 +54,7 @@ export function AccountTab() {
         </div>
         <div className="relative mt-3 flex items-end justify-between gap-3">
           <p className="text-sm text-forest-100">
-            {account?.google
+            {account?.supabaseId ? `Đăng nhập: ${account.emailMasked || account.phone}` : account?.google
               ? `Đăng nhập bằng ${loginIdentityLabel(account)}`
               : `SĐT: ${customer.phone.replace(/(\d{4})(\d{3})(\d{3})/, '$1 $2 $3')} (dùng để đăng nhập, không đổi tại đây)`}
           </p>
@@ -80,8 +82,8 @@ export function AccountTab() {
             <SecondaryButton onClick={() => setEditingName(false)}>Huỷ</SecondaryButton>
             <PrimaryButton
               className="flex-1"
-              onClick={() => {
-                const r = run((s) => updateCustomerProfile(s, customerActor, name));
+              onClick={async () => {
+                const r = await run((s) => updateCustomerProfile(s, customerActor, name));
                 showToast(r.ok ? 'Đã lưu thông tin.' : r.error);
                 if (r.ok) setEditingName(false);
               }}

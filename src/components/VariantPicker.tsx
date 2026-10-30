@@ -1,5 +1,5 @@
 import { useId } from 'react';
-import { isOrderableIn } from '../domain/cart';
+import { isOrderableIn } from '../store/commands/cart';
 import { formatMoney } from '../domain/pricing';
 import { remainingFor } from '../domain/state';
 import type { Product } from '../domain/types';

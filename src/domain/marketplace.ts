@@ -270,9 +270,11 @@ export function savedFirst(state: DemoState, customerId: string, vouchers: Vouch
 
 // ---------- Sắp xếp, khoảng giá ----------
 
-export type SortKey = 'relevant' | 'price_asc' | 'price_desc' | 'rating';
+export type SortKey = 'relevant' | 'price_asc' | 'price_desc' | 'rating' | 'newest' | 'bestseller';
 
 export const SORT_LABEL: Record<SortKey, string> = {
+  newest: 'Mới nhất',
+  bestseller: 'Bán chạy',
   relevant: 'Phù hợp',
   price_asc: 'Giá thấp → cao',
   price_desc: 'Giá cao → thấp',
@@ -322,6 +324,8 @@ export function sortProducts(state: DemoState, products: Product[], key: SortKey
   withKey.sort((a, b) => {
     if (key === 'price_asc') return a.price - b.price || a.i - b.i;
     if (key === 'price_desc') return b.price - a.price || a.i - b.i;
+    if (key === 'newest') return (Date.parse(b.p.createdAt??'')||0)-(Date.parse(a.p.createdAt??'')||0)||a.i-b.i;
+    if (key === 'bestseller') return (b.p.soldCount??0)-(a.p.soldCount??0)||a.i-b.i;
     return (b.rating.average ?? -1) - (a.rating.average ?? -1) || b.rating.count - a.rating.count || a.i - b.i;
   });
   return withKey.map((x) => x.p);

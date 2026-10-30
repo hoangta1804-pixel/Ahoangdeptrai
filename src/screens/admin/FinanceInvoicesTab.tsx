@@ -1,6 +1,6 @@
 import { AdminTable, Td } from '../../components/AdminTable';
 import { EmptyState, SimBadge } from '../../components/EmptyState';
-import { INVOICE_SIMULATED_LABEL, invoiceOrders } from '../../domain/invoice';
+import { INVOICE_SIMULATED_LABEL, invoiceOrders } from '../../store/commands/invoice';
 import { formatMoney } from '../../domain/pricing';
 import { ORDER_STATUS_LABEL } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
