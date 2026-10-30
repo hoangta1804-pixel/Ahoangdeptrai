@@ -1,6 +1,6 @@
 import { BottomSheet } from '../../components/BottomSheet';
 import { EmptyState } from '../../components/EmptyState';
-import { voucherWallet } from '../../domain/marketplace';
+import { voucherWallet } from '../../store/commands/marketplace';
 import { useStore } from '../../store/AppDataContext';
 import { useMarketplace } from './useMarketplace';
 import { VoucherTicket } from './VoucherTicket';

@@ -4,7 +4,7 @@ import { useUi } from '../../app/UiContext';
 import { BottomSheet } from '../../components/BottomSheet';
 import { ProductImage } from '../../components/ProductImage';
 import { QuantityStepper } from '../../components/QuantityStepper';
-import { isOrderableIn } from '../../domain/cart';
+import { isOrderableIn } from '../../store/commands/cart';
 import { formatMoney } from '../../domain/pricing';
 import { findProduct, formatDateKey, remainingFor } from '../../domain/state';
 import type { CartLine, OrderKind, Product } from '../../domain/types';

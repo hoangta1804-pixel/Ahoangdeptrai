@@ -47,6 +47,7 @@ export function qualitySetSellingRights(state: DemoState, actor: Actor, coopId: 
   if (actor.kind !== 'admin' || actor.adminGroup !== 'quality') return fail('Chỉ Admin – Chất lượng được kích hoạt hoặc tạm khoá quyền bán.');
   const coop = state.coops.find((c) => c.id === coopId);
   if (!coop) return fail('Không tìm thấy HTX.');
+  if(active&&state.users.some(u=>u.coopId===coopId&&u.accessClosedAt)&&!state.users.some(u=>u.coopId===coopId&&u.status==='active'&&!u.accessClosedAt))return fail('Đại diện HTX đã đóng quyền truy cập theo yêu cầu; cần giải quyết tài khoản đại diện trước khi mở lại bán hàng.');
   if (!active && !reason.trim()) return fail('Tạm khoá quyền bán phải ghi lý do.');
   const next = {
     ...state,

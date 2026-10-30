@@ -1,10 +1,12 @@
+import { AppImage } from '../../components/AppImage';
+import {QualityCatalogPanel} from './QualityCatalogPanel';
 import { useState } from 'react';
 import { useUi } from '../../app/UiContext';
 import { AdminTable, Td } from '../../components/AdminTable';
 import { EmptyState } from '../../components/EmptyState';
 import { DangerButton, Input, PrimaryButton } from '../../components/form';
 import { formatMoney } from '../../domain/pricing';
-import { decideProductChange } from '../../domain/productChanges';
+import { decideProductChange } from '../../store/commands/productChanges';
 import { findProduct, formatDateKey } from '../../domain/state';
 import { PRODUCT_CHANGE_LABEL, type DemoState, type ProductChangeRequest } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
@@ -16,7 +18,8 @@ export function QualityChangesTab() {
   const done = state.productChanges.filter((c) => c.status !== 'pending');
   return (
     <div className="space-y-4">
-      <h3 className="text-base font-bold">Chờ duyệt ({pending.length})</h3>
+      <QualityCatalogPanel/>
+      <h3 className="text-base font-bold">Yêu cầu lưu từ phiên bản cũ ({pending.length})</h3>
       {pending.length === 0 ? (
         <EmptyState>Không có yêu cầu chờ duyệt.</EmptyState>
       ) : (
@@ -83,8 +86,8 @@ function ChangeRow({ req }: { req: ProductChangeRequest }) {
   const { state, run } = useStore();
   const { adminActor, showToast } = useUi();
   const [reason, setReason] = useState('');
-  const decide = (approve: boolean) => {
-    const r = run((s, t) => decideProductChange(s, req.id, adminActor, approve, reason, t));
+  const decide = async (approve: boolean) => {
+    const r = await run((s, t) => decideProductChange(s, req.id, adminActor, approve, reason, t));
     showToast(r.ok ? (approve ? 'Đã duyệt.' : 'Đã từ chối.') : r.error);
   };
   return (
@@ -94,7 +97,7 @@ function ChangeRow({ req }: { req: ProductChangeRequest }) {
       <Td>{PRODUCT_CHANGE_LABEL[req.type]}</Td>
       <Td className="min-w-64">
         <p>{describe(req, state)}</p>
-        {req.cert?.photo && <img src={req.cert.photo} alt="Ảnh chứng nhận" className="mt-1 h-24 rounded-lg border border-stone-200 object-cover" />}
+        {req.cert?.photo && <AppImage src={req.cert.photo} alt="Ảnh chứng nhận" className="mt-1 h-24 rounded-lg border border-stone-200 object-cover" />}
       </Td>
       <Td>
         <div className="flex flex-wrap items-end gap-2">

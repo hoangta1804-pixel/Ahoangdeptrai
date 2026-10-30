@@ -1,3 +1,4 @@
+import { AppImage } from './AppImage';
 import { useMemo, useRef, useState } from 'react';
 import { ImagePlus, X } from 'lucide-react';
 import { PHOTO_BUDGET_FULL_MESSAGE, photoBudget } from '../domain/dataBudget';
@@ -68,7 +69,7 @@ export function PendingPhotos({ state: ps }: { state: MessagePhotosState }) {
         <ul aria-label="Ảnh sẽ gửi" className="flex flex-wrap gap-2">
           {ps.photos.map((src, i) => (
             <li key={i} className="relative h-16 w-16 overflow-hidden rounded-xl border border-stone-200">
-              <img src={src} alt={`Ảnh ${i + 1} sẽ gửi`} className="h-full w-full object-cover" />
+              <AppImage src={src} alt={`Ảnh ${i + 1} sẽ gửi`} className="h-full w-full object-cover" />
               <button
                 type="button"
                 onClick={() => ps.setPhotos(ps.photos.filter((_, j) => j !== i))}
@@ -98,7 +99,7 @@ export function MessagePhotoGrid({ photos, label }: { photos?: string[]; label: 
   return (
     <span className="mt-1 flex flex-wrap gap-1.5">
       {photos.map((src, i) => (
-        <img key={i} src={src} alt={`${label}, ảnh ${i + 1}`} className="h-28 w-28 rounded-xl object-cover ring-1 ring-black/5" loading="lazy" />
+        <AppImage key={i} src={src} alt={`${label}, ảnh ${i + 1}`} className="h-28 w-28 rounded-xl object-cover ring-1 ring-black/5" loading="lazy" />
       ))}
     </span>
   );

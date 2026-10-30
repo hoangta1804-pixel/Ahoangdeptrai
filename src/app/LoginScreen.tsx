@@ -1,321 +1,58 @@
-import { useState } from 'react';
-import { BrandEmblem, BrocadeBand, Ornament, SectionHeading } from '../components/Brand';
-import { SimBadge } from '../components/EmptyState';
-import { LandscapeArt } from '../components/LandscapeArt';
-import { Field, Input, PrimaryButton, SecondaryButton } from '../components/form';
-import { DEMO_OTP, googleLogin, registerCustomer, registerGoogleCustomer, requestOtp, verifyLogin, type GoogleProfile } from '../domain/auth';
-import { demoAccountsVisible, unlockDemoAccounts } from '../domain/demoAccess';
-import { formatPhone, PHONE_RULE } from '../domain/phone';
-import { ACCOUNT_ROLE_LABEL, ADMIN_GROUP_LABEL, type UserAccount } from '../domain/types';
-import { useStore } from '../store/AppDataContext';
-import { loadDemoUnlock, saveDemoUnlock } from '../store/persistence';
-import { GoogleSignIn } from './GoogleSignIn';
-import { PAGE_X } from './layout';
-import { useUi } from './UiContext';
+import {useEffect,useState,type FormEvent} from 'react';
+import {ArrowLeft,ArrowRight,Eye,EyeOff,ShieldCheck,Sprout} from 'lucide-react';
+import {api,acceptLogin,type LoginResponse} from '../store/backend';
+import {Field,Input,PrimaryButton,SecondaryButton} from '../components/form';
+import {useUi} from './UiContext';
+import {useStore} from '../store/AppDataContext';
+import {SupabaseSignIn} from './SupabaseSignIn';
+import {supabaseConfigured} from '../store/supabaseConfig';
+import type {UserAccount} from '../domain/types';
+import {PasswordTools} from './PasswordTools';
+import {ForgotOtpTools} from './ForgotOtpTools';
+import {GoogleSignIn} from './GoogleSignIn';
 
-type Step = 'phone' | 'otp' | 'register';
-
-const roleLabel = (u: UserAccount) => (u.role === 'admin' && u.adminGroup ? `Admin – ${ADMIN_GROUP_LABEL[u.adminGroup]}` : ACCOUNT_ROLE_LABEL[u.role]);
-
-/** Màu vòng tròn đại diện theo vai trò (chỉ trang trí). */
-const AVATAR: Record<UserAccount['role'], string> = {
-  customer: 'bg-forest-900 text-champagne-200',
-  coop: 'bg-champagne-300 text-forest-950',
-  admin: 'bg-ink text-champagne-200',
-  regulator: 'bg-forest-100 text-forest-900',
-  shipper: 'bg-champagne-100 text-forest-950',
-};
-const initialsOf = (name: string) => {
-  const words = name
-    .replace(/\(.*?\)/g, '')
-    .trim()
-    .split(/\s+/);
-  return ((words[0]?.[0] ?? '') + (words.length > 1 ? (words[words.length - 1][0] ?? '') : '')).toUpperCase();
-};
-
-/**
- * Đăng nhập demo (mục 5.9): SĐT + OTP mô phỏng (luôn là 123456), có danh sách tài khoản demo để bấm nhanh.
- * Khách hàng mới đăng ký được bằng SĐT + OTP. HTX mới nộp hồ sơ đăng ký, được duyệt thì có tài khoản; Admin, QLNN do Admin cấp.
- * Giai đoạn 7: Quản trị gốc đặt mã trình diễn (NEW-01) thì danh sách tài khoản demo ẩn cho tới khi tab này nhập đúng mã.
- */
-export function LoginScreen() {
-  const { state, run } = useStore();
-  const { login, showToast, openModal } = useUi();
-  const [step, setStep] = useState<Step>('phone');
-  const [phone, setPhone] = useState('');
-  const [otp, setOtp] = useState('');
-  const [name, setName] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [unlocked, setUnlocked] = useState(loadDemoUnlock);
-  const showDemoAccounts = demoAccountsVisible(state, unlocked);
-
-  const sendOtp = (p = phone) => {
-    const r = requestOtp(state, p);
-    if (!r.ok) return setError(r.error);
-    setPhone(p);
-    setError(null);
-    setOtp('');
-    setStep('otp');
+export function LoginScreen(){
+  const {login,showToast,openModal}=useUi();const {demoMode}=useStore();
+  const [registering,setRegistering]=useState(window.location.pathname==='/dang-ky');
+  const [phone,setPhone]=useState(''),[password,setPassword]=useState(''),[confirm,setConfirm]=useState(''),[name,setName]=useState('');
+  const [visible,setVisible]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
+  const [accounts,setAccounts]=useState<UserAccount[]>([]);
+  const [challenge,setChallenge]=useState(''),[otp,setOtp]=useState(''),[otpDemo,setOtpDemo]=useState(false),[resendAt,setResendAt]=useState(0),[remaining,setRemaining]=useState(0);
+  useEffect(()=>{const timer=setInterval(()=>setRemaining(Math.max(0,Math.ceil((resendAt-Date.now())/1000))),1000);return()=>clearInterval(timer);},[resendAt]);
+  useEffect(()=>{setChallenge('');setOtp('');setError('');},[phone,registering]);
+  const sendCode=async()=>{if(busy||Date.now()<resendAt)return;setBusy(true);setError('');try{const result=await api('/api/v1/auth/otp',{phone,purpose:'register'});setChallenge(result.challengeId);setOtp('');setOtpDemo(result.demo);setResendAt(Date.now()+60000);setRemaining(60);}catch(e){setError(e instanceof Error?e.message:'Không gửi được mã.');}finally{setBusy(false);}};
+  useEffect(()=>{const sync=()=>{setRegistering(window.location.pathname==='/dang-ky');setError('');setPassword('');setConfirm('');};window.addEventListener('popstate',sync);return()=>window.removeEventListener('popstate',sync);},[]);
+  useEffect(()=>{if(demoMode)void api('/api/v1/demo/accounts').then(r=>setAccounts(r.users)).catch(()=>{});},[demoMode]);
+  const switchPage=(register:boolean)=>{history.pushState(null,'',register?'/dang-ky':'/dang-nhap');window.dispatchEvent(new PopStateEvent('popstate'));};
+  const submit=async(e:FormEvent)=>{
+    e.preventDefault();if(busy)return;setError('');
+    if(registering&&password!==confirm){setError('Mật khẩu nhập lại chưa khớp.');return;}
+    if(registering&&(!challenge||otp.length!==6)){setError('Vui lòng xác minh số điện thoại bằng OTP trước khi tạo tài khoản.');return;}
+    setBusy(true);
+    try{const result=await api<LoginResponse>(`/api/v1/auth/password/${registering?'register':'login'}`,{phone,password,...(registering?{name,challengeId:challenge,otp}:{})});acceptLogin(result);login(result.user.id);history.replaceState(null,'','/');showToast(registering?'Đăng ký thành công.':`Xin chào ${result.user.name}.`);}
+    catch(e){setError(e instanceof Error?e.message:'Không thể kết nối. Vui lòng thử lại.');}finally{setBusy(false);}
   };
-
-  const confirmOtp = () => {
-    const r = verifyLogin(state, phone, otp);
-    if (!r.ok) return setError(r.error);
-    login(r.value.id);
-    showToast(`Xin chào ${r.value.name}.`);
-  };
-
-  const register = () => {
-    let id = '';
-    const r = run(
-      (s, at) => registerCustomer(s, { name, phone, otp }, at),
-      (v) => {
-        id = v.user.id;
-        return v.state;
-      },
-    );
-    if (!r.ok) return setError(r.error);
-    login(id);
-    showToast('Đăng ký thành công.');
-  };
-
-  // Đăng nhập bằng Google: tài khoản đã có thì vào luôn, lần đầu thì tạo tài khoản khách hàng.
-  const googleSignIn = (profile: GoogleProfile) => {
-    const found = googleLogin(state, profile);
-    if (!found.ok) return setError(found.error);
-    if (found.value) {
-      login(found.value.id);
-      showToast(`Xin chào ${found.value.name}.`);
-      return;
-    }
-    let id = '';
-    const r = run(
-      (s, at) => registerGoogleCustomer(s, profile, at),
-      (v) => {
-        id = v.user.id;
-        return v.state;
-      },
-    );
-    if (!r.ok) return setError(r.error);
-    login(id);
-    showToast(`Chào mừng ${r.value.user.name}. Đã tạo tài khoản khách hàng.`);
-  };
-
-  // Tài khoản đăng nhập bằng Google là của người dùng thật, không đưa vào danh sách tài khoản demo.
-  const groups: { title: string; users: UserAccount[] }[] = [
-    { title: 'Khách hàng', users: state.users.filter((u) => u.role === 'customer' && !u.google) },
-    { title: 'HTX', users: state.users.filter((u) => u.role === 'coop') },
-    { title: 'Admin', users: state.users.filter((u) => u.role === 'admin') },
-    { title: 'Giao vận', users: state.users.filter((u) => u.role === 'shipper') },
-    { title: 'Cơ quan QLNN', users: state.users.filter((u) => u.role === 'regulator') },
-  ];
-
-  return (
-    <div className={`w-full pt-4 pb-10 md:pt-6 lg:grid lg:grid-cols-[1.05fr_1fr] lg:items-start lg:gap-8 2xl:gap-12 ${PAGE_X}`}>
-      {/* Máy tính: khung giới thiệu cao bằng màn hình, đứng yên khi cuộn danh sách tài khoản demo. */}
-      <div className="relative overflow-hidden rounded-[32px] bg-forest-950 text-white shadow-[0_24px_60px_rgb(14,37,27,0.28)] lg:sticky lg:top-[calc(var(--app-header-h,0px)+1.5rem)] lg:min-h-[calc(100dvh-var(--app-header-h,0px)-3rem)]">
-        <div aria-hidden="true" className="lattice absolute inset-0" />
-        <LandscapeArt className="absolute inset-0 h-full w-full" />
-        <div className="relative flex flex-col items-center px-6 pt-8 pb-24 text-center sm:pb-32 lg:pt-16 lg:pb-56">
-          <BrandEmblem size={68} className="drop-shadow-[0_10px_24px_rgb(0,0,0,0.35)] lg:h-20 lg:w-20" />
-          <p className="mt-5 text-xs font-semibold uppercase tracking-[0.22em] text-champagne-300">Đặc sản vùng cao, giao tại Hà Nội</p>
-          <h1 className="text-gold mt-2 font-display text-4xl font-semibold leading-tight md:text-5xl">
-            Đặc Sản Số <span className="block italic sm:inline">Lào Cai</span>
-          </h1>
-          <Ornament tone="dark" className="mt-3" />
-          <p className="mt-3 max-w-xs text-sm text-forest-100">Đăng nhập bằng số điện thoại và mã OTP.</p>
-        </div>
-        <BrocadeBand className="absolute inset-x-0 bottom-0" />
-      </div>
-
-      <div className="mt-5 space-y-6 lg:mt-0">
-        <section
-          className="space-y-3 rounded-[28px] border border-champagne-200 bg-white p-5 shadow-[0_14px_34px_rgb(31,77,58,0.08)]"
-          aria-labelledby="dang-nhap"
-        >
-          <h2 id="dang-nhap" className="font-display text-2xl font-semibold text-ink">
-            {step === 'register' ? 'Đăng ký tài khoản khách' : 'Đăng nhập'}
-          </h2>
-          <p className="flex flex-wrap items-center gap-2 rounded-2xl border border-dashed border-champagne-500 bg-champagne-50 p-2.5 text-sm text-ink">
-            <SimBadge /> OTP mô phỏng: không gửi tin nhắn thật, mã luôn là <strong className="font-mono">{DEMO_OTP}</strong>
-          </p>
-
-          {step === 'phone' && (
-            <>
-              <Field label="Số điện thoại" hint={PHONE_RULE}>
-                <Input
-                  inputMode="tel"
-                  autoComplete="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="0900 000 000"
-                  onKeyDown={(e) => e.key === 'Enter' && sendOtp()}
-                />
-              </Field>
-              <PrimaryButton className="w-full" onClick={() => sendOtp()}>
-                Nhận mã OTP
-              </PrimaryButton>
-              <SecondaryButton
-                className="w-full"
-                onClick={() => {
-                  setError(null);
-                  setOtp('');
-                  setStep('register');
-                }}
-              >
-                Khách hàng mới? Đăng ký
-              </SecondaryButton>
-              <div className="flex items-center gap-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-champagne-700" aria-hidden="true">
-                <span className="h-px flex-1 bg-champagne-200" />
-                hoặc
-                <span className="h-px flex-1 bg-champagne-200" />
-              </div>
-              <GoogleSignIn onProfile={googleSignIn} />
-            </>
-          )}
-
-          {step === 'otp' && (
-            <>
-              <p className="text-sm text-stone-700">
-                Mã OTP mô phỏng cho số <strong>{formatPhone(phone)}</strong>.
-              </p>
-              <Field label="Mã OTP (6 số)">
-                <Input
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  maxLength={6}
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                  onKeyDown={(e) => e.key === 'Enter' && confirmOtp()}
-                />
-              </Field>
-              <div className="flex gap-2">
-                <SecondaryButton onClick={() => setStep('phone')}>Đổi số</SecondaryButton>
-                <SecondaryButton onClick={() => setOtp(DEMO_OTP)}>Điền OTP mô phỏng</SecondaryButton>
-                <PrimaryButton className="flex-1" onClick={confirmOtp}>
-                  Đăng nhập
-                </PrimaryButton>
-              </div>
-            </>
-          )}
-
-          {step === 'register' && (
-            <>
-              <Field label="Họ tên">
-                <Input value={name} onChange={(e) => setName(e.target.value)} />
-              </Field>
-              <Field label="Số điện thoại" hint={PHONE_RULE}>
-                <Input inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="0900 000 000" />
-              </Field>
-              <Field label="Mã OTP (6 số)">
-                <Input inputMode="numeric" maxLength={6} value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))} />
-              </Field>
-              <div className="flex gap-2">
-                <SecondaryButton onClick={() => setStep('phone')}>Quay lại</SecondaryButton>
-                <SecondaryButton onClick={() => setOtp(DEMO_OTP)}>Điền OTP mô phỏng</SecondaryButton>
-                <PrimaryButton className="flex-1" onClick={register}>
-                  Đăng ký
-                </PrimaryButton>
-              </div>
-            </>
-          )}
-
-          {error && (
-            <p className="text-sm font-semibold text-rose-700" role="alert">
-              {error}
-            </p>
-          )}
-        </section>
-
-        {/* Quy trình phê duyệt HTX: HTX mới nộp hồ sơ ở đây, Admin – Chất lượng duyệt rồi cấp tài khoản. */}
-        <section aria-labelledby="htx-dang-ky" className="space-y-3 rounded-[28px] border border-champagne-200 bg-champagne-50/70 p-5">
-          <h2 id="htx-dang-ky" className="font-display text-xl font-semibold text-ink">
-            HTX muốn bán hàng trên sàn?
-          </h2>
-          <p className="text-sm text-stone-600">Nộp hồ sơ đăng ký HTX. Admin – Chất lượng tiếp nhận, thẩm định và duyệt, rồi cấp tài khoản đăng nhập bằng SĐT người đại diện.</p>
-          <div className="grid gap-2 sm:grid-cols-2">
-            <PrimaryButton onClick={() => openModal({ type: 'coop_apply' })}>Đăng ký HTX</PrimaryButton>
-            <SecondaryButton onClick={() => openModal({ type: 'coop_apply_status' })}>Tra cứu hồ sơ HTX</SecondaryButton>
-          </div>
-        </section>
-
-        <section className="space-y-3" aria-labelledby="tai-khoan-demo">
-          <SectionHeading id="tai-khoan-demo" eyebrow="Bản demo" title="Tài khoản demo" />
-          {showDemoAccounts ? (
-            <p className="text-sm text-stone-600">
-              Bấm một tài khoản để điền sẵn số điện thoại, sau đó nhập OTP mô phỏng. Đổi vai trò bằng cách đăng xuất rồi đăng nhập tài khoản khác.
-            </p>
-          ) : (
-            <DemoCodeGate
-              onUnlocked={(hash) => {
-                saveDemoUnlock(hash);
-                setUnlocked(hash);
-              }}
-            />
-          )}
-          {showDemoAccounts && groups.map((g) => (
-            <div key={g.title} className="space-y-1.5">
-              <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-champagne-700">{g.title}</h3>
-              <ul className="grid gap-2 sm:grid-cols-2 2xl:grid-cols-3">
-                {g.users.map((u) => (
-                  <li key={u.id}>
-                    <button
-                      disabled={u.status !== 'active'}
-                      onClick={() => sendOtp(u.phone)}
-                      className="flex min-h-14 w-full items-center gap-3 rounded-2xl border border-champagne-200 bg-white/90 px-3 py-2 text-left transition hover:border-champagne-500 hover:shadow-[0_8px_20px_rgb(31,77,58,0.08)] disabled:opacity-50"
-                    >
-                      <span
-                        aria-hidden="true"
-                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-display text-sm font-semibold ring-1 ring-champagne-400/60 ${AVATAR[u.role]}`}
-                      >
-                        {initialsOf(u.name)}
-                      </span>
-                      <span className="min-w-0">
-                        <span className="block truncate text-sm font-bold text-ink">{u.name}</span>
-                        <span className="block truncate text-xs text-stone-600">
-                          {roleLabel(u)} · {formatPhone(u.phone)}
-                          {u.status !== 'active' ? ' · đang khoá' : ''}
-                        </span>
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </section>
-      </div>
+  const setupToken=new URLSearchParams(window.location.search).get('setup');
+  if(setupToken)return <div className="auth-page"><div className="mx-auto max-w-lg"><PasswordTools mode="setup" token={setupToken}/></div></div>;
+  return <div className="auth-page"><div className="auth-layout">
+    <aside className="auth-intro"><img src="/images/stitch/specialties-hero-v2.jpg" alt="Chè, mật ong và các món đặc sản vùng cao, ảnh minh họa"/><div className="auth-intro-shade"/><div className="auth-intro-copy"><Sprout size={38}/><p>TỪ MIỀN ĐẤT LÀNH</p><h1>Một chút quê hương.<br/><em>Một chút thương gửi bạn.</em></h1><p>Gắn kết cùng những người làm ra đặc sản, lưu lại hương vị yêu thích và đón chờ những mùa vụ mới.</p><span><ShieldCheck size={18}/> Tài khoản của bạn, hành trình của bạn.</span></div></aside>
+    <div className="auth-form-panel"><button className="auth-back" onClick={()=>window.dispatchEvent(new Event('browse-catalog'))}><ArrowLeft size={16}/> Trở về cửa hàng</button>
+      <p className="auth-eyebrow">ĐẶC SẢN SỐ</p><h2>{registering?'Đăng ký':'Đăng nhập'}</h2><p className="auth-description">{registering?'Tạo tài khoản để bắt đầu khám phá những hương vị quê nhà.':'Chào mừng bạn trở lại với những miền đất lành.'}</p>
+      <GoogleSignIn/><div className="auth-divider"><span/>hoặc dùng số điện thoại<span/></div>
+      <form onSubmit={submit} className="auth-form" aria-label={registering?'Đăng ký bằng số điện thoại':'Đăng nhập bằng số điện thoại'}>
+        {registering&&<Field label="Họ tên"><Input required minLength={2} maxLength={100} autoComplete="name" value={name} onChange={e=>setName(e.target.value)} placeholder="Họ và tên của bạn"/></Field>}
+        <Field label="Số điện thoại"><Input required type="tel" autoComplete="tel" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="0900 000 000" maxLength={20}/></Field>
+        <Field label="Mật khẩu" hint={registering?'8–32 ký tự, có chữ hoa, chữ thường, số và ký tự đặc biệt.':undefined}><span className="auth-password"><Input aria-label="Mật khẩu" required type={visible?'text':'password'} minLength={registering?8:undefined} maxLength={32} autoComplete={registering?'new-password':'current-password'} value={password} onChange={e=>setPassword(e.target.value)} placeholder="Nhập mật khẩu"/><button type="button" aria-label={visible?'Ẩn mật khẩu':'Hiện mật khẩu'} aria-pressed={visible} onClick={()=>setVisible(!visible)}>{visible?<EyeOff size={18}/>:<Eye size={18}/>}</button></span></Field>
+        {registering&&<Field label="Nhập lại mật khẩu"><Input aria-label="Nhập lại mật khẩu" required type={visible?'text':'password'} autoComplete="new-password" maxLength={32} value={confirm} onChange={e=>setConfirm(e.target.value)} placeholder="Nhập lại mật khẩu của bạn"/></Field>}
+        {registering&&<div className="space-y-3"><SecondaryButton type="button" disabled={busy||!phone||remaining>0} onClick={()=>void sendCode()}>{remaining>0?`Gửi lại sau ${remaining} giây`:challenge?'Gửi lại OTP đăng ký':'Gửi OTP đăng ký'}</SecondaryButton>{challenge&&<><Field label="OTP xác minh số điện thoại" hint="Mã có hiệu lực 120 giây."><Input inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={otp} onChange={e=>setOtp(e.target.value.replace(/\D/g,''))}/></Field>{otpDemo&&<p className="text-sm">Demo: OTP 123456.</p>}</>}</div>}
+        {error&&<p className="auth-error" role="alert">{error}</p>}
+        <PrimaryButton type="submit" disabled={busy} className="w-full">{busy?'Đang xử lý…':registering?'Tạo tài khoản':'Đăng nhập'} <ArrowRight size={16} className="inline ml-2"/></PrimaryButton>
+      </form>
+      {!registering&&<details className="auth-demo"><summary>Quên mật khẩu?</summary><PasswordTools mode="forgot"/><ForgotOtpTools/></details>}
+      <p className="auth-switch">{registering?'Đã có tài khoản?':'Bạn chưa có tài khoản?'} <button onClick={()=>switchPage(!registering)}>{registering?'Đăng nhập':'Đăng ký ngay'}</button></p>
+      {supabaseConfigured&&<SupabaseSignIn key={String(registering)} registering={registering}/>}
+      {!registering&&demoMode&&<details className="auth-demo"><summary>Dùng thử tài khoản demo</summary><p>Mật khẩu demo: <strong>Dacsan@123</strong></p><select aria-label="Chọn tài khoản demo" value={phone} onChange={e=>{setPhone(e.target.value);setPassword('Dacsan@123');}}><option value="">Chọn một tài khoản</option>{accounts.map(u=><option key={u.id} value={u.phone}>{u.name} · {u.phone}</option>)}</select><p>Tài khoản tạo mới sử dụng mật khẩu bạn tự đặt.</p></details>}
+      <div className="auth-coop"><p>Bạn là hợp tác xã muốn bán hàng?</p><SecondaryButton onClick={()=>openModal({type:'coop_apply'})}>Đăng ký HTX</SecondaryButton><button onClick={()=>openModal({type:'coop_apply_status'})}>Tra cứu hồ sơ</button></div>
     </div>
-  );
-}
-
-/** Danh sách tài khoản demo đang ẩn (NEW-01): nhập đúng mã trình diễn thì hiện, nhớ theo tab. */
-function DemoCodeGate({ onUnlocked }: { onUnlocked: (codeHash: string) => void }) {
-  const { state } = useStore();
-  const { showToast } = useUi();
-  const [code, setCode] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const unlock = () => {
-    const r = unlockDemoAccounts(state, code);
-    if (!r.ok) return setError(r.error);
-    setError(null);
-    onUnlocked(r.value);
-    showToast('Đã hiện danh sách tài khoản demo cho tab này.');
-  };
-  return (
-    <div className="space-y-3 rounded-[28px] border border-champagne-200 bg-white p-5">
-      <p className="text-sm text-stone-600">Danh sách tài khoản demo đang ẩn. Người trình diễn nhập mã trình diễn để hiện danh sách; người xem đăng nhập bằng số điện thoại ở trên.</p>
-      <Field label="Mã trình diễn">
-        <Input type="password" autoComplete="off" value={code} onChange={(e) => setCode(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && unlock()} />
-      </Field>
-      <SecondaryButton className="w-full" onClick={unlock}>
-        Hiện tài khoản demo
-      </SecondaryButton>
-      {error && (
-        <p className="text-sm font-semibold text-rose-700" role="alert">
-          {error}
-        </p>
-      )}
-    </div>
-  );
+  </div></div>;
 }

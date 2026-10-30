@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { TicketPercent } from 'lucide-react';
-import { WALLET_STATUS_LABEL, type WalletStatus } from '../../domain/marketplace';
+import { WALLET_STATUS_LABEL, type WalletStatus } from '../../store/commands/marketplace';
 import { formatMoney } from '../../domain/pricing';
 import type { Voucher } from '../../domain/voucher';
 import { useStore } from '../../store/AppDataContext';

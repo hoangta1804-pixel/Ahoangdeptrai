@@ -1,4 +1,4 @@
-import { shipperStep, type ShipperStep } from '../../domain/shipper';
+import { shipperStep, type ShipperStep } from '../../store/commands/shipper';
 import { ORDER_STATUS_LABEL, type Order } from '../../domain/types';
 
 const STEP: Record<Exclude<ShipperStep, 'done'>, { label: string; className: string }> = {

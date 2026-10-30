@@ -58,13 +58,13 @@ export function ModalHost() {
 }
 
 function ModalContent() {
-  const { modal, closeModal, openModal } = useUi();
+  const { modal, closeModal, openModal, user } = useUi();
   if (!modal) return null;
   switch (modal.type) {
     case 'product_detail':
       return <ProductDetailSheet key={modal.productId} productId={modal.productId} onClose={closeModal} />;
     case 'trace_lot':
-      return <TraceLotSheet productId={modal.productId} onClose={closeModal} />;
+      return <TraceLotSheet lotId={modal.lotId} productId={modal.productId} onClose={closeModal} />;
     case 'cart':
       return <CartSheet onClose={closeModal} />;
     case 'checkout':
@@ -96,7 +96,7 @@ function ModalContent() {
     case 'review':
       return <ReviewSheet key={`${modal.orderId}-${modal.productId}`} orderId={modal.orderId} productId={modal.productId} onClose={closeModal} />;
     case 'coop_product_form':
-      return <CoopProductFormSheet key={modal.productId ?? 'new'} productId={modal.productId} onClose={closeModal} />;
+      return user?.role==='admin'&&user.adminGroup==='quality'?<CoopProductFormSheet key={modal.productId ?? 'new'} productId={modal.productId} onClose={closeModal} />:null;
     case 'coop_variant_form':
       return <CoopVariantFormSheet key={modal.productId} productId={modal.productId} onClose={closeModal} />;
     case 'notifications':

@@ -4,10 +4,11 @@
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { actorOf } from '../domain/auth';
-import type { OrderTabKey } from '../domain/orderTabs';
+import type { OrderTabKey } from '../store/commands/orderTabs';
 import type { Actor, AdminSubGroup, CartLine, UserAccount } from '../domain/types';
 import { useStore } from '../store/AppDataContext';
 import { loadSession, saveSession } from '../store/persistence';
+import { backendLogout, hasBackendSession } from '../store/backend';
 
 /** Thanh dưới của khách. Đơn mua nằm trong Tài khoản (chủ repo yêu cầu gộp, không còn tab Đơn hàng riêng). */
 export type CustomerTab = 'explore' | 'season' | 'account';
@@ -17,7 +18,7 @@ export type CheckoutSource = { type: 'cart'; productIds?: string[] } | { type: '
 
 export type ModalState =
   | { type: 'product_detail'; productId: string }
-  | { type: 'trace_lot'; productId: string }
+  | { type: 'trace_lot'; productId: string;lotId?:string }
   | { type: 'cart' }
   /** `addressId`: địa chỉ chọn sẵn, vd. địa chỉ vừa thêm từ bước đặt hàng. */
   | { type: 'checkout'; source: CheckoutSource; addressId?: string }
@@ -93,7 +94,8 @@ const UiContext = createContext<UiContextValue | null>(null);
 
 export function UiProvider({ children }: { children: ReactNode }) {
   const { state } = useStore();
-  const [userId, setUserId] = useState<string | null>(() => loadSession());
+  const [userId, setUserId] = useState<string | null>(() => hasBackendSession() ? loadSession() : null);
+  useEffect(() => { const clear = () => { saveSession(null); setUserId(null); setModal(null); }; window.addEventListener('backend-logout', clear); return () => window.removeEventListener('backend-logout', clear); }, []);
   const [customerTab, setCustomerTab] = useState<CustomerTab>('explore');
   const [orderTab, setOrderTab] = useState<OrderTabKey>('all');
   const [ordersFocus, setOrdersFocus] = useState(0);
@@ -129,10 +131,11 @@ export function UiProvider({ children }: { children: ReactNode }) {
     pendingOrdersFocus.current = false;
     return pending;
   }, []);
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
     saveSession(null);
     setUserId(null);
     setModal(null);
+    await backendLogout();
   }, []);
   const closeModal = useCallback(() => setModal(null), []);
 
@@ -156,7 +159,7 @@ export function UiProvider({ children }: { children: ReactNode }) {
       ordersFocus,
       takeOrdersFocus,
       modal,
-      openModal: setModal,
+      openModal: (next) => { if(!user&&['checkout','cart','favorites','voucher_wallet','season_watch','address_book','invoice_default','review','complaint'].includes(next.type)){showToast('Vui lòng đăng nhập để tiếp tục.');window.dispatchEvent(new Event('show-login'));return;}setModal(next); },
       closeModal,
       toast,
       showToast,

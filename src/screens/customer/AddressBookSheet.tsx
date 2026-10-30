@@ -3,7 +3,7 @@ import { CheckCircle2, Circle, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useUi } from '../../app/UiContext';
 import { BottomSheet } from '../../components/BottomSheet';
 import { EmptyState } from '../../components/EmptyState';
-import { deleteAddress, MAX_ADDRESSES, setDefaultAddress } from '../../domain/address';
+import { deleteAddress, MAX_ADDRESSES, setDefaultAddress } from '../../store/commands/address';
 import { snapshotAddress } from '../../domain/state';
 import { useStore } from '../../store/AppDataContext';
 
@@ -19,10 +19,10 @@ export function AddressBookSheet({ onClose }: { onClose: () => void }) {
   const mine = state.addresses.filter((a) => a.customerId === customerActor.id);
   const full = mine.length >= MAX_ADDRESSES;
 
-  const choose = (id: string, label: string) => {
+  const choose = async (id: string, label: string) => {
     const current = mine.find((a) => a.isDefault);
     if (current?.id !== id) {
-      const r = run((s) => setDefaultAddress(s, customerActor.id!, id));
+      const r = await run((s) => setDefaultAddress(s, customerActor.id!, id));
       if (!r.ok) return showToast(r.error);
     }
     showToast(`Địa chỉ nhận hàng: ${label}.`);
@@ -101,8 +101,8 @@ export function AddressBookSheet({ onClose }: { onClose: () => void }) {
                       Huỷ
                     </button>
                     <button
-                      onClick={() => {
-                        const r = run((s) => deleteAddress(s, customerActor.id!, a.id));
+                      onClick={async () => {
+                        const r = await run((s) => deleteAddress(s, customerActor.id!, a.id));
                         showToast(r.ok ? 'Đã xoá địa chỉ.' : r.error);
                         setConfirmDeleteId(null);
                       }}

@@ -1,4 +1,4 @@
-import { INVOICE_LIMITS, INVOICE_SIMULATED_LABEL } from '../domain/invoice';
+import { INVOICE_LIMITS, INVOICE_SIMULATED_LABEL } from '../store/commands/invoice';
 import type { CompanyInvoice } from '../domain/types';
 import { Field, Input } from './form';
 

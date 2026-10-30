@@ -8,7 +8,7 @@ import { LandscapeArt } from '../../components/LandscapeArt';
 import { PreorderProgress } from '../../components/PreorderProgress';
 import { ProductImage } from '../../components/ProductImage';
 import { QuantityStepper } from '../../components/QuantityStepper';
-import { deliveryWindow, isOrderableIn } from '../../domain/cart';
+import { deliveryWindow, isOrderableIn } from '../../store/commands/cart';
 import { computeDeposit, formatMoney } from '../../domain/pricing';
 import { isSamplePrice, remainingFor } from '../../domain/state';
 import { useStore } from '../../store/AppDataContext';

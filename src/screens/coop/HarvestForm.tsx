@@ -2,7 +2,7 @@ import { useId, useState } from 'react';
 import { useUi } from '../../app/UiContext';
 import { Field, Input, PrimaryButton, SecondaryButton, Textarea } from '../../components/form';
 import { PhotoPicker } from '../../components/PhotoPicker';
-import { allocateHarvest, coopConfirmHarvest, HARVEST_NOTE_MAX_LENGTH, HARVEST_PHOTO_MAX, ordersAwaitingHarvest, quantityIn } from '../../domain/harvest';
+import { allocateHarvest, coopConfirmHarvest, HARVEST_NOTE_MAX_LENGTH, HARVEST_PHOTO_MAX, ordersAwaitingHarvest, quantityIn } from '../../store/commands/harvest';
 import { findProduct, formatDateKey, toDateKey } from '../../domain/state';
 import { useStore } from '../../store/AppDataContext';
 
@@ -39,9 +39,9 @@ export function HarvestForm({ productId, orderId, onDone, onCancel }: { productI
   const coveredIds = new Set(alloc.covered.map((o) => o.id));
   const batch = !orderId;
 
-  const submit = () => {
+  const submit = async () => {
     setError(null);
-    const r = run(
+    const r = await run(
       (s, at) => coopConfirmHarvest(s, coopActor, { productId, orderId, harvestedOn, quantity: batch ? (validQty ? q : 0) : undefined, note, photos, reportReady }, at),
       (v) => v.state,
     );

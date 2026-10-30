@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useUi } from '../app/UiContext';
-import { markNotificationsRead, notificationsOf } from '../domain/notifications';
+import { markNotificationsRead, notificationsOf } from '../store/commands/notifications';
 import type { AppNotification, NotificationLink } from '../domain/types';
 import { useStore } from '../store/AppDataContext';
 import { BottomSheet } from './BottomSheet';
@@ -15,7 +15,7 @@ export function NotificationsSheet({ onClose }: { onClose: () => void }) {
   const [unreadIds] = useState(() => list.filter((n) => !n.read).map((n) => n.id));
 
   useEffect(() => {
-    if (user && unreadIds.length > 0) run((s) => ({ ok: true, value: markNotificationsRead(s, user.id, unreadIds) }));
+    if (user && unreadIds.length > 0) void run((s) => ({ ok: true, value: markNotificationsRead(s, user.id, unreadIds) }));
     // Chỉ đánh dấu những thông báo chưa đọc lúc mở.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

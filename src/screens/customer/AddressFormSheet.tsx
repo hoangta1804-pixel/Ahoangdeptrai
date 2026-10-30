@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useUi, type ModalState } from '../../app/UiContext';
 import { BottomSheet } from '../../components/BottomSheet';
 import { Field, Input, PrimaryButton, Select } from '../../components/form';
-import { addAddress, updateAddress, type AddressInput } from '../../domain/address';
+import { addAddress, updateAddress, type AddressInput } from '../../store/commands/address';
 import { PHONE_RULE } from '../../domain/phone';
 import type { HouseType } from '../../domain/types';
 import { GpsAddressButton } from './GpsAddressButton';
@@ -32,11 +32,11 @@ export function AddressFormSheet({ addressId, returnTo, onClose }: { addressId?:
     else openModal(returnTo ?? { type: 'address_book' });
   };
 
-  const save = () => {
+  const save = async () => {
     let savedId = existing?.id;
     const r = existing
-      ? run((s) => updateAddress(s, customerActor.id!, existing.id, form))
-      : run(
+      ? await run((s) => updateAddress(s, customerActor.id!, existing.id, form))
+      : await run(
           (s) => addAddress(s, customerActor.id!, form),
           (v) => {
             savedId = v.address.id;

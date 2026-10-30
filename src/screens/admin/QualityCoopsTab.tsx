@@ -3,8 +3,8 @@ import { useUi } from '../../app/UiContext';
 import { AdminTable, Td } from '../../components/AdminTable';
 import { EmptyState } from '../../components/EmptyState';
 import { DangerButton, Input, PrimaryButton, SecondaryButton } from '../../components/form';
-import { coopPhonesOf, formatContactPhone } from '../../domain/coopContact';
-import { qualityDecideCoopProfile, qualitySetSellingRights } from '../../domain/coopProfile';
+import { coopPhonesOf, formatContactPhone } from '../../store/commands/coopContact';
+import { qualityDecideCoopProfile, qualitySetSellingRights } from '../../store/commands/coopProfile';
 import type { Coop } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
 
@@ -27,8 +27,8 @@ function CoopRow({ coop: c }: { coop: Coop }) {
   const { run } = useStore();
   const { adminActor, showToast } = useUi();
   const [reason, setReason] = useState('');
-  const act = (op: Parameters<typeof run>[0], ok: string) => {
-    const r = run(op);
+  const act = async (op: Parameters<typeof run>[0], ok: string) => {
+    const r = await run(op);
     showToast(r.ok ? ok : r.error);
     if (r.ok) setReason('');
   };

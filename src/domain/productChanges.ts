@@ -50,6 +50,12 @@ function newRequest(product: Product, type: ProductChangeType, at: Date, extra: 
 }
 
 export function validateContent(c: ProductContent): string | null {
+  if(c.traceUrl){try{const url=new URL(c.traceUrl);if(!['https:','http:'].includes(url.protocol)||url.username||url.password||c.traceUrl.length>2000)return 'Link truy xuất phải là địa chỉ web HTTP/HTTPS hợp lệ.';}catch{return 'Link truy xuất không hợp lệ.';}}
+  if(c.harvestMonths!==undefined&&(!Array.isArray(c.harvestMonths)||c.harvestMonths.length>12||c.harvestMonths.some(m=>!Number.isInteger(m)||m<1||m>12)||new Set(c.harvestMonths).size!==c.harvestMonths.length))return 'Chọn các tháng thu hoạch từ 1 đến 12, không trùng nhau.';
+  if(c.images&&(c.images.length<1||c.images.length>6||c.images.some(s=>typeof s!=='string'||!s)))return 'Sản phẩm cần từ 1 đến 6 ảnh.';
+  if(c.storage&&c.storage.length>1000)return 'Hướng dẫn bảo quản tối đa 1.000 ký tự.';
+  if(c.shelfLifeDays!==undefined&&(!Number.isInteger(c.shelfLifeDays)||c.shelfLifeDays<1||c.shelfLifeDays>(c.category==='fresh'?30:1095)))return 'Hạn dùng tối đa 30 ngày (tươi) hoặc 36 tháng (khô).';
+  if(c.preparationMinutes!==undefined&&(!Number.isInteger(c.preparationMinutes)||c.preparationMinutes<0||c.preparationMinutes>10080))return 'Thời gian chuẩn bị không hợp lệ.';
   if (!c.name.trim()) return 'Vui lòng nhập tên sản phẩm.';
   if (!c.unit.trim()) return 'Vui lòng nhập quy cách (ví dụ: gói 100 g).';
   if (!c.region.trim()) return 'Vui lòng nhập vùng sản xuất.';
@@ -71,6 +77,7 @@ export function coopCreateProduct(state: DemoState, actor: Actor, input: NewProd
   if (!coop) return fail('Không tìm thấy HTX.');
   const err = validateContent(input);
   if (err) return fail(err);
+  if(input.catalogCategoryId&&!state.catalogCategories?.some(c=>c.id===input.catalogCategoryId&&c.active&&c.group===input.category))return fail('Danh mục không hoạt động hoặc không đúng nhóm hàng.');
   if (!Number.isInteger(input.price) || input.price <= 0) return fail('Giá phải là số nguyên dương (đồng).');
   if (input.kind === 'ready' && (!Number.isInteger(input.stockOnHand) || input.stockOnHand < 0)) return fail('Tồn kho phải là số nguyên không âm.');
   if (input.kind === 'preorder') {
@@ -79,6 +86,11 @@ export function coopCreateProduct(state: DemoState, actor: Actor, input: NewProd
     if (pErr) return fail(pErr);
   }
   const product: Product = {
+    traceUrl:input.traceUrl,
+    harvestMonths:input.harvestMonths?.slice().sort((a,b)=>a-b),
+    catalogCategoryId:input.catalogCategoryId,
+    images:input.images,image:input.images?.[0],storage:input.storage,shelfLifeDays:input.shelfLifeDays,preparationMinutes:input.preparationMinutes,
+    createdAt: iso(at),
     id: generateId('SP'),
     coopId: coop.id,
     name: input.name.trim(),
@@ -104,6 +116,7 @@ export function coopRequestContentChange(state: DemoState, productId: string, ac
   if ('error' in own) return fail(own.error!);
   const err = validateContent(content);
   if (err) return fail(err);
+  if(content.catalogCategoryId&&!state.catalogCategories?.some(c=>c.id===content.catalogCategoryId&&c.active&&c.group===content.category))return fail('Danh mục không hợp lệ.');
   if (hasPending(state, productId, 'content')) return fail('Sản phẩm đã có yêu cầu sửa nội dung đang chờ duyệt.');
   const req = newRequest(own.product, 'content', at, { content: { ...content, name: content.name.trim(), description: content.description.trim(), unit: content.unit.trim(), region: content.region.trim() } });
   return ok(audit({ ...state, productChanges: [req, ...state.productChanges] }, actor, 'Gửi duyệt sửa nội dung', own.product.name, at));
@@ -135,9 +148,15 @@ export function coopRequestCertification(state: DemoState, productId: string, ac
   if ('error' in own) return fail(own.error!);
   if (!cert.label.trim()) return fail('Vui lòng nhập tên chứng nhận.');
   if (!cert.issuer.trim()) return fail('Vui lòng nhập nơi cấp.');
-  if (!cert.validUntil) return fail('Vui lòng nhập hạn hiệu lực.');
+  if(typeof cert.number!=='string'||!cert.number.trim()||cert.number.trim().length>100)return fail('Vui lòng nhập số chứng nhận, tối đa 100 ký tự.');
+  const validDate=(value:unknown):value is string=>typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value)&&Number.isFinite(Date.parse(value))&&new Date(value).toISOString().slice(0,10)===value;
+  if(!validDate(cert.issuedOn)||!validDate(cert.validUntil))return fail('Ngày cấp và ngày hết hạn phải là ngày hợp lệ.');
+  const today=at.toLocaleDateString('en-CA',{timeZone:'Asia/Ho_Chi_Minh'});
+  if(cert.issuedOn>today)return fail('Ngày cấp chứng nhận không được ở tương lai.');
+  if(cert.validUntil<cert.issuedOn)return fail('Ngày hết hạn không được trước ngày cấp.');
+  if(cert.validUntil<today)return fail('Chứng nhận đã hết hiệu lực.');
   if (!cert.photo) return fail('Vui lòng thêm ảnh chứng nhận.');
-  const req = newRequest(own.product, 'cert', at, { cert: { ...cert, id: generateId('CN'), label: cert.label.trim(), issuer: cert.issuer.trim(), verified: false } });
+  const req = newRequest(own.product, 'cert', at, { cert: { ...cert, number:cert.number.trim(), id: generateId('CN'), label: cert.label.trim(), issuer: cert.issuer.trim(), verified: false } });
   return ok(audit({ ...state, productChanges: [req, ...state.productChanges] }, actor, 'Gửi duyệt chứng nhận', own.product.name, at, cert.label));
 }
 
@@ -194,6 +213,7 @@ export function decideProductChange(state: DemoState, requestId: string, actor: 
   const req = state.productChanges.find((c) => c.id === requestId);
   if (!req) return fail('Không tìm thấy yêu cầu.');
   if (req.status !== 'pending') return fail('Yêu cầu đã được xử lý.');
+  if(approve&&req.type==='cert'&&req.cert&&req.cert.validUntil<at.toLocaleDateString('en-CA',{timeZone:'Asia/Ho_Chi_Minh'}))return fail('Chứng nhận đã hết hiệu lực trong lúc chờ duyệt.');
   if (!approve && !reason.trim()) return fail('Từ chối phải ghi lý do.');
   const decided: ProductChangeRequest = {
     ...req,

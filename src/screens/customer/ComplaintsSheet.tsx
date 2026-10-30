@@ -5,7 +5,7 @@ import { PrimaryButton } from '../../components/form';
 import { OrderStatusBadge } from '../../components/StatusBadge';
 import { CustomerTicketCard } from '../../components/TicketProgress';
 import { listTicketsFor } from '../../domain/access';
-import { isTicketOpen } from '../../domain/complaint';
+import { isTicketOpen } from '../../store/commands/complaint';
 import type { Ticket } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
 

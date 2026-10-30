@@ -134,7 +134,7 @@ export function shipperRemitCod(state: DemoState, actor: Actor, at: Date): Resul
     orders: state.orders.map((o) => (ids.has(o.id) ? { ...o, shipment: { ...o.shipment!, remittanceId: remittance.id } } : o)),
     codRemittances: [remittance, ...(state.codRemittances ?? [])],
   };
-  return ok({ state: audit(next, actor, 'Nộp tiền thu hộ (mô phỏng)', remittance.id, at, `${orders.length} đơn · ${remittance.amount}đ`), remittance });
+  return ok({ state: audit(next, actor, 'Lập phiếu nộp tiền thu hộ', remittance.id, at, `${orders.length} đơn · ${remittance.amount}đ`), remittance });
 }
 
 export function financeConfirmRemittance(state: DemoState, actor: Actor, remittanceId: string, at: Date): Result<DemoState> {
@@ -144,7 +144,7 @@ export function financeConfirmRemittance(state: DemoState, actor: Actor, remitta
   if (remittance.status === 'confirmed') return fail('Phiếu nộp tiền đã được xác nhận.');
   const confirmed: CodRemittance = { ...remittance, status: 'confirmed', confirmedAt: iso(at), confirmedBy: actor.name ?? 'Admin – Tài chính' };
   const next = { ...state, codRemittances: (state.codRemittances ?? []).map((r) => (r.id === remittanceId ? confirmed : r)) };
-  return ok(audit(next, actor, 'Xác nhận đã nhận tiền thu hộ (mô phỏng)', remittanceId, at, `${remittance.shipperName} · ${remittance.amount}đ`));
+  return ok(audit(next, actor, 'Ghi nhận Tài chính đã nhận tiền thu hộ', remittanceId, at, `${remittance.shipperName} · ${remittance.amount}đ`));
 }
 
 // ---------- Hiển thị ----------

@@ -4,6 +4,7 @@ import { DEMO_OTP } from '../domain/auth';
 import { emergencyReset } from '../store/emergencyReset';
 import { clearState, saveSession } from '../store/persistence';
 import { isChunkLoadError, reloadOnceForNewVersion } from './chunkReload';
+import { api, saveTokens, type LoginResponse } from '../store/backend';
 
 /**
  * Khung lỗi ở gốc app (sửa lỗi bản web 18/10/2026): trước đây lỗi ở khung app (thanh trên cùng, chuyển màn) làm trắng trang.
@@ -42,11 +43,14 @@ function CrashScreen({ error, componentStack }: { error: Error; componentStack: 
   };
   const resetShared = async () => {
     setBusy(true);
-    const r = await emergencyReset(phone, otp);
-    setBusy(false);
-    if (!r.ok) return setMessage(r.error);
-    saveSession(null);
-    window.location.reload();
+    try {
+      const challenge = await api('/api/v1/auth/otp', {phone,purpose:'login'});
+      const session = await api<LoginResponse>('/api/v1/auth/login', {challengeId:challenge.challengeId,otp});
+      saveTokens(session);
+      await api('/api/v1/demo/tools', {action:'data-reset'});
+      saveTokens(null);saveSession(null);window.location.reload();
+    } catch(e) {setMessage(e instanceof Error?e.message:'Không khôi phục được.');}
+    finally {setBusy(false);}
   };
 
   const button = 'min-h-11 rounded-2xl px-4 text-sm font-bold';

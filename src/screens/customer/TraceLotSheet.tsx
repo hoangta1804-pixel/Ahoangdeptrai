@@ -1,6 +1,7 @@
+import {LotTools} from '../../components/LotTools';
 import { BottomSheet } from '../../components/BottomSheet';
 import { ProductImage } from '../../components/ProductImage';
-import { latestHarvest } from '../../domain/harvest';
+import { latestHarvest } from '../../store/commands/harvest';
 import { findProduct, formatDateKey } from '../../domain/state';
 import { CATEGORY_LABEL, ORDER_KIND_LABEL } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
@@ -9,8 +10,8 @@ import { useStore } from '../../store/AppDataContext';
  * Thông tin nguồn gốc của đúng sản phẩm được chọn (L10).
  * Chỉ hiện dữ liệu có trong hồ sơ sản phẩm; không dựng nhật ký thu hái, toạ độ hay lời xác nhận của cơ quan nhà nước.
  */
-export function TraceLotSheet({ productId, onClose }: { productId: string; onClose: () => void }) {
-  const { state } = useStore();
+export function TraceLotSheet({ productId, lotId, onClose }: { productId: string;lotId?:string; onClose: () => void }) {
+  const { state,now } = useStore();
   const product = findProduct(state, productId);
   if (!product) return null;
   const coop = state.coops.find((c) => c.id === product.coopId);
@@ -22,8 +23,9 @@ export function TraceLotSheet({ productId, onClose }: { productId: string; onClo
     ['Nhóm hàng', CATEGORY_LABEL[product.category]],
     ['Loại đơn', ORDER_KIND_LABEL[product.kind]],
     ['Quy cách', product.unit],
+    ['Tháng thu hoạch',product.harvestMonths?.length?product.harvestMonths.join(', '):undefined],
     // Chỉ hiện chứng nhận Admin – Chất lượng đã xem hồ sơ (FR-SP-08); không có mã chứng nhận mẫu (mục 9.3).
-    ['Chứng nhận', product.certifications?.filter((c) => c.verified).map((c) => `${c.label} · ${c.issuer}`).join('; ') || undefined],
+    ['Chứng nhận', product.certifications?.filter((c) => c.verified&&c.validUntil>=now().toLocaleDateString('en-CA',{timeZone:'Asia/Ho_Chi_Minh'})).map((c) => `${c.label} · ${c.issuer}${c.number?` · Số ${c.number}`:''}${c.issuedOn?` · Cấp ${formatDateKey(c.issuedOn)}`:''} · Hết hạn ${formatDateKey(c.validUntil)}`).join('; ') || undefined],
     ['Ghi chú hồ sơ', product.sample?.dossierNote],
     [
       'Khoảng ngày giao',
@@ -34,7 +36,8 @@ export function TraceLotSheet({ productId, onClose }: { productId: string; onClo
     ['Thu hoạch gần nhất', harvest ? `${formatDateKey(harvest.harvestedOn)} (HTX xác nhận)` : undefined],
   ];
   return (
-    <BottomSheet title="Thông tin nguồn gốc" onClose={onClose}>
+    <BottomSheet title="Thông tin nguồn gốc" onClose={onClose}><LotTools productId={productId} lotId={lotId}/>
+      {product.traceUrl&&/^https?:\/\//i.test(product.traceUrl)&&<a className="block min-h-11 rounded border p-3 underline" href={product.traceUrl} target="_blank" rel="noopener noreferrer">Mở trang truy xuất do HTX cung cấp</a>}
       <div className="flex gap-3">
         <ProductImage product={product} className="h-20 w-20 shrink-0 rounded-2xl" />
         <div className="min-w-0">

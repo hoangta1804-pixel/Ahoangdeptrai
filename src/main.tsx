@@ -25,3 +25,14 @@ createRoot(document.getElementById('root')!).render(
     </AppCrashBoundary>
   </StrictMode>,
 );
+
+import '@fontsource/newsreader/400.css';
+import '@fontsource/newsreader/500.css';
+import '@fontsource/newsreader/400-italic.css';
+
+import './storefront.css';
+
+import './auth.css';
+
+import './catalog.css';
+import './responsive.css';

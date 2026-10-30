@@ -7,7 +7,8 @@ import { aggregateStats } from './stats';
 import { fail, ok, ORDER_STATUS_LABEL, ORDER_STATUSES, type Actor, type DemoState, type Result } from './types';
 
 const cell = (v: string | number): string => {
-  const s = String(v);
+  const raw = String(v);
+  const s = /^[\s\u0000-\u001f]*[=+\-@]/.test(raw) ? `'${raw}` : raw;
   return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
 const csv = (rows: (string | number)[][]): string => '﻿' + rows.map((r) => r.map(cell).join(',')).join('\n');
@@ -18,11 +19,12 @@ export function exportReport(state: DemoState, actor: Actor, kind: ReportKind, a
   if (actor.kind !== 'regulator' && actor.kind !== 'admin') return fail('Bạn không có quyền xuất báo cáo.');
   const stamp = at.toISOString().slice(0, 10);
   if (kind === 'summary') {
-    const s = aggregateStats(state);
+    const s = aggregateStats(state,at);
     const rows: (string | number)[][] = [
       ['Chỉ tiêu', 'Giá trị'],
       ['HTX đang hoạt động', s.coopsActive],
       ['Sản phẩm đang bán', s.productsActive],
+      ['Sản phẩm có chứng nhận đã xác minh còn hiệu lực',s.productsVerified],
       ['Tổng số đơn', s.ordersTotal],
       ['Giá trị hàng đã giao (đồng)', s.deliveredGoodsValue],
       ['Khiếu nại đang mở', s.ticketsOpen],

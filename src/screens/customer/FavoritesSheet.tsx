@@ -3,7 +3,7 @@ import { useUi } from '../../app/UiContext';
 import { BottomSheet } from '../../components/BottomSheet';
 import { EmptyState } from '../../components/EmptyState';
 import { ProductImage } from '../../components/ProductImage';
-import { coopShop, familyPrice, favoriteItems, followedCoops } from '../../domain/marketplace';
+import { coopShop, familyPrice, favoriteItems, followedCoops } from '../../store/commands/marketplace';
 import { formatMoney } from '../../domain/pricing';
 import { useStore } from '../../store/AppDataContext';
 import { useMarketplace } from './useMarketplace';

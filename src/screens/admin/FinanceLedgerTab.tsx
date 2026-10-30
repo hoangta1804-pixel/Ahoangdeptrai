@@ -5,13 +5,13 @@ import { useStore } from '../../store/AppDataContext';
 
 /** Sổ giao dịch (Admin – Tài chính): tiền vào qua cổng, thu COD, hoàn tiền, chi trả HTX. Chỉ thêm, không sửa, không xoá. */
 export function FinanceLedgerTab() {
-  const { state } = useStore();
+  const { state,demoMode } = useStore();
   if (state.ledgerEntries.length === 0) return <EmptyState>Sổ giao dịch chưa có dòng nào.</EmptyState>;
   const totals = (Object.keys(LEDGER_TYPE_LABEL) as LedgerType[]).map((t) => [t, state.ledgerEntries.filter((e) => e.type === t).reduce((s, e) => s + e.amount, 0)] as const);
   return (
     <div className="space-y-3">
       <p className="flex items-center gap-2 text-sm text-stone-700">
-        <SimBadge /> Mọi khoản tiền đều là mô phỏng.
+        {demoMode?<><SimBadge /> Dữ liệu tiền trong chế độ demo.</>:<>Sổ ghi nhận giao dịch và chứng từ. Bút toán điều chỉnh không tự chuyển tiền hoặc sửa kỳ đã chốt.</>}
       </p>
       <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
         {totals.map(([t, v]) => (

@@ -1,8 +1,8 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { ArrowLeft, MessageCircle, PhoneCall, Send, Store, X } from 'lucide-react';
 import { useUi } from '../app/UiContext';
-import { conversationsFor, coopMayMessage, markThreadRead, ordersBetween, previewOf, sendDirectMessage, threadItems, threadUnread, totalUnread, type Conversation } from '../domain/coopChat';
-import { chatClosedReason, MESSAGE_MAX_LENGTH, sendOrderMessage, type ChatSide } from '../domain/orderContact';
+import { conversationsFor, coopMayMessage, markThreadRead, ordersBetween, previewOf, sendDirectMessage, threadItems, threadUnread, totalUnread, type Conversation } from '../store/commands/coopChat';
+import { chatClosedReason, MESSAGE_MAX_LENGTH, sendOrderMessage, type ChatSide } from '../store/commands/orderContact';
 import { formatMoney } from '../domain/pricing';
 import { findProduct } from '../domain/state';
 import { CALL_OUTCOME_LABEL, ORDER_STATUS_LABEL } from '../domain/types';
@@ -157,7 +157,7 @@ function Thread({ side, withId, productId, onClearProduct, onBack }: { side: Cha
 
   // Mở cuộc trò chuyện (hoặc có tin mới khi đang mở) thì đánh dấu đã đọc.
   useEffect(() => {
-    if (unread > 0) run((s, at) => markThreadRead(s, actor, withId, at));
+    if (unread > 0) void run((s, at) => markThreadRead(s, actor, withId, at));
   }, [unread, withId, actor, run]);
 
   useEffect(() => {
@@ -166,8 +166,8 @@ function Thread({ side, withId, productId, onClearProduct, onBack }: { side: Cha
   }, [items.length]);
 
   // Gửi không được (vd. dữ liệu gần đầy) thì giữ nguyên chữ và ảnh đang soạn.
-  const send = () => {
-    const r = target ? run((s, at) => sendOrderMessage(s, target, actor, text, at, photos.photos)) : run((s, at) => sendDirectMessage(s, actor, withId, text, at, asking?.id, photos.photos));
+  const send = async () => {
+    const r = target ? await run((s, at) => sendOrderMessage(s, target, actor, text, at, photos.photos)) : await run((s, at) => sendDirectMessage(s, actor, withId, text, at, asking?.id, photos.photos));
     if (!r.ok) return showToast(r.error);
     setText('');
     photos.clear();

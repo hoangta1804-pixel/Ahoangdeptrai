@@ -6,5 +6,8 @@ coverage/
 *.log
 .env*
 !.env.example
+!.env.supabase.example
 test-results/
 playwright-report/
+data/
+.npm-cache/

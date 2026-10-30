@@ -238,19 +238,7 @@ interface VercelLikeResponse {
 
 export default async function handler(req: VercelLikeRequest, res: VercelLikeResponse): Promise<void> {
   res.setHeader('Cache-Control', 'no-store');
-  const store = storeFromEnv();
-  if (!store) {
-    res.status(503).json({ error: 'API chưa nối cơ sở dữ liệu (thiếu biến môi trường KV_REST_API_URL và KV_REST_API_TOKEN của Upstash). App đang lưu dữ liệu trên từng trình duyệt.', configured: false });
-    return;
-  }
-  try {
-    const result = await handleStateRequest(req, store);
-    if (result.status === 405) res.setHeader('Allow', 'GET, PUT');
-    res.status(result.status).json(result.body);
-  } catch (e) {
-    console.error(e);
-    res.status(502).json(storeErrorBody(e));
-  }
+  res.status(410).json({ error: 'API demo ghi toàn bộ dữ liệu đã ngừng. Chạy backend Node và dùng /api/v1/state, /api/v1/commands.' });
 }
 
 /**

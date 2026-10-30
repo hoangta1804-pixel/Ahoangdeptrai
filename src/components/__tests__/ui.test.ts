@@ -18,7 +18,7 @@ const walk = (dir: string) => {
   }
 };
 walk(join(root, 'src'));
-const offenders = (re: RegExp) => sources.filter((f) => re.test(f.text)).map((f) => f.path);
+const offenders = (re: RegExp) => sources.filter((f) => re.test(f.text)).map((f) => f.path.replace(/\\/g, '/'));
 
 describe('Giao diện (mục 10)', () => {
   it('bảng màu khai báo thành token trong theme Tailwind', () => {

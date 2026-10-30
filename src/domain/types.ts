@@ -81,6 +81,7 @@ export interface CoopProfile {
 }
 
 export interface Coop {
+  taxCode?: string;
   id: string;
   name: string;
   region: string;
@@ -110,6 +111,15 @@ export interface PreorderConfig {
 }
 
 export interface Product {
+  traceUrl?: string;
+  harvestMonths?: number[];
+  catalogCategoryId?: string;
+  images?: string[];
+  storage?: string;
+  shelfLifeDays?: number;
+  preparationMinutes?: number;
+  createdAt?: string;
+  soldCount?: number;
   id: string;
   coopId: string;
   /** Quy cách thêm của một sản phẩm: mã sản phẩm gốc (domain/variants.ts). Sản phẩm gốc không có. */
@@ -153,6 +163,8 @@ export interface SampleInfo {
 }
 
 export interface Certification {
+  number?: string;
+  issuedOn?: string;
   id: string;
   label: string;
   issuer: string;
@@ -164,6 +176,13 @@ export interface Certification {
 
 /** Nội dung sản phẩm HTX sửa được (cần duyệt). */
 export interface ProductContent {
+  traceUrl?: string;
+  harvestMonths?: number[];
+  catalogCategoryId?: string;
+  images?: string[];
+  storage?: string;
+  shelfLifeDays?: number;
+  preparationMinutes?: number;
   name: string;
   description: string;
   unit: string;
@@ -426,6 +445,8 @@ export interface CodRemittance {
 }
 
 export interface Order {
+  pickupPoint?: {name:string;address:string;contactName:string;contactPhone:string;note:string;updatedAt:string;updatedBy:string};
+  reconciledCod?: {reference:string;at:string;sessionId:string};
   id: string;
   checkoutId: string;
   customerId: string;
@@ -618,9 +639,10 @@ export interface RefundRecord {
 // Khiếu nại, đối soát, nhật ký
 // ==========================================
 
-export type ComplaintReason = 'damaged' | 'wrong_item' | 'expired' | 'foreign_object' | 'qr_abnormal' | 'health' | 'changed_mind';
+export type ComplaintReason = 'damaged' | 'wrong_item' | 'expired' | 'foreign_object' | 'qr_abnormal' | 'health' | 'changed_mind' | 'order_question' | 'late_delivery' | 'cancel_request' | 'other';
 
 export const COMPLAINT_REASON_LABEL: Record<ComplaintReason, string> = {
+  order_question:'Hỏi thông tin đơn hàng',late_delivery:'Giao hàng chậm',cancel_request:'Hỗ trợ hủy đơn',other:'Hỗ trợ khác',
   damaged: 'Hàng hư hỏng, dập nát',
   wrong_item: 'Sai hoặc thiếu hàng',
   expired: 'Hàng quá hạn',
@@ -659,6 +681,9 @@ export interface TicketEvent {
 }
 
 export interface Ticket {
+  assignedUserId?: string;
+  resolution?: 'check' | 'refund' | 'exchange' | 'resupply';
+  fulfillment?: {kind:'exchange'|'resupply';status:'requested'|'approved'|'shipped'|'completed'|'rejected';tracking?:string;updatedAt:string};
   id: string;
   orderId: string;
   coopId: string;
@@ -680,6 +705,7 @@ export interface Ticket {
 }
 
 export interface SettlementLine {
+  shippingFee?: number;
   orderId: string;
   deliveredAt: string;
   goods: number;
@@ -690,6 +716,11 @@ export interface SettlementLine {
 }
 
 export interface PayoutPeriod {
+  policy?: import('./params').SettlementPolicy;
+  reserveAmount?: number;
+  reserveUntil?: string;
+  payoutFee?: number;
+  disbursements?: {amount:number;reference:string;at:string;recordedBy:string;note:string}[];
   id: string;
   coopId: string;
   /** Đầu kỳ (thứ Hai 00:00) và giờ cắt kỳ (thứ Hai tuần sau 00:00), ISO. */
@@ -740,6 +771,11 @@ export interface GoogleIdentity {
 }
 
 export interface UserAccount {
+  accessClosedAt?: string;
+  phoneVerifiedAt?: string;
+  expiresAt?: string;
+  supabaseId?: string;
+  emailMasked?: string;
   id: string;
   /** SĐT đăng nhập. Rỗng với khách đăng nhập bằng Google. */
   phone: string;
@@ -767,13 +803,15 @@ export interface AppNotification {
   read: boolean;
 }
 
-export type LedgerType = 'payment_in' | 'cod_in' | 'refund_out' | 'payout_out' | 'commission';
+export type LedgerType = 'payment_in' | 'cod_in' | 'refund_out' | 'payout_out' | 'commission' | 'payout_fee' | 'reconciliation_adjustment';
 
 export const LEDGER_TYPE_LABEL: Record<LedgerType, string> = {
-  payment_in: 'Tiền vào qua cổng (mô phỏng)',
+  payout_fee: 'Phí chi trả HTX',
+  reconciliation_adjustment: 'Điều chỉnh chênh lệch đối soát',
+  payment_in: 'Tiền vào qua cổng',
   cod_in: 'Thu khi giao (COD)',
   refund_out: 'Hoàn tiền cho khách',
-  payout_out: 'Chi trả cho HTX (mô phỏng)',
+  payout_out: 'Chi trả cho HTX',
   commission: 'Hoa hồng sàn',
 };
 
@@ -792,6 +830,7 @@ export interface LedgerEntry {
 
 /** Đánh giá sản phẩm (chức năng làm ở Giai đoạn 4). */
 export interface Review {
+  flagged?: boolean;
   id: string;
   orderId: string;
   productId: string;
@@ -799,7 +838,7 @@ export interface Review {
   stars: number;
   comment: string;
   photos: string[];
-  status: 'visible' | 'hidden';
+  status: 'visible' | 'hidden' | 'pending' | 'rejected';
   hiddenReason?: string;
   coopReply?: string;
   createdAt: string;
@@ -810,6 +849,15 @@ export interface Review {
 // ==========================================
 
 export interface DemoState {
+  catalogDictionaries?: {id:string;kind:'region'|'unit'|'certification';name:string;active:boolean}[];
+  homepage?: {title:string;subtitle:string;description:string;collectionTitle:string;image:string;featuredProductIds:string[]};
+  supportAgents?: {id:string;name:string}[];
+  catalogCategories?: {id:string;name:string;group:Category;active:boolean;createdAt:string}[];
+  reviewPolicy?: {requireModeration:boolean;windowDays:number};
+  /** Public stock/slot counts calculated by the server without exposing other customers' orders. */
+  availability?: Record<string, number>;
+  /** Server-calculated aggregates; QLNN never receives individual orders. */
+  serverStats?: { aggregate: import('./stats').AggregateStats; periods: Record<import('./stats').StatsRange, import('./stats').PeriodStats> };
   /** Độ lệch đồng hồ demo (tua thời gian), ms. */
   clockOffsetMs: number;
   users: UserAccount[];

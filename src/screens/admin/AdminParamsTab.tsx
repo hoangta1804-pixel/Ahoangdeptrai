@@ -1,8 +1,9 @@
 import { useState } from 'react';
+import {SettlementPolicySettings} from '../../components/SettlementPolicySettings';
 import { useUi } from '../../app/UiContext';
 import { Field, Input, PrimaryButton, SecondaryButton } from '../../components/form';
-import { opsUpdateParam } from '../../domain/adminConfig';
-import { DEMO_CODE_RULE, rootClearDemoCode, rootSetDemoCode } from '../../domain/demoAccess';
+import { opsUpdateParam } from '../../store/commands/adminConfig';
+import { DEMO_CODE_RULE, rootClearDemoCode, rootSetDemoCode } from '../../store/commands/demoAccess';
 import { PARAM_CATALOG, type ParamKey, type ParamMeta, type Params } from '../../domain/params';
 import { formatMoney } from '../../domain/pricing';
 import { useStore } from '../../store/AppDataContext';
@@ -30,6 +31,7 @@ export function AdminParamsTab() {
   return (
     <div className="space-y-4">
       <DemoCodeSection />
+      <SettlementPolicySettings key={state.params.settlementPolicy?.revision??0}/>
       <p className="text-sm text-stone-600">Giá trị mới chỉ áp cho đơn tạo sau thời điểm sửa. Cột “Tình trạng” cho biết giá trị nào chưa được nhóm chốt.</p>
       <div className="overflow-x-auto rounded-2xl border border-stone-200 bg-white">
         <table className="w-full min-w-[860px] text-left text-sm">
@@ -74,14 +76,14 @@ function DemoCodeSection() {
   const [code, setCode] = useState('');
   const isRoot = adminGroup === 'root';
   const access = state.demoAccess;
-  const save = () => {
-    const r = run((s, at) => rootSetDemoCode(s, adminActor, code, at));
+  const save = async () => {
+    const r = await run((s, at) => rootSetDemoCode(s, adminActor, code, at));
     if (!r.ok) return showToast(r.error);
     setCode('');
     showToast(access ? 'Đã đổi mã trình diễn. Tab đã nhập mã cũ phải nhập mã mới.' : 'Đã đặt mã trình diễn. Mã không hiện lại, hãy ghi lại để dùng khi demo.');
   };
-  const clear = () => {
-    const r = run((s, at) => rootClearDemoCode(s, adminActor, at));
+  const clear = async () => {
+    const r = await run((s, at) => rootClearDemoCode(s, adminActor, at));
     showToast(r.ok ? 'Đã bỏ mã trình diễn. Màn đăng nhập hiện lại danh sách tài khoản demo.' : r.error);
   };
   return (
@@ -128,12 +130,12 @@ function ParamRow({ meta: m, canEdit }: { meta: ParamMeta; canEdit: boolean }) {
   const [value, setValue] = useState('');
   const [reason, setReason] = useState('');
   const editable = typeof current === 'number' || typeof current === 'boolean' || typeof current === 'string';
-  const save = () => {
+  const save = async () => {
     let parsed: Params[ParamKey];
     if (typeof current === 'number') parsed = Number(value);
     else if (typeof current === 'boolean') parsed = value === 'true';
     else parsed = value;
-    const r = run((s, at) => opsUpdateParam(s, adminActor, m.key, parsed as never, reason, at));
+    const r = await run((s, at) => opsUpdateParam(s, adminActor, m.key, parsed as never, reason, at));
     showToast(r.ok ? `Đã sửa ${m.code}. Áp cho đơn tạo từ bây giờ.` : r.error);
     if (r.ok) {
       setValue('');

@@ -6,7 +6,7 @@ import { EmptyState, ErrorState, SimBadge } from '../../components/EmptyState';
 import { PrimaryButton } from '../../components/form';
 import { SwipeTabs } from '../../components/SwipeTabs';
 import { formatMoney } from '../../domain/pricing';
-import { codOnHand, codTotal, shipperOrders, shipperRemitCod, shipperStep } from '../../domain/shipper';
+import { codOnHand, codTotal, shipperOrders, shipperRemitCod, shipperStep } from '../../store/commands/shipper';
 import type { Order } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
 import { ShipperStepBadge } from './ShipperStepBadge';
@@ -64,7 +64,7 @@ export function ShipperScreen() {
         <div aria-hidden="true" className="brocade-dark absolute inset-x-0 bottom-0 h-2" />
       </section>
 
-      <SwipeTabs
+      <SwipeTabs<ShipperTab>
         label="Đơn của shipper"
         tabs={(Object.keys(TAB_LABEL) as ShipperTab[]).map((key) => ({ key, label: TAB_LABEL[key], count: key === 'cod' ? onHand.length : byTab(key).length }))}
         active={tab}
@@ -119,11 +119,11 @@ function OrderList({ orders, tab }: { orders: Order[]; tab: Exclude<ShipperTab, 
 }
 
 function CodPanel({ onHand }: { onHand: Order[] }) {
-  const { state, run } = useStore();
+  const { state, run,demoMode } = useStore();
   const { actor, showToast } = useUi();
   const remittances = (state.codRemittances ?? []).filter((r) => r.shipperId === actor.id);
-  const remit = () => {
-    const r = run(
+  const remit = async () => {
+    const r = await run(
       (s, t) => shipperRemitCod(s, actor, t),
       (v) => v.state,
     );
@@ -133,7 +133,7 @@ function CodPanel({ onHand }: { onHand: Order[] }) {
     <div className="space-y-4 pt-4">
       <section aria-label="Tiền thu hộ đang giữ" className="space-y-3 rounded-3xl border border-champagne-300 bg-white p-4">
         <p className="flex flex-wrap items-center gap-2 text-sm text-stone-700">
-          <SimBadge /> Nộp tiền mô phỏng: không chuyển tiền thật.
+          {demoMode&&<SimBadge />} Lập phiếu để nộp tiền ngoài ứng dụng; chờ Tài chính xác nhận đã nhận. Thao tác này không tự chuyển tiền.
         </p>
         <p className="text-sm text-stone-700">
           Đang giữ <strong className="font-display text-2xl tabular-nums text-ink">{formatMoney(codTotal(onHand))}</strong> của {onHand.length} đơn.

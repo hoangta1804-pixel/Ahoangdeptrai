@@ -1,5 +1,5 @@
 import { Check, X } from 'lucide-react';
-import { applicationSteps, APPLICATION_STATUS_LABEL, type ApplicationStatus, type ApplicationStep, type CoopApplication } from '../domain/coopApplication';
+import { applicationSteps, APPLICATION_STATUS_LABEL, type ApplicationStatus, type ApplicationStep, type CoopApplication } from '../store/commands/coopApplication';
 
 const DOT: Record<ApplicationStep['state'], string> = {
   done: 'bg-forest-900 text-champagne-200 ring-1 ring-champagne-400/70',

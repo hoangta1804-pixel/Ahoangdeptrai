@@ -1,4 +1,5 @@
-import { useId, useState, type ReactNode } from 'react';
+import { useEffect,useId, useState, type ReactNode } from 'react';
+import {api} from '../../store/backend';
 import { BarList, ColumnChart, Segmented, type ChartDatum } from '../../components/Charts';
 import { ExportButtons } from '../../components/ExportButtons';
 import { formatMoney } from '../../domain/pricing';
@@ -34,11 +35,15 @@ export function StatsPanel() {
   const { state, now } = useStore();
   const [range, setRange] = useState<StatsRange>('30d');
   const [metric, setMetric] = useState<StatsMetric>('orders');
-  const s = aggregateStats(state);
-  const p = periodStats(state, range, now());
+  const [refresh,setRefresh]=useState(0),[preview,setPreview]=useState<{snapshotId:string;dataAsOf:string;range:StatsRange;aggregate:ReturnType<typeof aggregateStats>;period:ReturnType<typeof periodStats>}|null>(null),[previewError,setPreviewError]=useState('');
+  useEffect(()=>{let cancelled=false;setPreview(null);setPreviewError('');void api('/api/v1/reports/dashboard?range='+range).then(value=>{if(!cancelled)setPreview(value);}).catch(e=>{if(!cancelled)setPreviewError(e instanceof Error?e.message:'Không tải được báo cáo.');});return()=>{cancelled=true;};},[range,refresh]);
+  const current=preview?.range===range?preview:null;
+  const s = current?.aggregate??state.serverStats?.aggregate ?? aggregateStats(state);
+  const p = current?.period??state.serverStats?.periods[range] ?? periodStats(state, range, now());
   const tiles: [string, string][] = [
     ['HTX đang hoạt động', String(s.coopsActive)],
     ['Sản phẩm đang bán', String(s.productsActive)],
+    ['Sản phẩm có chứng nhận đã xác minh còn hiệu lực',String(s.productsVerified??0)],
     ['Tổng số đơn', String(s.ordersTotal)],
     ['Giá trị hàng đã giao', formatMoney(s.deliveredGoodsValue)],
     ['Khiếu nại đang mở', String(s.ticketsOpen)],
@@ -65,6 +70,8 @@ export function StatsPanel() {
 
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-3 text-sm"><button className="min-h-11 rounded border bg-white px-3" onClick={()=>setRefresh(value=>value+1)}>Làm mới số liệu</button><span>{current?`Dữ liệu chốt lúc ${new Date(current.dataAsOf).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'})}`:previewError||'Đang chốt phiên dữ liệu…'}</span></div>
+      <ExportButtons filters={{range}} snapshotId={current?.snapshotId} snapshotRequired/>
       <div className="grid grid-cols-2 gap-2 md:grid-cols-3 2xl:grid-cols-6">
         {tiles.map(([label, value]) => (
           <div key={label} className="rounded-2xl border border-stone-200 bg-white p-3">
@@ -168,7 +175,6 @@ function DataTable({ caption, head, rows }: { caption: string; head: string[]; r
 export function AdminOverviewTab() {
   return (
     <div className="space-y-4">
-      <ExportButtons />
       <StatsPanel />
     </div>
   );

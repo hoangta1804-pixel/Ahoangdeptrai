@@ -1,25 +1,26 @@
 import { useUi } from '../../app/UiContext';
+import {ManualRefundForm} from '../../components/ManualRefundForm';
 import { EmptyState, SimBadge } from '../../components/EmptyState';
 import { PrimaryButton, SecondaryButton } from '../../components/form';
 import { viewRefundAccount } from '../../domain/access';
-import { confirmRefundBySimBank, startRefundProcessing } from '../../domain/finance';
+import { confirmRefundBySimBank, startRefundProcessing } from '../../store/commands/finance';
 import { formatMoney } from '../../domain/pricing';
 import { REFUND_SOURCE_LABEL } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
 
 /** Admin – Tài chính ghi nhận hoàn tiền (FR-DH-12). Chỉ sang Đã hoàn tiền khi ngân hàng mô phỏng xác nhận. */
 export function FinanceRefundsTab() {
-  const { state, run } = useStore();
+  const { state, run,demoMode } = useStore();
   const { adminActor, showToast } = useUi();
   if (state.refunds.length === 0) return <EmptyState>Chưa có yêu cầu hoàn tiền.</EmptyState>;
-  const act = (op: Parameters<typeof run>[0], ok: string) => {
-    const r = run(op);
+  const act = async (op: Parameters<typeof run>[0], ok: string) => {
+    const r = await run(op);
     showToast(r.ok ? ok : r.error);
   };
   return (
     <div className="space-y-2">
       <p className="flex items-center gap-2 text-sm text-stone-700">
-        <SimBadge /> Ngân hàng / cổng hoàn tiền là mô phỏng, không chuyển tiền thật.
+        {demoMode?<><SimBadge /> Đang dùng chế độ demo.</>:<>Hoàn về cổng chờ kết quả xác minh; hoàn ngân hàng có thể ghi nhận chứng từ đã kiểm tra. Không tự chuyển tiền khi bấm ghi nhận.</>}
       </p>
       <div className="overflow-x-auto rounded-2xl border border-stone-200 bg-white">
         <table className="w-full min-w-[760px] text-left text-sm">
@@ -50,7 +51,8 @@ export function FinanceRefundsTab() {
                   <td className="px-3 py-2">{r.status === 'refunded' ? `Đã hoàn tiền (${r.bankRef})` : r.status === 'refunding' ? 'Đang hoàn tiền' : 'Chờ hoàn tiền'}</td>
                   <td className="px-3 py-2">
                     {r.status === 'refund_pending' && <SecondaryButton onClick={() => act((s, t) => startRefundProcessing(s, r.id, adminActor, t), 'Đã chuyển sang Đang hoàn tiền.')}>Bắt đầu hoàn</SecondaryButton>}
-                    {r.status === 'refunding' && <PrimaryButton onClick={() => act((s, t) => confirmRefundBySimBank(s, r.id, adminActor, t), 'Ngân hàng mô phỏng đã xác nhận hoàn.')}>Ngân hàng mô phỏng xác nhận</PrimaryButton>}
+                    {r.status === 'refunding' && demoMode&&<PrimaryButton onClick={() => act((s, t) => confirmRefundBySimBank(s, r.id, adminActor, t), 'Ngân hàng mô phỏng đã xác nhận hoàn.')}>Ngân hàng mô phỏng xác nhận</PrimaryButton>}
+                    {r.status==='refunding'&&r.destination==='bank_account'&&<ManualRefundForm refundId={r.id} amount={r.amount} accountNumber={acc.ok?acc.value?.accountNumber:undefined}/>}
                   </td>
                 </tr>
               );

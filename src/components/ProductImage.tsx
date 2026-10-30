@@ -1,3 +1,4 @@
+import { AppImage } from './AppImage';
 import { useState } from 'react';
 import type { Product } from '../domain/types';
 import { IllustrationBackdrop, IllustrationSubject } from './ProductIllustration';
@@ -18,7 +19,7 @@ export function ProductImage({ product, className = '', variant = 'thumb' }: { p
   const [failed, setFailed] = useState(false);
   if (product.image && !failed) {
     return (
-      <img
+      <AppImage
         src={product.image}
         alt={product.name}
         loading="lazy"

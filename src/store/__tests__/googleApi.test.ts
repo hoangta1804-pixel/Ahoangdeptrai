@@ -130,8 +130,19 @@ describe('/api/auth/google', () => {
     expect(await check({ aud: 'ung-dung-khac' })).toBe(401);
     expect(await check({ iss: 'https://evil.example' })).toBe(401);
     expect(await check({ exp: '1800000000' })).toBe(401);
+    expect(await check({ exp: undefined })).toBe(401);
+    expect(await check({ exp: 'invalid' })).toBe(401);
     expect(await check({ email_verified: 'false' })).toBe(401);
     expect(await check({}, 400)).toBe(401);
+  });
+
+  it('báo lỗi dịch vụ rõ ràng khi không kết nối Google, hết thời gian hoặc Google quá tải',async()=>{
+    for(const error of [new TypeError('fetch failed'),new Error('timeout')]){
+      const result=await handleGoogleAuthRequest(post({credential}),{clientId:CLIENT,fetch:async()=>{throw error;}});
+      expect(result.status).toBe(503);expect(String(result.body.error)).toContain('kết nối được Google');
+      expect(JSON.stringify(result)).not.toContain(credential);
+    }
+    for(const status of [429,500,503])expect((await handleGoogleAuthRequest(post({credential}),{clientId:CLIENT,fetch:async()=>json(status,{})})).status).toBe(503);
   });
 
   it('thiếu cấu hình, thiếu token, sai phương thức', async () => {

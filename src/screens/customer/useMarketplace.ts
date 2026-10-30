@@ -1,6 +1,6 @@
 import { useUi } from '../../app/UiContext';
-import { isFavorite, isFollowing, isVoucherSaved, saveVoucher, setFavorite, setFollow, unsaveVoucher } from '../../domain/marketplace';
-import { isSeasonWatched, setSeasonWatch } from '../../domain/seasonWatch';
+import { isFavorite, isFollowing, isVoucherSaved, saveVoucher, setFavorite, setFollow, unsaveVoucher } from '../../store/commands/marketplace';
+import { isSeasonWatched, setSeasonWatch } from '../../store/commands/seasonWatch';
 import type { Product } from '../../domain/types';
 import { useStore } from '../../store/AppDataContext';
 
@@ -10,36 +10,36 @@ export function useMarketplace() {
   const { customerActor, showToast } = useUi();
   const customerId = customerActor.id ?? '';
 
-  const toggleFav = (productId: string) => {
+  const toggleFav = async (productId: string) => {
     const product = state.products.find((p) => p.id === productId);
     const on = !(product && isFavorite(state, customerId, product));
-    const r = run((s) => setFavorite(s, customerActor, productId, on));
+    const r = await run((s) => setFavorite(s, customerActor, productId, on));
     showToast(r.ok ? (on ? 'Đã thêm vào Yêu thích.' : 'Đã bỏ khỏi Yêu thích.') : r.error);
   };
 
-  const toggleFollowCoop = (coopId: string) => {
+  const toggleFollowCoop = async (coopId: string) => {
     const name = state.coops.find((c) => c.id === coopId)?.name ?? 'HTX';
     const on = !isFollowing(state, customerId, coopId);
-    const r = run((s) => setFollow(s, customerActor, coopId, on));
+    const r = await run((s) => setFollow(s, customerActor, coopId, on));
     showToast(r.ok ? (on ? `Đã theo dõi ${name}. Bạn được báo khi HTX có sản phẩm mới.` : `Đã bỏ theo dõi ${name}.`) : r.error);
   };
 
-  const toggleSeasonWatch = (productId: string) => {
+  const toggleSeasonWatch = async (productId: string) => {
     const product = state.products.find((p) => p.id === productId);
     const on = !(product && isSeasonWatched(state, customerId, product));
-    const r = run((s, at) => setSeasonWatch(s, customerActor, productId, on, at));
+    const r = await run((s, at) => setSeasonWatch(s, customerActor, productId, on, at));
     showToast(r.ok ? (on ? 'Đã bật "Báo tôi khi vào mùa". Bạn được báo khi HTX mở đợt đặt trước mới.' : 'Đã tắt báo khi vào mùa.') : r.error);
   };
 
-  const save = (voucherId: string) => {
+  const save = async (voucherId: string) => {
     const code = state.vouchers.find((v) => v.id === voucherId)?.code ?? '';
-    const r = run((s, at) => saveVoucher(s, customerActor, voucherId, at));
+    const r = await run((s, at) => saveVoucher(s, customerActor, voucherId, at));
     showToast(r.ok ? `Đã lưu mã ${code} vào Kho voucher.` : r.error);
   };
 
-  const unsave = (voucherId: string) => {
+  const unsave = async (voucherId: string) => {
     const code = state.vouchers.find((v) => v.id === voucherId)?.code ?? '';
-    const r = run((s) => unsaveVoucher(s, customerActor, voucherId));
+    const r = await run((s) => unsaveVoucher(s, customerActor, voucherId));
     showToast(r.ok ? `Đã bỏ mã ${code} khỏi Kho voucher.` : r.error);
   };
 

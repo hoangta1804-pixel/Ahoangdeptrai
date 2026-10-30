@@ -36,6 +36,7 @@ export function submitReview(state: DemoState, actor: Actor, input: ReviewInput,
   if (!order) return fail('Không tìm thấy đơn.');
   if (actor.kind !== 'customer' || actor.id !== order.customerId) return fail('Bạn chỉ đánh giá sản phẩm trong đơn của mình.');
   if (order.status !== 'delivered') return fail('Chỉ đánh giá được đơn Đã giao.');
+  if(order.deliveredAt&&at.getTime()>Date.parse(order.deliveredAt)+(state.reviewPolicy?.windowDays??30)*86400000)return fail('Đã quá thời hạn đánh giá của đơn hàng.');
   if (!order.items.some((i) => i.productId === input.productId)) return fail('Sản phẩm không thuộc đơn này.');
   if (state.reviews.some((r) => r.orderId === order.id && r.productId === input.productId)) return fail('Sản phẩm này trong đơn đã được đánh giá.');
   if (!Number.isInteger(input.stars) || input.stars < 1 || input.stars > 5) return fail('Vui lòng chọn từ 1 đến 5 sao.');
@@ -51,7 +52,8 @@ export function submitReview(state: DemoState, actor: Actor, input: ReviewInput,
     stars: input.stars,
     comment,
     photos: input.photos,
-    status: 'visible',
+    status: state.reviewPolicy?.requireModeration?'pending':'visible',
+    flagged:/ngộ độc|dị vật|hết hạn|quá hạn|hàng hỏng|đau bụng|mốc|an toàn thực phẩm|qr.{0,30}(bất thường|không đúng|không rõ)|nguồn gốc.{0,20}(không rõ|không đúng)/i.test(comment),
     createdAt: iso(at),
   };
   return ok({ state: { ...state, reviews: [review, ...state.reviews] }, review });

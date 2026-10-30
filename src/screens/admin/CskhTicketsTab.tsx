@@ -1,3 +1,5 @@
+import {TicketActions} from '../../components/TicketActions';
+import { AppImage } from '../../components/AppImage';
 import { useState } from 'react';
 import { ArrowRight, Info } from 'lucide-react';
 import { useUi } from '../../app/UiContext';
@@ -5,7 +7,7 @@ import { AdminTable, Td } from '../../components/AdminTable';
 import { EmptyState } from '../../components/EmptyState';
 import { DangerButton, Input, PrimaryButton, SecondaryButton } from '../../components/form';
 import { TicketProgress, TicketStatusBadge } from '../../components/TicketProgress';
-import { cskhRequestCoopReply, cskhUpdateTicket, eventKind, eventLabel, isTicketOpen, nextTicketAction, returnRefundAmount } from '../../domain/complaint';
+import { cskhRequestCoopReply, cskhUpdateTicket, eventKind, eventLabel, isTicketOpen, nextTicketAction, returnRefundAmount } from '../../store/commands/complaint';
 import { formatMoney } from '../../domain/pricing';
 import { findOrder } from '../../domain/state';
 import { COMPLAINT_REASON_LABEL, type Ticket, type TicketStatus } from '../../domain/types';
@@ -139,13 +141,13 @@ function TicketDetail({ ticket: t }: { ticket: Ticket }) {
   const [note, setNote] = useState('');
   const order = findOrder(state, t.orderId);
   const coopReplied = t.history.some((e) => eventKind(e) === 'coop_reply');
-  const update = (status: TicketStatus, refund = false) => {
-    const r = run((s, time) => cskhUpdateTicket(s, t.id, adminActor, status, note, time, refund));
+  const update = async (status: TicketStatus, refund = false) => {
+    const r = await run((s, time) => cskhUpdateTicket(s, t.id, adminActor, status, note, time, refund));
     showToast(r.ok ? 'Đã cập nhật ticket.' : r.error);
     if (r.ok) setNote('');
   };
-  const requestCoop = () => {
-    const r = run((s, time) => cskhRequestCoopReply(s, t.id, adminActor, note, time));
+  const requestCoop = async () => {
+    const r = await run((s, time) => cskhRequestCoopReply(s, t.id, adminActor, note, time));
     showToast(r.ok ? 'Đã đề nghị HTX phản hồi. HTX nhận được thông báo.' : r.error);
     if (r.ok) setNote('');
   };
@@ -177,7 +179,7 @@ function TicketDetail({ ticket: t }: { ticket: Ticket }) {
         {t.photos.length > 0 && (
           <div className="flex gap-1">
             {t.photos.map((src, i) => (
-              <img key={i} src={src} alt={`Ảnh ${i + 1}`} className="h-16 w-16 rounded-lg object-cover" />
+              <AppImage key={i} src={src} alt={`Ảnh ${i + 1}`} className="h-16 w-16 rounded-lg object-cover" />
             ))}
           </div>
         )}
@@ -231,7 +233,7 @@ function TicketDetail({ ticket: t }: { ticket: Ticket }) {
       </div>
       <div className="space-y-2 rounded-2xl bg-stone-50 p-3">
         <h4 className="font-bold text-ink">Các bước của ticket</h4>
-        <TicketProgress ticket={t} />
+        <TicketProgress ticket={t} /><TicketActions ticket={t}/>
       </div>
     </section>
   );

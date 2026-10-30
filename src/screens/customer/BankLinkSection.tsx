@@ -4,7 +4,7 @@ import { useUi } from '../../app/UiContext';
 import { SimBadge } from '../../components/EmptyState';
 import { Field, Input, PrimaryButton, SecondaryButton, Select } from '../../components/form';
 import { viewRefundAccount } from '../../domain/access';
-import { linkRefundAccount, normalizeHolderName, prepareBankLink, unlinkRefundAccount, type BankLinkInput } from '../../domain/account';
+import { linkRefundAccount, normalizeHolderName, prepareBankLink, unlinkRefundAccount, type BankLinkInput } from '../../store/commands/account';
 import { DEMO_OTP } from '../../domain/auth';
 import { bankCodeOf, BANKS, OTHER_BANK_CODE } from '../../domain/banks';
 import { useStore } from '../../store/AppDataContext';
@@ -55,16 +55,16 @@ export function BankLinkSection() {
     setStep('otp');
   };
 
-  const confirmLink = () => {
-    const r = run((s, at) => linkRefundAccount(s, customerActor, input, otp, at));
+  const confirmLink = async () => {
+    const r = await run((s, at) => linkRefundAccount(s, customerActor, input, otp, at));
     if (!r.ok) return setError(r.error);
     setError(null);
     setStep('view');
     showToast('Đã liên kết tài khoản ngân hàng (mô phỏng).');
   };
 
-  const unlink = () => {
-    const r = run((s) => unlinkRefundAccount(s, customerActor));
+  const unlink = async () => {
+    const r = await run((s) => unlinkRefundAccount(s, customerActor));
     setConfirmUnlink(false);
     showToast(r.ok ? 'Đã huỷ liên kết tài khoản ngân hàng.' : r.error);
   };

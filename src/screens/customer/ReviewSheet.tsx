@@ -4,7 +4,7 @@ import { BottomSheet } from '../../components/BottomSheet';
 import { Field, PrimaryButton, Textarea } from '../../components/form';
 import { PhotoPicker } from '../../components/PhotoPicker';
 import { StarPicker } from '../../components/Stars';
-import { REVIEW_MAX_COMMENT, REVIEW_MAX_PHOTOS, REVIEW_MIN_LOW_STAR_COMMENT, submitReview } from '../../domain/reviews';
+import { REVIEW_MAX_COMMENT, REVIEW_MAX_PHOTOS, REVIEW_MIN_LOW_STAR_COMMENT, submitReview } from '../../store/commands/reviews';
 import { findOrder } from '../../domain/state';
 import { useStore } from '../../store/AppDataContext';
 
@@ -17,8 +17,8 @@ export function ReviewSheet({ orderId, productId, onClose }: { orderId: string; 
   const [photos, setPhotos] = useState<string[]>([]);
   const item = findOrder(state, orderId)?.items.find((i) => i.productId === productId);
 
-  const submit = () => {
-    const r = run(
+  const submit = async () => {
+    const r = await run(
       (s, at) => submitReview(s, customerActor, { orderId, productId, stars, comment, photos }, at),
       (v) => v.state,
     );

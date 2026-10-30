@@ -5,11 +5,11 @@ import { OrderChat } from '../../components/OrderChat';
 import { OrderJourney } from '../../components/OrderJourney';
 import { TrackingTimeline } from '../../components/TrackingTimeline';
 import { DangerButton, Field, Input, PrimaryButton, SecondaryButton, Select, Textarea } from '../../components/form';
-import { deliveryWindow } from '../../domain/cart';
-import { customerChangeAddress, customerChangeDeliveryDate, customerEditGift } from '../../domain/orderEdits';
+import { deliveryWindow } from '../../store/commands/cart';
+import { customerChangeAddress, customerChangeDeliveryDate, customerEditGift } from '../../store/commands/orderEdits';
 import { OrderStatusBadge, PaymentStatusBadge } from '../../components/StatusBadge';
 import { getOrderFor } from '../../domain/access';
-import { isTicketOpen, returnDeadline, ticketsOfOrder } from '../../domain/complaint';
+import { isTicketOpen, returnDeadline, ticketsOfOrder } from '../../store/commands/complaint';
 import { CustomerTicketCard } from '../../components/TicketProgress';
 import { customerCancelMode } from '../../domain/orderStateMachine';
 import {
@@ -19,7 +19,7 @@ import {
   customerRequestCancel,
   customerSwitchRemainingToCod,
   ensureRemainingTransaction,
-} from '../../domain/orders';
+} from '../../store/commands/orders';
 import { formatMoney } from '../../domain/pricing';
 import { depositRefundDeadline } from '../../domain/refund';
 import { findProduct, formatDateKey, fromDateKey, snapshotAddress } from '../../domain/state';
@@ -57,8 +57,8 @@ export function OrderDetailSheet({ orderId, onClose }: { orderId: string; onClos
   const canComplain = order.status === 'delivered' && deadline && at.getTime() <= deadline.getTime() && !tickets.some(isTicketOpen);
   const needRemaining = order.kind === 'preorder' && order.readyReportedAt && order.paymentStatus === 'deposit_paid' && order.paymentMethod === 'online' && order.status === 'awaiting_harvest';
 
-  const act = (op: Parameters<typeof run>[0], success: string) => {
-    const r = run(op);
+  const act = async (op: Parameters<typeof run>[0], success: string) => {
+    const r = await run(op);
     showToast(r.ok ? success : r.error);
     if (r.ok) setEditing(null);
     return r.ok;
@@ -70,13 +70,13 @@ export function OrderDetailSheet({ orderId, onClose }: { orderId: string; onClos
   const myAddresses = state.addresses.filter((a) => a.customerId === order.customerId);
   const reviewed = new Set(state.reviews.filter((r) => r.orderId === order.id).map((r) => r.productId));
 
-  const doCancel = () => {
+  const doCancel = async () => {
     const reason = cancelReason.trim();
     if (!reason) return showToast('Vui lòng chọn lý do huỷ.');
     const ok =
       mode === 'immediate'
-        ? act((s, t) => customerCancel(s, order.id, customerActor, reason, t), 'Đã huỷ đơn.')
-        : act((s, t) => customerRequestCancel(s, order.id, customerActor, reason, t), 'Đã gửi yêu cầu huỷ, chờ HTX duyệt.');
+        ? await act((s, t) => customerCancel(s, order.id, customerActor, reason, t), 'Đã huỷ đơn.')
+        : await act((s, t) => customerRequestCancel(s, order.id, customerActor, reason, t), 'Đã gửi yêu cầu huỷ, chờ HTX duyệt.');
     if (ok) setCancelling(false);
   };
 
@@ -290,8 +290,8 @@ export function OrderDetailSheet({ orderId, onClose }: { orderId: string; onClos
                   </p>
                   <PrimaryButton
                     className="w-full"
-                    onClick={() => {
-                      const r = run(
+                    onClick={async () => {
+                      const r = await run(
                         (s, t) => ensureRemainingTransaction(s, order.id, t),
                         (v) => v.state,
                       );

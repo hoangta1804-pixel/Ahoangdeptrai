@@ -1,188 +1,78 @@
-import { useEffect, useRef, useState } from 'react';
-import { Mail } from 'lucide-react';
-import { SimBadge } from '../components/EmptyState';
-import { Field, Input, PrimaryButton, SecondaryButton } from '../components/form';
-import { isEmail, maskEmail, type GoogleProfile } from '../domain/auth';
-import { GOOGLE_CLIENT_ID as CLIENT_ID } from '../store/serviceStatus';
+import {useEffect,useRef,useState} from 'react';
+import {api,acceptLogin,type LoginResponse} from '../store/backend';
+import {GOOGLE_CLIENT_ID} from '../store/serviceStatus';
+import {supabase} from '../store/supabase';
+import {useUi} from './UiContext';
 
-interface GoogleIdApi {
-  initialize(config: {
-    client_id: string;
-    callback: (response: { credential?: string }) => void;
-    ux_mode?: 'popup';
-    auto_select?: boolean;
-    context?: 'signin';
-    itp_support?: boolean;
-  }): void;
-  renderButton(el: HTMLElement, options: Record<string, unknown>): void;
+interface GoogleIdApi{
+  initialize(options:{client_id:string;callback:(result:{credential?:string})=>void;ux_mode:'popup';auto_select:boolean}):void;
+  renderButton(element:HTMLElement,options:Record<string,unknown>):void;
 }
-
-declare global {
-  interface Window {
-    google?: { accounts?: { id?: GoogleIdApi } };
-  }
-}
-
-let gisPromise: Promise<GoogleIdApi> | null = null;
-
-/** Tải thư viện Google Identity Services (chỉ khi đã có Client ID). */
-function loadGis(): Promise<GoogleIdApi> {
-  const ready = window.google?.accounts?.id;
-  if (ready) return Promise.resolve(ready);
-  gisPromise ??= new Promise<GoogleIdApi>((resolve, reject) => {
-    const script = document.createElement('script');
-    script.src = 'https://accounts.google.com/gsi/client';
-    script.async = true;
-    script.onload = () => {
-      const api = window.google?.accounts?.id;
-      if (api) resolve(api);
-      else reject(new Error('Google Identity Services không sẵn sàng'));
-    };
-    script.onerror = () => {
-      gisPromise = null;
-      reject(new Error('Không tải được Google Identity Services'));
-    };
+declare global{interface Window{google?:{accounts?:{id?:GoogleIdApi}}}}
+let library:Promise<GoogleIdApi>|null=null;
+function loadGoogle(){
+  if(window.google?.accounts?.id)return Promise.resolve(window.google.accounts.id);
+  library??=new Promise<GoogleIdApi>((resolve,reject)=>{
+    const script=document.createElement('script');script.src='https://accounts.google.com/gsi/client?hl=vi';script.async=true;
+    script.onload=()=>window.google?.accounts?.id?resolve(window.google.accounts.id):reject(new Error('Không tải được đăng nhập Google.'));
+    script.onerror=()=>{script.remove();library=null;reject(new Error('Không kết nối được Google. Vui lòng tải lại trang và thử lại.'));};
     document.head.appendChild(script);
-  });
-  return gisPromise;
+  });return library;
 }
-
-/** Mã băm SHA-256 (hex, 32 ký tự) cho tài khoản Google mô phỏng. */
-async function hashHex(text: string): Promise<string> {
-  if (globalThis.crypto?.subtle) {
-    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
-    return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('').slice(0, 32);
-  }
-  // Trang không chạy https (crypto.subtle không có): băm FNV-1a, đủ cho bản mô phỏng.
-  let h1 = 0x811c9dc5;
-  let h2 = 0x01000193;
-  for (const ch of text) {
-    h1 = Math.imul(h1 ^ ch.charCodeAt(0), 16777619) >>> 0;
-    h2 = Math.imul(h2 ^ ch.charCodeAt(0), 2246822519) >>> 0;
-  }
-  return (h1.toString(16).padStart(8, '0') + h2.toString(16).padStart(8, '0')).repeat(2);
-}
-
-/**
- * Đăng nhập bằng Google cho khách hàng.
- * - Có Client ID: nút chính chủ của Google; ID token được /api/auth/google xác minh với Google rồi mới đăng nhập.
- * - Chưa có Client ID, không tải được thư viện Google, hoặc mở trên claude.ai: bản mô phỏng (nhập Gmail, không kết nối Google).
- * Dữ liệu demo chỉ lưu tên, email đã che và mã đã băm.
- */
-export function GoogleSignIn({ onProfile }: { onProfile: (profile: GoogleProfile) => void }) {
-  const [mode, setMode] = useState<'real' | 'sim'>(CLIENT_ID ? 'real' : 'sim');
-  const [loadFailed, setLoadFailed] = useState(false);
-  const [open, setOpen] = useState(false);
-  const [email, setEmail] = useState('');
-  const [name, setName] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const holder = useRef<HTMLDivElement>(null);
-  const onProfileRef = useRef(onProfile);
-  onProfileRef.current = onProfile;
-
-  useEffect(() => {
-    if (mode !== 'real') return;
-    let cancelled = false;
-    loadGis()
-      .then((gis) => {
-        const el = holder.current;
-        if (cancelled || !el) return;
-        gis.initialize({
-          client_id: CLIENT_ID,
-          ux_mode: 'popup',
-          auto_select: false,
-          context: 'signin',
-          itp_support: true,
-          callback: async ({ credential }) => {
-            if (!credential) return setError('Google không trả về thông tin đăng nhập. Vui lòng thử lại.');
-            setBusy(true);
-            setError(null);
-            try {
-              const res = await fetch('/api/auth/google', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ credential }) });
-              const body = (await res.json().catch(() => null)) as { id?: string; name?: string; emailMasked?: string; error?: string } | null;
-              if (!res.ok || !body?.id) return setError(body?.error ?? 'Không xác minh được đăng nhập Google.');
-              onProfileRef.current({ id: body.id, name: body.name ?? '', emailMasked: body.emailMasked ?? '', simulated: false });
-            } catch {
-              setError('Không kết nối được máy chủ để xác minh đăng nhập Google.');
-            } finally {
-              setBusy(false);
-            }
-          },
-        });
-        gis.renderButton(el, { type: 'standard', theme: 'outline', size: 'large', text: 'signin_with', shape: 'pill', logo_alignment: 'left', locale: 'vi', width: Math.min(400, el.clientWidth || 320) });
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setLoadFailed(true);
-        setMode('sim');
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [mode]);
-
-  const submitSimulated = async () => {
-    if (!isEmail(email)) return setError('Email không hợp lệ. Ví dụ: ten@gmail.com');
-    setError(null);
-    const normalized = email.trim().toLowerCase();
-    const id = await hashHex(`sim:${normalized}`);
-    onProfileRef.current({ id, name: name.trim() || normalized.split('@')[0], emailMasked: maskEmail(normalized), simulated: true });
+const PENDING='dac-san-so-lao-cai:google-oauth';
+export function GoogleSignIn(){
+  const {login}=useUi();const holder=useRef<HTMLDivElement>(null);
+  const [busy,setBusy]=useState(false),[error,setError]=useState('');
+  const callbackTask=useRef<Promise<LoginResponse>|null>(null);
+  const finish=(result:LoginResponse)=>{acceptLogin(result);login(result.user.id);history.replaceState(null,'','/');};
+  useEffect(()=>{
+    if(!supabase||!sessionStorage.getItem(PENDING))return;
+    const params=new URLSearchParams(window.location.search);
+    if(params.has('error')){sessionStorage.removeItem(PENDING);setError('Đăng nhập Google chưa hoàn tất. Vui lòng thử lại.');history.replaceState(null,'','/dang-nhap');return;}
+    let cancelled=false;setBusy(true);
+    callbackTask.current??=(async()=>{
+      // getSession waits for the SDK's PKCE callback exchange (detectSessionInUrl).
+      const {data,error}=await supabase!.auth.getSession();if(error)throw error;
+      if(!data.session)throw new Error('Chưa nhận được phiên Google. Vui lòng chọn tài khoản lại.');
+      const session=data.session,result=await api<Omit<LoginResponse,'accessToken'|'refreshToken'>>('/api/v1/auth/supabase',{accessToken:session.access_token});
+      return {...result,accessToken:session.access_token,refreshToken:session.refresh_token,authProvider:'supabase'};
+    })();
+    void callbackTask.current.then(result=>{if(!cancelled){sessionStorage.removeItem(PENDING);finish(result);}}).catch(e=>{if(!cancelled){sessionStorage.removeItem(PENDING);setError(e instanceof Error?e.message:'Không xác minh được đăng nhập Google.');}}).finally(()=>{if(!cancelled)setBusy(false);});
+    return()=>{cancelled=true;};
+  },[]);
+  useEffect(()=>{
+    if(supabase||!GOOGLE_CLIENT_ID)return;
+    let cancelled=false,stopResize=()=>{};
+    void loadGoogle().then(google=>{
+      if(cancelled||!holder.current)return;
+      google.initialize({client_id:GOOGLE_CLIENT_ID,ux_mode:'popup',auto_select:false,callback:async({credential})=>{
+        if(cancelled)return;if(!credential){setError('Google chưa trả về thông tin đăng nhập.');return;}
+        setBusy(true);setError('');
+        try{const result=await api<LoginResponse>('/api/v1/auth/google',{credential});if(!cancelled)finish(result);}
+        catch(e){if(!cancelled)setError(e instanceof Error?e.message:'Không đăng nhập được bằng Google.');}
+        finally{if(!cancelled)setBusy(false);}
+      }});
+      let previousWidth=-1;
+      const render=()=>{
+        if(cancelled||!holder.current)return;
+        const width=Math.floor(holder.current.clientWidth);if(width<=0||width===previousWidth)return;previousWidth=width;
+        holder.current.replaceChildren();google.renderButton(holder.current,{type:width<200?'icon':'standard',theme:'outline',size:'large',text:'signin_with',shape:'rectangular',locale:'vi',...(width>=200?{width:Math.min(400,width)}:{})});
+      };
+      render();
+      if(typeof ResizeObserver!=='undefined'){const observer=new ResizeObserver(render);observer.observe(holder.current);stopResize=()=>observer.disconnect();}
+      else {window.addEventListener('resize',render);stopResize=()=>window.removeEventListener('resize',render);}
+    }).catch(e=>{if(!cancelled)setError(e.message);});
+    return()=>{cancelled=true;stopResize();};
+  },[]);
+  const start=async()=>{
+    if(!supabase||busy)return;setBusy(true);setError('');sessionStorage.setItem(PENDING,'1');
+    try{const {error}=await supabase.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin+'/dang-nhap',queryParams:{prompt:'select_account'}}});if(error)throw error;}
+    catch(e){sessionStorage.removeItem(PENDING);setBusy(false);setError(e instanceof Error?e.message:'Không mở được đăng nhập Google.');}
   };
-
-  if (mode === 'real') {
-    return (
-      <div className="space-y-2">
-        <div ref={holder} className="flex min-h-11 justify-center" aria-busy={busy} />
-        <p className="text-center text-xs text-muted">Dành cho khách hàng. Dữ liệu demo chỉ lưu tên và email đã che.</p>
-        {error && (
-          <p role="alert" className="text-sm font-semibold text-rose-700">
-            {error}
-          </p>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-2">
-      {!open ? (
-        <SecondaryButton type="button" className="flex w-full items-center justify-center gap-2" onClick={() => setOpen(true)}>
-          <Mail size={16} aria-hidden="true" /> Tiếp tục với Gmail <SimBadge />
-        </SecondaryButton>
-      ) : (
-        <div className="space-y-3 rounded-2xl border border-champagne-200 bg-champagne-50/60 p-3" role="group" aria-label="Đăng nhập Gmail mô phỏng">
-          <p className="flex flex-wrap items-center gap-2 text-sm text-stone-700">
-            <SimBadge /> Không kết nối Google, không cần mật khẩu. App chỉ lưu tên và email đã che.
-          </p>
-          <Field label="Địa chỉ Gmail">
-            <Input type="email" inputMode="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="ten@gmail.com" onKeyDown={(e) => e.key === 'Enter' && submitSimulated()} />
-          </Field>
-          <Field label="Tên hiển thị (không bắt buộc)">
-            <Input autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} />
-          </Field>
-          <div className="flex gap-2">
-            <SecondaryButton
-              type="button"
-              onClick={() => {
-                setOpen(false);
-                setError(null);
-              }}
-            >
-              Huỷ
-            </SecondaryButton>
-            <PrimaryButton type="button" className="flex-1" onClick={submitSimulated}>
-              Tiếp tục
-            </PrimaryButton>
-          </div>
-        </div>
-      )}
-      {loadFailed && <p className="text-xs text-muted">Không tải được nút đăng nhập của Google, đang dùng bản mô phỏng.</p>}
-      {error && (
-        <p role="alert" className="text-sm font-semibold text-rose-700">
-          {error}
-        </p>
-      )}
-    </div>
-  );
+  const configured=!!supabase||!!GOOGLE_CLIENT_ID;
+  return <section className="auth-google" aria-label="Đăng nhập bằng Google" aria-busy={busy}>
+    {supabase||!configured?<button className="auth-google-button" type="button" disabled={busy||!configured} onClick={()=>{void start();}}><span aria-hidden="true" className="auth-google-mark">G</span>{busy?'Đang đăng nhập…':'Đăng nhập bằng Google'}</button>:<div ref={holder} className="auth-google-holder"/>}
+    <p>{configured?'Chọn tài khoản Google để vào tài khoản khách hàng. Không cần nhập lại tên hoặc email.':'Đăng nhập Google chưa được cấu hình trên máy này.'}</p>
+    {error&&<p role="alert" className="auth-error">{error}</p>}
+  </section>;
 }
