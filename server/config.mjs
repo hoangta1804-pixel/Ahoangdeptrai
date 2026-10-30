@@ -11,7 +11,8 @@ export function configuration(){
     databasePath:resolve(env.DATABASE_PATH||'data/app.sqlite'),encryptionKey:env.DATA_ENCRYPTION_KEY,adminPhone:env.BOOTSTRAP_ADMIN_PHONE,
     supabaseUrl:env.SUPABASE_URL||env.VITE_SUPABASE_URL,supabasePublishableKey:env.SUPABASE_PUBLISHABLE_KEY||env.VITE_SUPABASE_PUBLISHABLE_KEY,
     supabaseServiceKey:env.SUPABASE_SERVICE_ROLE_KEY,supabaseAdminEmail:env.SUPABASE_ADMIN_EMAIL?.trim(),
-    ca:env.SUPABASE_DB_CA_PATH?readFileSync(env.SUPABASE_DB_CA_PATH,'utf8'):undefined,
+    // SUPABASE_DB_CA: nội dung PEM (dùng trên Vercel, không có file); SUPABASE_DB_CA_PATH: đường dẫn file.
+    ca:env.SUPABASE_DB_CA?.trim()?env.SUPABASE_DB_CA.replace(/\\n/g,'\n'):env.SUPABASE_DB_CA_PATH?readFileSync(env.SUPABASE_DB_CA_PATH,'utf8'):undefined,
     publicUrl:env.PUBLIC_URL,accountLinkUrl:env.ACCOUNT_LINK_DELIVERY_URL,accountLinkToken:env.ACCOUNT_LINK_DELIVERY_TOKEN,
     smsUrl:env.SMS_OTP_URL,smsToken:env.SMS_OTP_TOKEN,googleClientId:env.GOOGLE_CLIENT_ID||env.VITE_GOOGLE_CLIENT_ID,mapsKey:env.GOOGLE_MAPS_API_KEY,
     webhookSecrets:{payment:env.PAYMENT_WEBHOOK_SECRET,refund:env.REFUND_WEBHOOK_SECRET,payout:env.PAYOUT_WEBHOOK_SECRET,carrier:env.CARRIER_WEBHOOK_SECRET},

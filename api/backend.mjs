@@ -10,6 +10,15 @@ process.env.TZ = 'Asia/Ho_Chi_Minh';
 const BACKGROUND_EVERY_MS = 30_000;
 let appPromise = null;
 let lastBackgroundAt = 0;
+const REQUIRED_ENV = ['DATABASE_PROVIDER', 'SUPABASE_DB_URL', 'DATA_ENCRYPTION_KEY', 'SUPABASE_URL', 'SUPABASE_PUBLISHABLE_KEY', 'ALLOWED_ORIGINS'];
+
+/** Lý do lỗi khởi động đã che chuỗi kết nối, mật khẩu và khoá dài. */
+function safeReason(e) {
+  return `${e.code ? e.code + ': ' : ''}${String(e.message ?? e)}`
+    .replace(/postgres(ql)?:\/\/\S+/gi, 'postgresql://***')
+    .replace(/[A-Za-z0-9_\-.]{32,}/g, '***')
+    .slice(0, 300);
+}
 
 function application() {
   appPromise ??= (async () => {
@@ -39,10 +48,16 @@ export default async function handler(req, res) {
   try {
     app = await application();
   } catch (e) {
-    console.error('Backend start:', e.message);
+    console.error('Backend start:', e.code ?? '', e.message);
     res.statusCode = 503;
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
-    return res.end(JSON.stringify({ error: 'Máy chủ chưa cấu hình xong. Kiểm tra biến môi trường trên Vercel.' }));
+    return res.end(JSON.stringify({
+      error: 'Máy chủ chưa cấu hình xong. Kiểm tra biến môi trường trên Vercel.',
+      // Chỉ tên biến và mã lỗi, không bao giờ trả giá trị biến hay chuỗi kết nối.
+      missing: REQUIRED_ENV.filter((name) => !process.env[name]?.trim()),
+      reason: safeReason(e),
+      node: process.version,
+    }));
   }
   if (cron) {
     // Vercel Cron gửi "Authorization: Bearer <CRON_SECRET>" khi có biến CRON_SECRET.
