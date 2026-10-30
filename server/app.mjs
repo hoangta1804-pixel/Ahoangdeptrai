@@ -100,7 +100,9 @@ export async function createApplication(config = {}) {
                     return json(res, 404, { error: 'Chưa có giao diện build. Chạy npm run build hoặc npm run dev.' });
                 }
             }
-            const ip = req.socket.remoteAddress ?? 'unknown';
+            // Sau proxy (Vercel) mọi request đến từ cùng địa chỉ; lấy IP khách do proxy ghi vào x-forwarded-for.
+            const forwarded = options.trustProxy ? String(req.headers['x-forwarded-for'] ?? '').split(',')[0].trim() : '';
+            const ip = forwarded || (req.socket.remoteAddress ?? 'unknown');
             assert(await db.rate(`api:${ip}`, 600, 60000), 429, 'Quá nhiều yêu cầu. Thử lại sau.');
             if (req.headers.origin) {
                 const allowed = options.allowedOrigins ?? ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:4173', 'http://127.0.0.1:4173', `http://localhost:${options.port ?? 4000}`];
@@ -497,16 +499,16 @@ export async function createApplication(config = {}) {
     else
         res.end(); }); });
     let stopping = false, ticking = false,pushTask=null;
-    const pushTick=setInterval(()=>{
-        if(stopping||pushTask)return;
+    const runPush=()=>{
+        if(stopping||pushTask)return pushTask;
         pushTask=processPushQueue(db,options).catch(e=>console.error('Push worker:',e.code??e.name)).finally(()=>{pushTask=null;});
-    },5000);
-    pushTick.unref();
-    const tick = setInterval(() => {
+        return pushTask;
+    };
+    const runJobsOnce = () => {
         if (stopping || ticking)
-            return;
+            return Promise.resolve();
         ticking = true;
-        void db.withRequest(async () => {
+        return db.withRequest(async () => {
             await runJobs(db);
             await processExportQueue(db);
             await db.sql.prepare("UPDATE export_jobs SET status='EXPIRED',content=NULL WHERE expires_at<? AND status!='EXPIRED'").run(Date.now());
@@ -515,9 +517,13 @@ export async function createApplication(config = {}) {
             await db.sql.prepare('DELETE FROM sessions WHERE refresh_expires_at<?').run(Date.now());
             await db.sql.prepare('DELETE FROM revoked_tokens WHERE expires_at<?').run(Date.now());
         }).catch(e => console.error('Scheduled jobs:', e.code ?? e.name)).finally(() => { ticking = false; });
-    }, 5000);
-    tick.unref();
-    server.on('close', () => { stopping = true; clearInterval(tick);clearInterval(pushTick); if (!config.db)
+    };
+    // Serverless (Vercel) không giữ được setInterval giữa các request: tắt timer và gọi runBackgroundWork từ api/backend.mjs.
+    const runBackgroundWork = () => Promise.all([runPush(), runJobsOnce()]);
+    const timers = config.backgroundTimers === false ? [] : [setInterval(runPush, 5000), setInterval(runJobsOnce, 5000)];
+    for (const timer of timers)
+        timer.unref();
+    server.on('close', () => { stopping = true; timers.forEach(clearInterval); if (!config.db)
         void Promise.resolve(pushTask).then(()=>db.withRequest(() => db.close())).catch(e => console.error('Database close:', e.code ?? e.name)); });
-    return { server, db };
+    return { server, db, runBackgroundWork };
 }

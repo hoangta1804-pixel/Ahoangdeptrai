@@ -1,0 +1,61 @@
+/**
+ * Chạy backend Node (server/app.mjs) dạng Vercel Serverless Function, dữ liệu trên Supabase.
+ * vercel.json chuyển /api/v1/* và /api/health về đây, kèm đường dẫn gốc trong tham số __path.
+ * Việc định kỳ (hết hạn thanh toán, tự xác nhận đã giao, push…) chạy kèm request tối đa 1 lần/30 giây
+ * mỗi instance, và Vercel Cron gọi thêm qua /api/backend?__cron=1.
+ */
+import '../server/register.mjs';
+
+process.env.TZ = 'Asia/Ho_Chi_Minh';
+const BACKGROUND_EVERY_MS = 30_000;
+let appPromise = null;
+let lastBackgroundAt = 0;
+
+function application() {
+  appPromise ??= (async () => {
+    const { configuration } = await import('../server/config.mjs');
+    const { createApplication } = await import('../server/app.mjs');
+    const options = configuration();
+    if (options.databaseProvider !== 'supabase') throw new Error('Trên Vercel cần DATABASE_PROVIDER=supabase.');
+    if (!options.demo && !options.encryptionKey) throw new Error('Cần DATA_ENCRYPTION_KEY khi chạy chế độ thật.');
+    return createApplication({ ...options, poolMax: options.poolMax ?? 2, backgroundTimers: false });
+  })().catch((e) => { appPromise = null; throw e; });
+  return appPromise;
+}
+
+async function backgroundWork(app, force) {
+  if (!force && Date.now() - lastBackgroundAt < BACKGROUND_EVERY_MS) return;
+  lastBackgroundAt = Date.now();
+  await app.runBackgroundWork().catch((e) => console.error('Background work:', e.code ?? e.name));
+}
+
+export default async function handler(req, res) {
+  const url = new URL(req.url, 'http://localhost');
+  const original = url.searchParams.get('__path');
+  const cron = url.searchParams.get('__cron') === '1';
+  url.searchParams.delete('__path');
+  url.searchParams.delete('__cron');
+  let app;
+  try {
+    app = await application();
+  } catch (e) {
+    console.error('Backend start:', e.message);
+    res.statusCode = 503;
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    return res.end(JSON.stringify({ error: 'Máy chủ chưa cấu hình xong. Kiểm tra biến môi trường trên Vercel.' }));
+  }
+  if (cron) {
+    // Vercel Cron gửi "Authorization: Bearer <CRON_SECRET>" khi có biến CRON_SECRET.
+    const authorized = process.env.CRON_SECRET && req.headers.authorization === `Bearer ${process.env.CRON_SECRET}`;
+    res.statusCode = authorized ? 200 : 401;
+    if (authorized) await backgroundWork(app, true);
+    return res.end();
+  }
+  await backgroundWork(app, false);
+  req.url = (original ?? url.pathname) + url.search;
+  await new Promise((resolve) => {
+    res.once('finish', resolve);
+    res.once('close', resolve);
+    app.server.emit('request', req, res);
+  });
+}

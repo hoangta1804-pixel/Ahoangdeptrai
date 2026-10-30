@@ -21,7 +21,7 @@ export class PostgresDatabase {
       for(const key of ['sslmode','sslcert','sslkey','sslrootcert'])uri.searchParams.delete(key);
       connectionString=uri.toString();
     }
-    this.pool=options.pool??new pg.Pool({connectionString,max:5,connectionTimeoutMillis:10000,idleTimeoutMillis:30000,statement_timeout:20000,ssl:options.ssl===false?false:{rejectUnauthorized:true,...(options.ca?{ca:options.ca}:{})},types:{getTypeParser:(oid,format)=>oid===20?value=>Number(value):pg.types.getTypeParser(oid,format)}});
+    this.pool=options.pool??new pg.Pool({connectionString,max:options.poolMax??5,connectionTimeoutMillis:10000,idleTimeoutMillis:30000,statement_timeout:20000,ssl:options.ssl===false?false:{rejectUnauthorized:true,...(options.ca?{ca:options.ca}:{})},types:{getTypeParser:(oid,format)=>oid===20?value=>Number(value):pg.types.getTypeParser(oid,format)}});
     this.pool.on?.('error',e=>console.error('PostgreSQL idle connection error:',e.code??e.name));
     this.sql={prepare:sql=>({
       get:async(...args)=>(await this.query(sql,args)).rows[0],

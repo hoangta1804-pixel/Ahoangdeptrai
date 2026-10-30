@@ -1,0 +1,19 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "functions": {
+    "api/backend.mjs": {
+      "includeFiles": "{server,src,supabase}/**",
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    { "source": "/api/v1/:path*", "destination": "/api/backend?__path=/api/v1/:path*" },
+    { "source": "/api/health", "destination": "/api/backend?__path=/api/health" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ],
+  "crons": [
+    { "path": "/api/backend?__cron=1", "schedule": "0 0 * * *" }
+  ]
+}
