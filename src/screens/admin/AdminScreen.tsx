@@ -1,4 +1,8 @@
 import { useState, type ReactNode } from 'react';
+import {
+  BadgeCheck, BarChart3, BookOpen, ClipboardCheck, FileText, Gauge, History, Landmark, LayoutDashboard, MessageSquareWarning,
+  Newspaper, PackageSearch, Receipt, ScrollText, Settings2, ShieldCheck, Star, Store, Ticket, Truck, Undo2, Users, Wallet, type LucideIcon,
+} from 'lucide-react';
 import {ContentManagementTab} from './ContentManagementTab';
 import { useUi } from '../../app/UiContext';
 import { PAGE_X } from '../../app/layout';
@@ -27,6 +31,32 @@ import { QualityApplicationsTab } from './QualityApplicationsTab';
 import { QualityChangesTab } from './QualityChangesTab';
 
 type TabDef = { key: string; label: string; render: () => ReactNode };
+
+/** Biểu tượng và mô tả ngắn cho từng mục quản trị. */
+const TAB_META: Record<string, { Icon: LucideIcon; hint: string }> = {
+  overview: { Icon: LayoutDashboard, hint: 'Số liệu chính của sàn trong nháy mắt.' },
+  'coop-list': { Icon: Store, hint: 'Liên hệ và sản phẩm đang bán của từng hợp tác xã.' },
+  orders: { Icon: PackageSearch, hint: 'Theo dõi và xử lý đơn hàng toàn sàn.' },
+  carrier: { Icon: Truck, hint: 'Phân công và theo dõi giao hàng.' },
+  accounts: { Icon: Users, hint: 'Cấp, khoá và phân quyền tài khoản.' },
+  params: { Icon: Settings2, hint: 'Tham số vận hành của hệ thống.' },
+  catalog: { Icon: BookOpen, hint: 'Danh mục dùng chung cho sản phẩm.' },
+  content: { Icon: Newspaper, hint: 'Nội dung hiển thị trên trang chủ.' },
+  vouchers: { Icon: Ticket, hint: 'Tạo và quản lý mã ưu đãi.' },
+  applications: { Icon: ClipboardCheck, hint: 'Duyệt hồ sơ hợp tác xã đăng ký mới.' },
+  changes: { Icon: BadgeCheck, hint: 'Duyệt thay đổi sản phẩm và giá.' },
+  coops: { Icon: ShieldCheck, hint: 'Hồ sơ HTX và quyền bán hàng.' },
+  tickets: { Icon: MessageSquareWarning, hint: 'Tiếp nhận và xử lý khiếu nại.' },
+  reviews: { Icon: Star, hint: 'Kiểm duyệt đánh giá của khách hàng.' },
+  refunds: { Icon: Undo2, hint: 'Duyệt và theo dõi hoàn tiền.' },
+  settlement: { Icon: Landmark, hint: 'Đối soát và chi trả cho HTX.' },
+  ledger: { Icon: ScrollText, hint: 'Sổ giao dịch tài chính.' },
+  cod: { Icon: Wallet, hint: 'Theo dõi tiền thu hộ COD.' },
+  invoices: { Icon: Receipt, hint: 'Hoá đơn cho khách hàng công ty.' },
+  audit: { Icon: History, hint: 'Nhật ký thao tác trên hệ thống.' },
+};
+const metaOf = (key: string) => TAB_META[key] ?? { Icon: FileText, hint: '' };
+const greeting = (hour: number) => (hour < 5 ? 'Xin chào' : hour < 11 ? 'Chào buổi sáng' : hour < 14 ? 'Chào buổi trưa' : hour < 18 ? 'Chào buổi chiều' : 'Chào buổi tối');
 
 const OVERVIEW: TabDef = { key: 'overview', label: 'Tổng quan', render: () => <AdminOverviewTab /> };
 /** Danh sách HTX (có SĐT, địa chỉ để Admin liên hệ HTX, sản phẩm đang bán của từng HTX): mọi nhóm quyền đều có. */
@@ -74,33 +104,61 @@ const TABS: Record<AdminSubGroup, TabDef[]> = {
   ],
 };
 
-/** Admin theo nhóm quyền (mục 8). Giao diện rộng cho máy tính. */
+/** Admin theo nhóm quyền (mục 8). Giao diện rộng cho máy tính: thanh mục bên trái, nội dung bên phải. */
 export function AdminScreen() {
-  const { adminGroup } = useUi();
-  const { state } = useStore();
-  const [tab, setTab] = useState(TABS[adminGroup][0].key);
-  const current = TABS[adminGroup].find((t) => t.key === tab) ?? TABS[adminGroup][0];
+  const { adminGroup, user } = useUi();
+  const { state, now } = useStore();
+  const tabs = TABS[adminGroup];
+  const [tab, setTab] = useState(tabs[0].key);
+  const current = tabs.find((t) => t.key === tab) ?? tabs[0];
+  const { Icon: CurrentIcon, hint } = metaOf(current.key);
+  const today = now();
+  const stats = [
+    { label: 'Đơn hàng', value: state.orders.length, Icon: BarChart3 },
+    { label: 'Hợp tác xã', value: state.coops.length, Icon: Store },
+    { label: 'Sản phẩm', value: state.products.filter((p) => p.status === 'active').length, Icon: Gauge },
+  ];
 
   return (
-    <div className={`flex flex-1 flex-col gap-4 py-4 lg:flex-row lg:gap-6 ${PAGE_X}`}>
-      <aside className="space-y-3 lg:sticky lg:top-[calc(var(--app-header-h,0px)+1rem)] lg:w-60 lg:shrink-0 lg:self-start">
-        <div className="lattice relative overflow-hidden rounded-3xl bg-forest-950 p-4 pb-6 text-white">
+    <div className={`admin-shell flex flex-1 flex-col gap-4 py-5 lg:flex-row lg:gap-6 ${PAGE_X}`}>
+      <aside className="admin-sidebar space-y-3 lg:sticky lg:top-[calc(var(--app-header-h,0px)+1rem)] lg:w-64 lg:shrink-0 lg:self-start">
+        <div className="admin-badge lattice relative hidden lg:block overflow-hidden rounded-3xl bg-forest-950 p-5 pb-6 text-white">
           <span className="text-xs font-semibold uppercase tracking-[0.18em] text-champagne-300">Quản trị</span>
-          <p className="font-display text-lg font-semibold">Admin – {ADMIN_GROUP_LABEL[adminGroup]}</p>
+          <p className="font-display text-lg font-semibold">{ADMIN_GROUP_LABEL[adminGroup]}</p>
+          <p className="mt-1 text-xs text-forest-200">{tabs.length} chức năng</p>
           <div aria-hidden="true" className="brocade-dark absolute inset-x-0 bottom-0 h-2" />
         </div>
-        <nav className="no-scrollbar flex gap-1 overflow-x-auto lg:flex-col" aria-label="Chức năng quản trị">
-          {TABS[adminGroup].map((t) => (
-            <button key={t.key} onClick={() => setTab(t.key)} aria-current={current.key === t.key ? 'page' : undefined} className={`min-h-11 whitespace-nowrap rounded-xl px-3 text-left text-sm font-medium ${current.key === t.key ? 'bg-forest-900 text-champagne-100 ring-1 ring-champagne-400/60' : 'bg-white text-stone-700 hover:bg-stone-100'}`}>
-              {t.label}
-            </button>
-          ))}
+        <nav className="admin-nav no-scrollbar flex gap-1.5 overflow-x-auto lg:flex-col" aria-label="Chức năng quản trị">
+          {tabs.map((t) => {
+            const { Icon } = metaOf(t.key);
+            const active = current.key === t.key;
+            return (
+              <button key={t.key} onClick={() => setTab(t.key)} aria-current={active ? 'page' : undefined} className={`admin-nav-item ${active ? 'is-active' : ''}`}>
+                <Icon size={17} strokeWidth={active ? 2.2 : 1.8} aria-hidden="true" />
+                <span>{t.label}</span>
+              </button>
+            );
+          })}
         </nav>
       </aside>
-      <section className="min-w-0 flex-1">
-        <ListBoundary key={current.key} label={`mục "${current.label}"`} resetKey={state}>
-          {current.render()}
-        </ListBoundary>
+      <section className="min-w-0 flex-1 space-y-4">
+        <header className="admin-hero">
+          <div className="min-w-0">
+            <p className="admin-hero-greet">{greeting(today.getHours())}, {user?.name ?? 'Quản trị viên'} 👋</p>
+            <h1 className="admin-hero-title"><span className="admin-hero-icon"><CurrentIcon size={20} /></span>{current.label}</h1>
+            {hint && <p className="admin-hero-hint">{hint}</p>}
+          </div>
+          <div className="admin-hero-stats" aria-label="Số liệu nhanh">
+            {stats.map(({ label, value, Icon }) => (
+              <div key={label}><Icon size={15} aria-hidden="true" /><strong className="tabular-nums">{value}</strong><span>{label}</span></div>
+            ))}
+          </div>
+        </header>
+        <div key={current.key} className="admin-panel">
+          <ListBoundary key={current.key} label={`mục "${current.label}"`} resetKey={state}>
+            {current.render()}
+          </ListBoundary>
+        </div>
       </section>
     </div>
   );

@@ -1,0 +1,180 @@
+/*
+ * Hiệu ứng chuyển động + làm mới giao diện (11/2026).
+ * - Intro khi mở web (IntroSplash), hiện dần khi cuộn (useScrollReveal), chuyển trang, sheet, toast.
+ * - Giao diện Admin mới (admin-*), tinh chỉnh cửa hàng của khách (shop-*), màn nhập SĐT sau Google (phone-gate).
+ * Mọi chuyển động tắt khi người dùng bật "giảm chuyển động" (xem cuối file và index.css).
+ */
+:root{
+  --ease-out-expo:cubic-bezier(.16,1,.3,1);
+  --ease-spring:cubic-bezier(.34,1.56,.64,1);
+}
+
+/* ---------- Keyframes dùng chung ---------- */
+@keyframes fade-up{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+@keyframes fade-in{from{opacity:0}to{opacity:1}}
+@keyframes scale-in{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:none}}
+@keyframes sheet-up{from{opacity:.4;transform:translateY(40px)}to{opacity:1;transform:none}}
+@keyframes toast-in{from{opacity:0;transform:translateY(16px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes float-y{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes ken-burns{from{transform:scale(1.12)}to{transform:scale(1)}}
+@keyframes shimmer{from{background-position:-200% 0}to{background-position:200% 0}}
+@keyframes pulse-ring{0%{box-shadow:0 0 0 0 #c9a96e80}100%{box-shadow:0 0 0 12px #c9a96e00}}
+
+/* ---------- Intro ---------- */
+.intro-splash{
+  position:fixed;inset:0;z-index:100;display:grid;place-items:center;overflow:hidden;cursor:pointer;
+  background:radial-gradient(120% 90% at 50% 40%,#173a2c 0%,#0e251b 55%,#07150f 100%);color:#f7f0e3;
+  transition:opacity .7s var(--ease-out-expo),transform .7s var(--ease-out-expo),clip-path .7s var(--ease-out-expo);
+  clip-path:circle(150% at 50% 50%);
+}
+.intro-splash.is-leaving{opacity:0;transform:scale(1.04);clip-path:circle(0% at 50% 50%);pointer-events:none}
+.intro-bg{position:absolute;inset:0;pointer-events:none}
+.intro-orb{position:absolute;border-radius:50%;filter:blur(60px);opacity:.55;animation:float-y 6s ease-in-out infinite}
+.intro-orb-1{width:380px;height:380px;left:-90px;top:-60px;background:#2c684f}
+.intro-orb-2{width:300px;height:300px;right:-70px;bottom:-40px;background:#876a33;animation-delay:-2s}
+.intro-orb-3{width:220px;height:220px;left:55%;top:12%;background:#37795e;animation-delay:-4s;opacity:.35}
+.intro-center{position:relative;display:flex;flex-direction:column;align-items:center;gap:18px;padding:24px;text-align:center}
+.intro-mark{position:relative;display:grid;place-items:center;width:120px;height:120px;color:#dfcba4;animation:scale-in .9s var(--ease-spring) both}
+.intro-mark>svg:last-child{animation:float-y 3s ease-in-out .9s infinite}
+.intro-ring{position:absolute;inset:0;transform:rotate(-90deg)}
+.intro-ring circle{fill:none;stroke:#c9a96e;stroke-width:1.5;stroke-dasharray:340;stroke-dashoffset:340;animation:ring-draw 1.6s var(--ease-out-expo) .15s forwards}
+@keyframes ring-draw{to{stroke-dashoffset:0}}
+.intro-title{font-family:Newsreader,Georgia,serif;font-size:clamp(38px,8vw,64px);font-weight:400;letter-spacing:.01em;line-height:1;display:flex}
+.intro-title>span{display:inline-block;opacity:0;transform:translateY(24px) rotate(4deg);animation:intro-letter .8s var(--ease-out-expo) forwards}
+@keyframes intro-letter{to{opacity:1;transform:none}}
+.intro-caption{font-size:12px;letter-spacing:.32em;color:#c9a96e;opacity:0;animation:fade-up .8s var(--ease-out-expo) 1.35s forwards}
+.intro-progress{display:block;width:160px;height:2px;margin-top:10px;border-radius:2px;background:#ffffff1f;overflow:hidden;opacity:0;animation:fade-in .4s 1.5s forwards}
+.intro-progress>span{display:block;height:100%;width:100%;transform-origin:left;transform:scaleX(0);background:linear-gradient(90deg,#c9a96e,#f7f0e3);animation:intro-bar 1.3s var(--ease-out-expo) 1.55s forwards}
+@keyframes intro-bar{to{transform:scaleX(1)}}
+.intro-skip{position:absolute;right:20px;bottom:calc(20px + env(safe-area-inset-bottom));min-height:44px;padding:0 18px;border:1px solid #c9a96e66;border-radius:999px;font-size:13px;color:#dfcba4;background:#ffffff08;backdrop-filter:blur(6px);transition:background .2s}
+.intro-skip:hover{background:#ffffff1a}
+
+/* ---------- Hiện dần khi cuộn ---------- */
+.reveal-init{opacity:0;transform:translateY(28px);transition:opacity .8s var(--ease-out-expo) var(--reveal-delay,0ms),transform .8s var(--ease-out-expo) var(--reveal-delay,0ms)}
+.reveal-init.is-visible{opacity:1;transform:none}
+
+/* ---------- Chuyển trang, sheet, toast ---------- */
+.page-enter{animation:fade-in .45s ease-out both}
+.app-sheet-overlay{animation:fade-in .25s ease-out both}
+.app-sheet{animation:sheet-up .45s var(--ease-out-expo) both}
+@media(min-width:768px){.app-sheet{animation-name:scale-in}}
+[role="status"].fixed{animation:toast-in .4s var(--ease-spring) both}
+
+/* ---------- Nút: phản hồi khi rê / bấm ---------- */
+.shop-button,.shop-add-cart,.shop-icon,.admin-nav-item,.auth-google-button,.auth-form>button{transition:transform .2s var(--ease-out-expo),box-shadow .25s,background-color .2s,color .2s}
+.shop-button:hover,.auth-form>button:hover:not(:disabled),.auth-google-button:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 10px 24px #0e251b26}
+.shop-button:active,.shop-add-cart:active,.shop-icon:active,.auth-form>button:active,.admin-nav-item:active{transform:scale(.96)}
+.shop-add-cart:hover:not(:disabled){transform:rotate(-8deg) scale(1.08)}
+.shop-product-favorite{transition:transform .25s var(--ease-spring)}
+.shop-product-favorite:hover{transform:scale(1.12)}
+.shop-product-favorite.is-saved svg{animation:scale-in .4s var(--ease-spring)}
+.shop-count{animation:scale-in .35s var(--ease-spring)}
+
+/* ---------- Cửa hàng của khách ---------- */
+.shop-hero-photo{animation:ken-burns 9s ease-out both}
+.shop-hero-content>*{animation:fade-up .9s var(--ease-out-expo) both}
+.shop-hero-content>*:nth-child(2){animation-delay:.12s}
+.shop-hero-content>*:nth-child(3){animation-delay:.24s}
+.shop-hero-content>*:nth-child(4){animation-delay:.36s}
+.shop-hero-content>*:nth-child(5){animation-delay:.48s}
+.shop-hero-scroll{animation:float-y 2.4s ease-in-out infinite}
+.shop-hero-eyebrow{backdrop-filter:blur(8px)}
+.shop-site-header{transition:box-shadow .3s}
+.shop-site-header:hover{box-shadow:0 8px 30px #0e251b0d}
+.shop-desktop-nav>button{position:relative}
+.shop-desktop-nav>button::after{content:"";position:absolute;left:0;right:0;bottom:-6px;height:2px;border-radius:2px;background:#b89451;transform:scaleX(0);transform-origin:center;transition:transform .3s var(--ease-out-expo)}
+.shop-desktop-nav>button:hover::after{transform:scaleX(1)}
+.shop-product-card{border-radius:16px;transition:transform .35s var(--ease-out-expo),box-shadow .35s,border-color .35s}
+.shop-product-card:hover{transform:translateY(-6px);box-shadow:0 22px 44px -18px #183f2540;border-color:#dfcba4}
+.shop-product-open>img,.shop-product-illustration{transition:transform .7s var(--ease-out-expo)}
+.shop-product-card:hover .shop-product-open>img{transform:scale(1.07)}
+.shop-product-tag{border-radius:999px;backdrop-filter:blur(6px)}
+.shop-region-card{transition:transform .45s var(--ease-out-expo),box-shadow .45s}
+.shop-region-card:hover{transform:translateY(-6px);box-shadow:0 24px 50px -20px #0e251b66}
+.shop-region-card img{transition:transform .9s var(--ease-out-expo)}
+.shop-region-card:hover img{transform:scale(1.08)}
+.shop-region-arrow{transition:transform .35s var(--ease-spring)}
+.shop-region-card:hover .shop-region-arrow{transform:rotate(45deg)}
+.shop-promise-card,.shop-review-card,.shop-story-card{transition:transform .35s var(--ease-out-expo),box-shadow .35s}
+.shop-promise-card:hover,.shop-review-card:hover,.shop-story-card:hover{transform:translateY(-4px);box-shadow:0 18px 40px -20px #183f2540}
+.shop-promise-card>span{transition:transform .4s var(--ease-spring)}
+.shop-promise-card:hover>span{transform:rotate(-10deg) scale(1.1)}
+.shop-category-tabs>button{transition:background-color .25s,color .25s,transform .2s}
+.shop-category-tabs>button:hover{transform:translateY(-1px)}
+.shop-spinner{animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.shop-mobile-menu{animation:fade-up .35s var(--ease-out-expo) both}
+.shop-mobile-menu>button{animation:fade-up .4s var(--ease-out-expo) both}
+.shop-mobile-menu>button:nth-child(2){animation-delay:.04s}.shop-mobile-menu>button:nth-child(3){animation-delay:.08s}.shop-mobile-menu>button:nth-child(4){animation-delay:.12s}.shop-mobile-menu>button:nth-child(5){animation-delay:.16s}.shop-mobile-menu>button:nth-child(6){animation-delay:.2s}
+.shop-filter-panel{animation:fade-up .3s var(--ease-out-expo) both}
+
+/* Trang đăng nhập / đăng ký */
+.auth-layout{animation:scale-in .6s var(--ease-out-expo) both;border-radius:24px}
+.auth-intro{overflow:hidden}
+.auth-intro>img{animation:ken-burns 12s ease-out both}
+.auth-intro-copy>*{animation:fade-up .8s var(--ease-out-expo) both}
+.auth-intro-copy>*:nth-child(2){animation-delay:.1s}.auth-intro-copy>*:nth-child(3){animation-delay:.2s}.auth-intro-copy>*:nth-child(4){animation-delay:.3s}.auth-intro-copy>*:nth-child(5){animation-delay:.4s}
+.auth-form-panel>*{animation:fade-up .6s var(--ease-out-expo) both}
+.auth-form-panel>*:nth-child(2){animation-delay:.05s}.auth-form-panel>*:nth-child(3){animation-delay:.1s}.auth-form-panel>*:nth-child(4){animation-delay:.15s}.auth-form-panel>*:nth-child(5){animation-delay:.2s}.auth-form-panel>*:nth-child(6){animation-delay:.25s}.auth-form-panel>*:nth-child(7){animation-delay:.3s}
+.auth-form input{transition:border-color .2s,box-shadow .2s}
+.auth-form input:focus{border-color:#37795e;box-shadow:0 0 0 4px #37795e1f}
+
+/* Màn nhập SĐT sau khi đăng nhập Google */
+.phone-gate{max-width:480px;margin:24px auto;padding:40px 36px 32px;background:#fff;border:1px solid #e4e7de;border-radius:24px;box-shadow:0 24px 70px #0325170f;animation:scale-in .55s var(--ease-out-expo) both}
+.phone-gate>h2{font-family:Newsreader,Georgia,serif;color:#193d2b;font-size:36px;line-height:1.2}
+.phone-gate-icon{display:grid;place-items:center;width:58px;height:58px;margin-bottom:18px;border-radius:18px;background:linear-gradient(135deg,#255b44,#0e251b);color:#dfcba4;animation:pulse-ring 1.8s ease-out infinite}
+.phone-gate-note{display:flex;align-items:center;gap:8px;margin-top:18px;font-size:12px;color:#6d7a64}
+.phone-gate-logout{display:flex;align-items:center;gap:8px;min-height:44px;margin-top:6px;font-size:13px;font-weight:600;color:#234e35}
+@media(max-width:767px){.phone-gate{padding:28px 22px;margin:8px auto}.phone-gate>h2{font-size:30px}}
+
+/* ---------- Giao diện Admin / nhân sự ---------- */
+.staff-header{background:linear-gradient(90deg,#0e251b 0%,#173a2c 60%,#1f4d3a 100%);box-shadow:0 10px 30px -12px #0e251b80}
+.staff-main{background:radial-gradient(1200px 400px at 100% 0%,#e1efe9 0%,transparent 60%),var(--color-ivory)}
+.admin-badge{box-shadow:0 18px 40px -22px #0e251b;animation:fade-up .5s var(--ease-out-expo) both}
+.admin-nav{padding:6px;border-radius:20px;background:#ffffffb3;border:1px solid #e7e2d6;backdrop-filter:blur(10px)}
+.admin-nav-item{position:relative;display:flex;align-items:center;gap:10px;min-height:44px;white-space:nowrap;border-radius:14px;padding:0 14px;text-align:left;font-size:14px;font-weight:500;color:#44403c}
+.admin-nav-item>svg{flex-shrink:0;color:#6b8f7d;transition:transform .3s var(--ease-spring),color .2s}
+.admin-nav-item:hover{background:#f2f8f5;color:#173a2c}
+.admin-nav-item:hover>svg{transform:scale(1.15);color:#255b44}
+.admin-nav-item.is-active{background:linear-gradient(135deg,#255b44,#173a2c);color:#f7f0e3;font-weight:600;box-shadow:0 10px 22px -12px #173a2c}
+.admin-nav-item.is-active>svg{color:#dfcba4}
+@media(min-width:1024px){.admin-nav-item.is-active::before{content:"";position:absolute;left:-6px;top:50%;width:4px;height:22px;margin-top:-11px;border-radius:4px;background:#c9a96e}}
+.admin-nav>.admin-nav-item{animation:fade-up .45s var(--ease-out-expo) both}
+.admin-nav>.admin-nav-item:nth-child(2){animation-delay:.03s}.admin-nav>.admin-nav-item:nth-child(3){animation-delay:.06s}.admin-nav>.admin-nav-item:nth-child(4){animation-delay:.09s}.admin-nav>.admin-nav-item:nth-child(5){animation-delay:.12s}.admin-nav>.admin-nav-item:nth-child(6){animation-delay:.15s}.admin-nav>.admin-nav-item:nth-child(7){animation-delay:.18s}.admin-nav>.admin-nav-item:nth-child(8){animation-delay:.21s}.admin-nav>.admin-nav-item:nth-child(9){animation-delay:.24s}
+.admin-hero{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px;padding:22px 24px;border-radius:24px;background:linear-gradient(120deg,#fff 0%,#fcf9f3 60%,#f7f0e3 100%);border:1px solid #ede1c9;box-shadow:0 16px 40px -28px #5e4921;animation:fade-up .5s var(--ease-out-expo) both}
+.admin-hero-greet{font-size:13px;color:#6b655f}
+.admin-hero-title{display:flex;align-items:center;gap:12px;margin-top:6px;font-family:var(--font-display);font-size:clamp(22px,3vw,30px);font-weight:600;color:#173a2c;line-height:1.2}
+.admin-hero-icon{display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:#173a2c;color:#dfcba4;flex-shrink:0}
+.admin-hero-hint{margin-top:6px;font-size:14px;color:#6b655f}
+.admin-hero-stats{display:flex;gap:10px;flex-wrap:wrap}
+.admin-hero-stats>div{display:grid;grid-template-columns:auto 1fr;align-items:center;column-gap:6px;min-width:104px;padding:10px 14px;border-radius:16px;background:#ffffffcc;border:1px solid #ede1c9;transition:transform .3s var(--ease-out-expo),box-shadow .3s}
+.admin-hero-stats>div:hover{transform:translateY(-3px);box-shadow:0 12px 24px -16px #5e4921}
+.admin-hero-stats svg{color:#876a33}
+.admin-hero-stats strong{font-size:20px;color:#173a2c;line-height:1.1}
+.admin-hero-stats span{grid-column:1/-1;font-size:12px;color:#6b655f}
+.admin-panel{animation:fade-up .45s var(--ease-out-expo) both}
+/* Thẻ, bảng bên trong các mục quản trị: bo tròn mềm, có bóng nhẹ khi rê. */
+.admin-panel :is(section,article).rounded-2xl,.admin-panel :is(section,article,div).rounded-3xl{transition:box-shadow .3s,transform .3s var(--ease-out-expo)}
+.admin-panel :is(section,article).rounded-2xl:hover,.admin-panel :is(section,article).rounded-3xl:hover{box-shadow:0 16px 36px -24px #173a2c}
+.admin-panel table{border-collapse:separate;border-spacing:0}
+.admin-panel tbody tr{transition:background-color .2s}
+.admin-panel tbody tr:hover{background:#f2f8f5}
+@media(max-width:1023px){.admin-hero{padding:18px}.admin-hero-stats>div{min-width:88px;padding:8px 12px}}
+
+/* Thẻ có hiệu ứng rê chuột riêng: giữ hiện dần (opacity có lệch thời gian) mà không làm chậm hiệu ứng rê. */
+:is(.shop-product-card,.shop-region-card,.shop-promise-card,.shop-review-card,.shop-story-card).reveal-init{transition:opacity .8s var(--ease-out-expo) var(--reveal-delay,0ms),transform .6s var(--ease-out-expo),box-shadow .35s,border-color .35s}
+
+/* ---------- Giảm chuyển động ---------- */
+@media (prefers-reduced-motion: reduce){
+  .reveal-init{opacity:1;transform:none}
+  .shop-product-card:hover,.shop-region-card:hover,.shop-button:hover{transform:none}
+}
+
+/* Thanh tab của khách (điện thoại): tab đang mở có nền sáng mờ, biểu tượng nảy nhẹ khi chọn. */
+nav[aria-label="Điều hướng khách hàng"]>button{transition:background-color .25s,color .25s,transform .2s}
+nav[aria-label="Điều hướng khách hàng"]>button[aria-current="page"]{background:#ffffff14}
+nav[aria-label="Điều hướng khách hàng"]>button[aria-current="page"]>svg{animation:scale-in .45s var(--ease-spring)}
+nav[aria-label="Điều hướng khách hàng"]>button:active{transform:scale(.94)}
+
+/* Kiểm thử tự động: không có chuyển động. */
+.no-motion *,.no-motion ::before,.no-motion ::after{animation:none !important;transition:none !important}

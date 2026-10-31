@@ -7,7 +7,7 @@ import { ApiError, assert, authenticate, hash, issueSession, requestOtp, verifyO
 import { project } from './projection.mjs';
 import { executeBatch, runJobs, authorizeBatch, projectResults } from './command-service.mjs';
 import { actorOf, registerCustomer, registerGoogleCustomer, findGoogleUser } from '../src/domain/auth.ts';
-import { normalizePhone } from '../src/domain/phone.ts';
+import { normalizePhone, isValidPhone } from '../src/domain/phone.ts';
 import { aggregateStats, periodStats } from '../src/domain/stats.ts';
 import { exportReport } from '../src/domain/reports.ts';
 import { handleGoogleAuthRequest } from '../api/auth/google.ts';
@@ -140,9 +140,10 @@ export async function createApplication(config = {}) {
                 else assert(typeof body.password==='string'&&body.password.length<=128,400,'Vui lòng nhập mật khẩu.');
                 if(registering){
                     assert(typeof body.name==='string'&&body.name.trim().length>=2&&body.name.length<=100,400,'Họ tên phải từ 2 đến 100 ký tự.');
+                    // Đăng ký không cần OTP: chỉ kiểm tra SĐT hợp lệ và chưa có tài khoản.
+                    assert(isValidPhone(phone),400,'Số điện thoại không hợp lệ.');
                     assert(!(await db.read()).state.users.some(u=>u.phone===phone),409,'Số điện thoại đã có tài khoản. Vui lòng đăng nhập.');
-                    const verifiedPhone=await verifyOtp(db,body,'register');
-                    assert(verifiedPhone===phone,403,'OTP không thuộc số điện thoại đăng ký.');
+                    assert(await db.rate(`register:${ip}`,10,15*60000),429,'Đăng ký quá nhiều lần. Vui lòng thử lại sau.');
                 }
                 return await transactionReply(res,db,async()=>{
                     const {state}=await db.read();let user=state.users.find(u=>u.phone===phone);
@@ -151,7 +152,6 @@ export async function createApplication(config = {}) {
                         assert(!user,409,'Số điện thoại đã có tài khoản. Vui lòng đăng nhập.');
                         const result=registerCustomer(state,{name:body.name,phone,otp:'123456'},new Date());
                         assert(result.ok,422,result.error);user=result.value.user;
-                        user.phoneVerifiedAt=new Date().toISOString();
                         await db.save(result.value.state);
                         await db.sql.prepare('INSERT INTO password_credentials(user_id,password_hash) VALUES(?,?)').run(user.id,await hashPassword(body.password));
                     }else{
@@ -270,7 +270,7 @@ export async function createApplication(config = {}) {
                 if(req.method==='POST')assert(await db.rate('push:'+auth.user.id,30,900000),429,'Thử lại sau ít phút.');
                 return await transactionReply(res,db,async()=>({status:200,body:await pushRoute(req.method,body,{db,auth,options})}));
             }
-            if(['/api/v1/me/profile','/api/v1/me/phone/start','/api/v1/me/phone/confirm'].includes(path)&&req.method==='POST')return json(res,200,await manageProfile(path,body,{db,auth,options,ip}));
+            if(['/api/v1/me/profile','/api/v1/me/phone/start','/api/v1/me/phone/confirm','/api/v1/me/phone/first'].includes(path)&&req.method==='POST')return json(res,200,await manageProfile(path,body,{db,auth,options,ip}));
             if(['/api/v1/homepage','/api/v1/catalog-dictionaries'].includes(path)&&req.method==='POST')return await transactionReply(res,db,async()=>({status:200,body:await saveContent(path.endsWith('/homepage')?'homepage':'dictionary',body,{db,auth})}));
             if(auth?.user.adminGroup==='root'&&['POST','PUT','PATCH','DELETE'].includes(req.method)){
                 const allowed=['/api/v1/commands','/api/v1/auth/logout','/api/v1/demo/tools','/api/v1/media/sign'].includes(path)||(path==='/api/v1/exports'&&body.kind==='audit')||/^\/api\/v1\/exports\/[\w-]+\/retry$/.test(path);

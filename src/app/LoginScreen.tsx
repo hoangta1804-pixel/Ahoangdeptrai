@@ -17,19 +17,15 @@ export function LoginScreen(){
   const [phone,setPhone]=useState(''),[password,setPassword]=useState(''),[confirm,setConfirm]=useState(''),[name,setName]=useState('');
   const [visible,setVisible]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
   const [accounts,setAccounts]=useState<UserAccount[]>([]);
-  const [challenge,setChallenge]=useState(''),[otp,setOtp]=useState(''),[otpDemo,setOtpDemo]=useState(false),[resendAt,setResendAt]=useState(0),[remaining,setRemaining]=useState(0);
-  useEffect(()=>{const timer=setInterval(()=>setRemaining(Math.max(0,Math.ceil((resendAt-Date.now())/1000))),1000);return()=>clearInterval(timer);},[resendAt]);
-  useEffect(()=>{setChallenge('');setOtp('');setError('');},[phone,registering]);
-  const sendCode=async()=>{if(busy||Date.now()<resendAt)return;setBusy(true);setError('');try{const result=await api('/api/v1/auth/otp',{phone,purpose:'register'});setChallenge(result.challengeId);setOtp('');setOtpDemo(result.demo);setResendAt(Date.now()+60000);setRemaining(60);}catch(e){setError(e instanceof Error?e.message:'Không gửi được mã.');}finally{setBusy(false);}};
+  useEffect(()=>{setError('');},[phone,registering]);
   useEffect(()=>{const sync=()=>{setRegistering(window.location.pathname==='/dang-ky');setError('');setPassword('');setConfirm('');};window.addEventListener('popstate',sync);return()=>window.removeEventListener('popstate',sync);},[]);
   useEffect(()=>{if(demoMode)void api('/api/v1/demo/accounts').then(r=>setAccounts(r.users)).catch(()=>{});},[demoMode]);
   const switchPage=(register:boolean)=>{history.pushState(null,'',register?'/dang-ky':'/dang-nhap');window.dispatchEvent(new PopStateEvent('popstate'));};
   const submit=async(e:FormEvent)=>{
     e.preventDefault();if(busy)return;setError('');
     if(registering&&password!==confirm){setError('Mật khẩu nhập lại chưa khớp.');return;}
-    if(registering&&(!challenge||otp.length!==6)){setError('Vui lòng xác minh số điện thoại bằng OTP trước khi tạo tài khoản.');return;}
     setBusy(true);
-    try{const result=await api<LoginResponse>(`/api/v1/auth/password/${registering?'register':'login'}`,{phone,password,...(registering?{name,challengeId:challenge,otp}:{})});acceptLogin(result);login(result.user.id);history.replaceState(null,'','/');showToast(registering?'Đăng ký thành công.':`Xin chào ${result.user.name}.`);}
+    try{const result=await api<LoginResponse>(`/api/v1/auth/password/${registering?'register':'login'}`,{phone,password,...(registering?{name}:{})});acceptLogin(result);login(result.user.id);history.replaceState(null,'','/');showToast(registering?'Đăng ký thành công.':`Xin chào ${result.user.name}.`);}
     catch(e){setError(e instanceof Error?e.message:'Không thể kết nối. Vui lòng thử lại.');}finally{setBusy(false);}
   };
   const setupToken=new URLSearchParams(window.location.search).get('setup');
@@ -44,7 +40,6 @@ export function LoginScreen(){
         <Field label="Số điện thoại"><Input required type="tel" autoComplete="tel" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="0900 000 000" maxLength={20}/></Field>
         <Field label="Mật khẩu" hint={registering?'8–32 ký tự, có chữ hoa, chữ thường, số và ký tự đặc biệt.':undefined}><span className="auth-password"><Input aria-label="Mật khẩu" required type={visible?'text':'password'} minLength={registering?8:undefined} maxLength={32} autoComplete={registering?'new-password':'current-password'} value={password} onChange={e=>setPassword(e.target.value)} placeholder="Nhập mật khẩu"/><button type="button" aria-label={visible?'Ẩn mật khẩu':'Hiện mật khẩu'} aria-pressed={visible} onClick={()=>setVisible(!visible)}>{visible?<EyeOff size={18}/>:<Eye size={18}/>}</button></span></Field>
         {registering&&<Field label="Nhập lại mật khẩu"><Input aria-label="Nhập lại mật khẩu" required type={visible?'text':'password'} autoComplete="new-password" maxLength={32} value={confirm} onChange={e=>setConfirm(e.target.value)} placeholder="Nhập lại mật khẩu của bạn"/></Field>}
-        {registering&&<div className="space-y-3"><SecondaryButton type="button" disabled={busy||!phone||remaining>0} onClick={()=>void sendCode()}>{remaining>0?`Gửi lại sau ${remaining} giây`:challenge?'Gửi lại OTP đăng ký':'Gửi OTP đăng ký'}</SecondaryButton>{challenge&&<><Field label="OTP xác minh số điện thoại" hint="Mã có hiệu lực 120 giây."><Input inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={otp} onChange={e=>setOtp(e.target.value.replace(/\D/g,''))}/></Field>{otpDemo&&<p className="text-sm">Demo: OTP 123456.</p>}</>}</div>}
         {error&&<p className="auth-error" role="alert">{error}</p>}
         <PrimaryButton type="submit" disabled={busy} className="w-full">{busy?'Đang xử lý…':registering?'Tạo tài khoản':'Đăng nhập'} <ArrowRight size={16} className="inline ml-2"/></PrimaryButton>
       </form>

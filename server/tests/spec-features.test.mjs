@@ -316,8 +316,7 @@ test('unified SRS: only operations edits homepage and dictionaries, public conte
 
 test('unified SRS: phone change verifies password and new number OTP, then revokes old local sessions',async t=>{
   const f=await fixture(t),credentials={name:'Khách đổi số',phone:'0987777666',password:'Phonechange@123'};
-  const challenge=await f.request('/api/v1/auth/otp',{body:{phone:credentials.phone,purpose:'register'}});
-  const registration=await f.request('/api/v1/auth/password/register',{body:{...credentials,challengeId:challenge.data.challengeId,otp:'123456'}});assert.equal(registration.status,200);
+  const registration=await f.request('/api/v1/auth/password/register',{body:credentials});assert.equal(registration.status,200);
   const as=registration.data.user;
   assert.equal((await f.request('/api/v1/me/phone/start',{as,body:{phone:'0987777667',currentPassword:'Wrong@123'}})).status,401);
   const started=await f.request('/api/v1/me/phone/start',{as,body:{phone:'0987777667',currentPassword:credentials.password}});assert.equal(started.status,200);assert.equal(started.data.expiresIn,120);
@@ -431,16 +430,23 @@ test('SRS queued export failure can retry only by owner with current permission 
   assert.equal((await processExportQueue(f.db)).status,'FAILED');
 });
 
-test('SRS password signup requires purpose-bound OTP for exactly the submitted phone',async t=>{
-  const f=await fixture(t),credentials={phone:'0985550101',name:'Khách xác minh',password:'Signup@123'};
-  assert.equal((await f.request('/api/v1/auth/password/register',{body:credentials})).status,401);
-  const login=await f.request('/api/v1/auth/otp',{body:{phone:credentials.phone,purpose:'login'}});
-  assert.equal((await f.request('/api/v1/auth/password/register',{body:{...credentials,challengeId:login.data.challengeId,otp:'123456'}})).status,401);
-  const sent=await f.request('/api/v1/auth/otp',{body:{phone:'0985550102',purpose:'register'}});
-  const payload={...credentials,challengeId:sent.data.challengeId,otp:'123456'};
-  assert.equal((await f.request('/api/v1/auth/password/register',{body:payload})).status,403);
-  assert.equal((await f.request('/api/v1/auth/password/register',{body:payload})).status,401);
-  assert.equal((await f.db.read()).state.users.some(u=>u.phone===credentials.phone),false);
+test('password signup no longer needs OTP and rejects duplicate or invalid phones',async t=>{
+  const f=await fixture(t),credentials={phone:'0985550101',name:'Khách không OTP',password:'Signup@123'};
+  assert.equal((await f.request('/api/v1/auth/password/register',{body:{...credentials,phone:'abc'}})).status,400);
+  assert.equal((await f.request('/api/v1/auth/password/register',{body:credentials})).status,200);
+  assert.equal((await f.request('/api/v1/auth/password/register',{body:credentials})).status,409);
+  assert.equal((await f.db.read()).state.users.filter(u=>u.phone===credentials.phone).length,1);
+});
+
+test('Google account without phone can add a phone once, unique across accounts',async t=>{
+  const f=await fixture(t);
+  const google=await f.request('/api/v1/auth/google',{body:{simulated:true,email:'khach.google@example.com',name:'Khách Google'}});assert.equal(google.status,200);
+  const as=google.data.user;assert.equal(as.phone,'');
+  assert.equal((await f.request('/api/v1/me/phone/first',{as,body:{phone:'123'}})).status,400);
+  assert.equal((await f.request('/api/v1/me/phone/first',{as,body:{phone:'0900000001'}})).status,409);
+  const saved=await f.request('/api/v1/me/phone/first',{as,body:{phone:'0985550199'}});assert.equal(saved.status,200);
+  const user=(await f.db.read()).state.users.find(u=>u.id===as.id);assert.equal(user.phone,'0985550199');
+  assert.equal((await f.request('/api/v1/me/phone/first',{as,body:{phone:'0985550198'}})).status,409);
 });
 
 test('SRS reconciliation adjustments need independent finance approval and append once without rewriting money',async t=>{

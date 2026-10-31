@@ -11,10 +11,9 @@ import { createHmac } from 'node:crypto';
 test('password signup and login persist credentials privately and reject invalid credentials',async t=>{
     const f=await fixture(t,{demo:false});const body={name:'Khách mật khẩu',phone:'0912345678',password:'Matkhau@123'};
     assert.equal((await f.request('/api/v1/auth/password/register',{body:{...body,password:'short'}})).status,400);
-    assert.equal((await f.request('/api/v1/auth/password/register',{body})).status,401);
-    const challenge=await requestOtp(f.db,{phone:body.phone,purpose:'register'},{demo:true},'test-register');
-    const created=await f.request('/api/v1/auth/password/register',{body:{...body,role:'admin',challengeId:challenge.challengeId,otp:'123456'}});
-    assert.equal(created.status,200);assert.equal(created.data.user.role,'customer');assert(created.data.accessToken);assert.ok(created.data.user.phoneVerifiedAt);
+    assert.equal((await f.request('/api/v1/auth/password/register',{body:{...body,phone:'12345'}})).status,400);
+    const created=await f.request('/api/v1/auth/password/register',{body:{...body,role:'admin'}});
+    assert.equal(created.status,200);assert.equal(created.data.user.role,'customer');assert(created.data.accessToken);
     assert(!JSON.stringify(created.data).includes('password_hash'));
     const row=await f.db.sql.prepare('SELECT password_hash FROM password_credentials WHERE user_id=?').get(created.data.user.id);
     assert(row.password_hash.startsWith('$2b$12$'));assert(!row.password_hash.includes(body.password));

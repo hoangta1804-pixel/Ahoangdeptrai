@@ -9,6 +9,19 @@ export async function manageProfile(path,body,{db,auth,options,ip}){
     user.name=body.name.trim();if(user.customerId){const customer=state.customers.find(c=>c.id===user.customerId);if(customer)customer.name=user.name;}
     await db.save(state);await db.audit(user.id,'profile-name-update',user.id);return {message:'Đã cập nhật tên tài khoản.'};
   });
+  // Tài khoản Google/Supabase chưa có SĐT: bổ sung số điện thoại lần đầu, không cần mật khẩu hay OTP.
+  if(path.endsWith('/first')){
+    assert(await db.rate('profile-phone-first:'+auth.user.id,10,900000),429,'Thử lại sau ít phút.');
+    const phone=normalizePhone(typeof body.phone==='string'?body.phone:'');assert(isValidPhone(phone),400,'Số điện thoại không hợp lệ.');
+    return db.transaction(async()=>{
+      const {state}=await db.read(),user=state.users.find(u=>u.id===auth.user.id&&u.status==='active');assert(user,401,'Tài khoản không còn hoạt động.');
+      assert(!user.phone,409,'Tài khoản đã có số điện thoại. Dùng chức năng đổi số điện thoại.');
+      assert(!state.users.some(u=>u.id!==user.id&&u.phone===phone),409,'Số điện thoại đã được tài khoản khác sử dụng.');
+      user.phone=phone;if(user.customerId){const customer=state.customers.find(c=>c.id===user.customerId);if(customer)customer.phone=phone;}
+      await db.save(state);await db.audit(user.id,'profile-phone-first',user.id);
+      return {message:'Đã lưu số điện thoại.',user};
+    });
+  }
   assert(await db.rate('profile-phone:'+auth.user.id,8,900000),429,'Thử đổi số điện thoại quá nhiều lần. Vui lòng chờ 15 phút.');
   const credential=await db.sql.prepare('SELECT password_hash FROM password_credentials WHERE user_id=?').get(auth.user.id);
   assert(credential&&await verifyPassword(body.currentPassword,credential.password_hash),401,'Xác thực bằng mật khẩu hiện tại để đổi số điện thoại. Tài khoản chưa có mật khẩu riêng cần thiết lập trước.');

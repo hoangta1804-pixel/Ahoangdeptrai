@@ -25,6 +25,10 @@ test('Google account selection returns through PKCE and creates customer without
   await page.getByRole('button',{name:'Đăng nhập bằng Google',exact:true}).click();
   await expect(page.getByRole('banner').getByRole('button',{name:'Đăng xuất'})).toBeVisible();
   await expect(page).toHaveURL('http://localhost:3000/');expect(selected).toBe(true);expect(exchanged).toBe(true);
+  await expect(page.getByRole('heading',{name:'Thêm số điện thoại'})).toBeVisible();
+  await page.getByRole('form',{name:'Nhập số điện thoại cho tài khoản Google'}).getByLabel('Số điện thoại').fill('0987650001');
+  await page.getByRole('button',{name:'Lưu và tiếp tục'}).click();
+  await expect(page.getByRole('heading',{name:'Thêm số điện thoại'})).toHaveCount(0);
   const stored=await page.evaluate(()=>JSON.parse(sessionStorage.getItem('dac-san-so-lao-cai:api-session')!));expect(stored.authProvider).toBe('supabase');
   const response=await page.request.get('/api/v1/me',{headers:{Authorization:`Bearer ${stored.accessToken}`}});expect((await response.json()).user.role).toBe('customer');
   await page.getByRole('banner').getByRole('button',{name:'Đăng xuất'}).click();await page.reload();

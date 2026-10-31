@@ -15,6 +15,9 @@ import {AccountSecuritySettings} from './PasswordTools';
 import { LoginScreen } from './LoginScreen';
 import { ModalHost } from './ModalHost';
 import { useUi } from './UiContext';
+import { GooglePhoneGate } from './GooglePhoneGate';
+import { IntroSplash } from './IntroSplash';
+import { useScrollReveal } from './useScrollReveal';
 
 // Màn HTX, Admin, QLNN tải riêng theo vai trò, để khách trên điện thoại không phải tải mã của các màn này.
 const CoopScreen = lazy(lazyWithReload(() => import('../screens/coop/CoopScreen').then((m) => ({ default: m.CoopScreen }))));
@@ -39,7 +42,10 @@ export function AppShell() {
     window.addEventListener('browse-catalog',browse);window.addEventListener('show-login',login);window.addEventListener('backend-logout',browse);window.addEventListener('popstate',sync);
     return()=>{window.removeEventListener('browse-catalog',browse);window.removeEventListener('show-login',login);window.removeEventListener('backend-logout',browse);window.removeEventListener('popstate',sync);};
   },[]);
+  useScrollReveal();
   const storefront = !user || user.role === 'customer';
+  // Khách đăng nhập bằng Google chưa có số điện thoại: bắt buộc nhập trước khi dùng cửa hàng.
+  const needsPhone = !!user && user.role === 'customer' && !user.phone;
   const unread = user ? state.notifications.filter((n) => n.userId === user.id && !n.read).length : 0;
   const roleText = user ? (user.role === 'admin' && user.adminGroup ? `Admin – ${ADMIN_GROUP_LABEL[user.adminGroup]}` : ACCOUNT_ROLE_LABEL[user.role]) : '';
 
@@ -88,7 +94,7 @@ export function AppShell() {
 
   return (
     <div className={`flex min-h-dvh flex-col text-ink ${storefront ? 'shop-shell' : 'bg-stone-100'}`}>
-      <header ref={headerRef} className={storefront ? "shop-site-header" : "sticky top-0 z-40 bg-forest-950 text-forest-100"}>{storefront ? <StorefrontHeader /> : <><DemoBand />
+      <header ref={headerRef} className={storefront ? "shop-site-header" : "staff-header sticky top-0 z-40 bg-forest-950 text-forest-100"}>{storefront ? <StorefrontHeader /> : <><DemoBand />
 
         <div className={`flex w-full items-center gap-1 py-1.5 ${PAGE_X}`}>
           {/* Logo và chữ thương hiệu. Trên điện thoại, tài khoản HTX / Admin / QLNN hiện tên và vai trò thay cho chữ thương hiệu. */}
@@ -139,13 +145,14 @@ export function AppShell() {
         <div aria-hidden="true" className="brocade-dark h-2.5 border-t border-forest-950" />
       </>}</header>
 
-      <main className={`flex w-full flex-1 flex-col ${storefront ? '' : 'bg-ivory'}`}>
+      <main key={user?.id ?? (guestBrowsing ? 'guest' : 'login')} className={`page-enter flex w-full flex-1 flex-col ${storefront ? '' : 'staff-main bg-ivory'}`}>
         {user&&user.role!=='customer'&&<AccountSecuritySettings/>}
         <ListBoundary key={user?.id ?? 'guest'} label="màn này" resetKey={state}>
           <Suspense fallback={<p className="p-6 text-center text-sm text-stone-600">Đang tải…</p>}>
             {!user && !guestBrowsing && <LoginScreen />}
             {!user && guestBrowsing && <CustomerScreen />}
-            {user?.role === 'customer' && <CustomerScreen />}
+            {needsPhone && <GooglePhoneGate />}
+            {user?.role === 'customer' && !needsPhone && <CustomerScreen />}
             {user?.role === 'coop' && <CoopScreen />}
             {user?.role === 'regulator' && <RegulatorScreen />}
             {user?.role === 'shipper' && <ShipperScreen />}
@@ -154,8 +161,9 @@ export function AppShell() {
         </ListBoundary>
       </main>
 
-      <ModalHost />
+      {!needsPhone && <ModalHost />}
       <Toast />
+      <IntroSplash />
     </div>
   );
 }

@@ -13,6 +13,9 @@ import { AppCrashBoundary } from './app/AppCrashBoundary';
 import { reloadOnceForNewVersion } from './app/chunkReload';
 import './index.css';
 
+// Trình duyệt tự động (kiểm thử): tắt chuyển động để phép đo bố cục ổn định.
+if (navigator.webdriver) document.documentElement.classList.add('no-motion');
+
 // Vite báo không tải được mã của một màn (thường do vừa deploy bản mới): tải lại trang để lấy bản mới.
 window.addEventListener('vite:preloadError', (event) => {
   if (reloadOnceForNewVersion()) event.preventDefault();
@@ -36,3 +39,4 @@ import './auth.css';
 
 import './catalog.css';
 import './responsive.css';
+import './motion.css';

@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test('operations closes requested account access after checks and the owner session is revoked',async({page,browser})=>{
   await page.goto('/dang-ky');const form=page.getByRole('form',{name:'Đăng ký bằng số điện thoại'});
-  await form.getByLabel('Họ tên',{exact:true}).fill('Khách đóng quyền truy cập');await form.getByLabel('Số điện thoại',{exact:true}).fill('0966660123');await form.getByLabel('Mật khẩu',{exact:true}).fill('Closeaccess@123');await form.getByLabel('Nhập lại mật khẩu',{exact:true}).fill('Closeaccess@123');await verifySignupPhone(form);await form.getByRole('button',{name:'Tạo tài khoản',exact:true}).click();
+  await form.getByLabel('Họ tên',{exact:true}).fill('Khách đóng quyền truy cập');await form.getByLabel('Số điện thoại',{exact:true}).fill('0966660123');await form.getByLabel('Mật khẩu',{exact:true}).fill('Closeaccess@123');await form.getByLabel('Nhập lại mật khẩu',{exact:true}).fill('Closeaccess@123');await form.getByRole('button',{name:'Tạo tài khoản',exact:true}).click();
   await page.getByRole('banner').getByRole('button',{name:'Tài khoản',exact:true}).click();await page.getByText('Bảo mật tài khoản',{exact:true}).click();await page.getByText('Yêu cầu xóa tài khoản',{exact:true}).click();await page.getByLabel('Mật khẩu xác nhận yêu cầu xóa',{exact:true}).fill('Closeaccess@123');await page.getByLabel('Lý do yêu cầu xóa tài khoản',{exact:true}).fill('Tôi muốn đóng tài khoản này vì không còn nhu cầu.');await page.getByRole('checkbox',{name:'Tôi xác nhận gửi yêu cầu cho tài khoản của mình'}).check();await page.getByRole('button',{name:'Gửi yêu cầu xóa tài khoản',exact:true}).click();await expect(page.getByText(/Chờ tiếp nhận ·/)).toBeVisible();
   const opsContext=await browser.newContext();try{
     const ops=await opsContext.newPage();await ops.goto('/dang-nhap');await ops.getByPlaceholder('0900 000 000').fill('0900000201');await ops.getByLabel('Mật khẩu',{exact:true}).fill('Dacsan@123');await ops.getByRole('main').getByRole('button',{name:'Đăng nhập',exact:true}).click();await ops.getByText('Bảo mật tài khoản',{exact:true}).click();await ops.getByText('Xử lý yêu cầu xóa tài khoản',{exact:true}).click();await ops.getByText('Đóng quyền truy cập theo yêu cầu',{exact:true}).click();
@@ -59,7 +59,7 @@ test('background export finishes through the server queue and appears in browser
 
 test('customer submits and withdraws an account deletion request without losing login',async({page})=>{
   await page.goto('/dang-ky');const form=page.getByRole('form',{name:'Đăng ký bằng số điện thoại'});
-  await form.getByLabel('Họ tên',{exact:true}).fill('Khách yêu cầu xóa');await form.getByLabel('Số điện thoại',{exact:true}).fill('0976543210');await form.getByLabel('Mật khẩu',{exact:true}).fill('Delete@123');await form.getByLabel('Nhập lại mật khẩu',{exact:true}).fill('Delete@123');await verifySignupPhone(form);await form.getByRole('button',{name:'Tạo tài khoản',exact:true}).click();
+  await form.getByLabel('Họ tên',{exact:true}).fill('Khách yêu cầu xóa');await form.getByLabel('Số điện thoại',{exact:true}).fill('0976543210');await form.getByLabel('Mật khẩu',{exact:true}).fill('Delete@123');await form.getByLabel('Nhập lại mật khẩu',{exact:true}).fill('Delete@123');await form.getByRole('button',{name:'Tạo tài khoản',exact:true}).click();
   await page.getByRole('banner').getByRole('button',{name:'Tài khoản',exact:true}).click();await page.getByText('Bảo mật tài khoản',{exact:true}).click();await page.getByText('Yêu cầu xóa tài khoản',{exact:true}).click();
   await page.getByLabel('Mật khẩu xác nhận yêu cầu xóa',{exact:true}).fill('Delete@123');await page.getByLabel('Lý do yêu cầu xóa tài khoản',{exact:true}).fill('Tôi không còn nhu cầu sử dụng tài khoản.');await page.getByRole('checkbox',{name:'Tôi xác nhận gửi yêu cầu cho tài khoản của mình'}).check();await page.getByRole('button',{name:'Gửi yêu cầu xóa tài khoản',exact:true}).click();
   await page.getByText('Kiểm tra trước khi xử lý xóa tài khoản',{exact:true}).click();
@@ -166,7 +166,7 @@ test('separate signup and login pages create an account with verified phone OTP 
   await form.getByLabel('Nhập lại mật khẩu',{exact:true}).fill('Khongkhop@123');
   await form.getByRole('button',{name:'Tạo tài khoản',exact:true}).click();await expect(page.getByRole('alert')).toContainText('chưa khớp');
   await form.getByLabel('Nhập lại mật khẩu',{exact:true}).fill('Dangky@123');
-  await verifySignupPhone(form);
+  
   await page.screenshot({path:testInfo.outputPath('register-desktop.png'),fullPage:true});
   await form.getByRole('button',{name:'Tạo tài khoản',exact:true}).click();
   await expect(page.getByRole('banner').getByRole('button',{name:'Đăng xuất'})).toBeVisible();
@@ -281,4 +281,3 @@ test('HTX, root, finance, regulator and shipper load their own screens',async({b
   }
 });
 
-async function verifySignupPhone(form: import('@playwright/test').Locator){await form.getByRole('button').filter({hasText:/OTP/}).click();await form.locator('input[autocomplete="one-time-code"]').fill('123456');}
