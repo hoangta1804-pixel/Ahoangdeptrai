@@ -9,14 +9,40 @@ export function postgresSql(sql) {
   let index=0;
   return sql.replace(/(?<![\w.])(feature_records|password_attempts|account_links|password_credentials|app_state|sessions|otp_challenges|receipts|audit_events|export_jobs|rate_limits|webhook_events|revoked_tokens)\b/g,'app_private.$1').replace(/'(?:''|[^'])*'|\?/g,value=>value==='?'?`$${++index}`:value);
 }
+/**
+ * Sửa các lỗi dán hay gặp: ngoặc kép/dấu cách thừa, dán kèm "SUPABASE_DB_URL=",
+ * mật khẩu có ký tự đặc biệt (# / ? @ …) chưa mã hoá. Mật khẩu nằm giữa "user:" đầu tiên và "@" cuối cùng.
+ */
+export function normalizeConnectionString(value) {
+  let text=String(value).trim().replace(/^SUPABASE_DB_URL\s*=\s*/i,'').trim().replace(/^["']|["']$/g,'').trim();
+  const match=/^(postgres(?:ql)?:\/\/)([^:/@]+):(.*)@([^@]+)$/i.exec(text);
+  if(match){
+    let password=match[3];
+    try{password=decodeURIComponent(password);}catch{/* Chưa mã hoá, giữ nguyên. */}
+    text=match[1]+match[2]+':'+encodeURIComponent(password)+'@'+match[4];
+  }
+  return text;
+}
+/** Mô tả hình dạng chuỗi kết nối để chẩn đoán, không lộ mật khẩu hay mã project. */
+export function describeConnectionString(value) {
+  const text=String(value).trim(),problems=[];
+  if(/^["']|["']$/.test(text))problems.push('có dấu ngoặc kép');
+  if(/\s/.test(text))problems.push('có dấu cách/xuống dòng');
+  if(/^SUPABASE_DB_URL/i.test(text))problems.push('dán kèm tên biến');
+  if(!/^(["']?\s*)?(SUPABASE_DB_URL\s*=\s*)?["']?postgres(ql)?:\/\//i.test(text))problems.push('không bắt đầu bằng postgresql://');
+  if(/YOUR-PASSWORD/i.test(text))problems.push('chưa thay [YOUR-PASSWORD]');
+  if(!text.includes('@'))problems.push('thiếu @ trước host');
+  if(!/supabase\.(com|co)/i.test(text))problems.push('không có host Supabase');
+  return problems.join(', ')||'định dạng lạ, copy lại từ nút Connect';
+}
 export class PostgresDatabase {
   constructor(options={}) {
     if(options.encryptionKey&&!/^[a-f\d]{64}$/i.test(options.encryptionKey))throw new Error('DATA_ENCRYPTION_KEY phải gồm 64 ký tự hex.');
     this.encryptionKey=options.encryptionKey?Buffer.from(options.encryptionKey,'hex'):null;
     this.provider='supabase';this.context=new AsyncLocalStorage();
-    let connectionString=options.connectionString;
+    let connectionString=options.connectionString&&normalizeConnectionString(options.connectionString);
     if(connectionString){
-      let uri;try{uri=new URL(connectionString);}catch{throw new Error('SUPABASE_DB_URL không hợp lệ.');}
+      let uri;try{uri=new URL(connectionString);}catch{throw new Error('SUPABASE_DB_URL không hợp lệ: '+describeConnectionString(options.connectionString));}
       if(!['postgres:','postgresql:'].includes(uri.protocol))throw new Error('SUPABASE_DB_URL phải là URI PostgreSQL.');
       for(const key of ['sslmode','sslcert','sslkey','sslrootcert'])uri.searchParams.delete(key);
       connectionString=uri.toString();
