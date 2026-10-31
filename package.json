@@ -20,7 +20,8 @@
     "check:production": "node scripts/check-production.mjs",
     "test:backend": "node --import ./server/register.mjs --test server/tests/*.test.mjs",
     "supabase:migrate": "node scripts/supabase-migrate.mjs",
-    "supabase:import": "node scripts/supabase-import.mjs"
+    "supabase:import": "node scripts/supabase-import.mjs",
+    "supabase:seed-catalog": "node scripts/supabase-seed-catalog.mjs"
   },
   "dependencies": {
     "@fontsource/fraunces": "^5.3.0",

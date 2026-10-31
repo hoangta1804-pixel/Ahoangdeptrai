@@ -27,6 +27,18 @@ Thêm 4 sản phẩm, 3 HTX mẫu (Giới Phiên, Mù Cang Chải, Lục Yên) v
 - OCOP chỉ ghi trong `sample.dossierNote`, luôn kèm "theo hồ sơ nhóm, chờ xác minh".
 - Không thêm ảnh: chưa sản phẩm nào được phép dùng ảnh/video.
 
-## Đưa lên môi trường đang chạy
+## Đưa lên Supabase (web đang chạy)
 
-Dữ liệu mẫu chỉ được nạp khi cơ sở dữ liệu trống. Môi trường demo đã có dữ liệu: dùng Công cụ demo → khôi phục dữ liệu mẫu (xoá đơn và thao tác đã có). Môi trường thật (không demo) không nạp sản phẩm mẫu; HTX tạo sản phẩm và Admin – Chất lượng duyệt như bình thường.
+App chỉ nạp dữ liệu mẫu khi cơ sở dữ liệu còn trống, và ở chế độ thật (`DEMO_MODE=false`) không nạp sản phẩm mẫu, nên web trên Vercel không có sản phẩm cho tới khi chạy script nạp danh mục (PowerShell, tại thư mục dự án):
+
+```powershell
+$env:SUPABASE_DB_CA_PATH="C:\đường\dẫn\prod-ca-2021.crt"
+npm run supabase:seed-catalog -- --env .env.vercel           # chạy thử, chưa ghi
+npm run supabase:seed-catalog -- --env .env.vercel --apply   # sao lưu app_state ra data/backups/ rồi ghi
+```
+
+- Chỉ thêm bản ghi còn thiếu theo mã (10 "HTX mẫu …", 10 tài khoản HTX 0900000101–0900000110 chưa có mật khẩu, 15 dòng sản phẩm); không sửa, không xoá dữ liệu đã có; chạy lại không tạo trùng.
+- `prod-ca-2021.crt`: CA của Supabase (Project Settings → Database → SSL). Trên Vercel đặt qua `SUPABASE_DB_CA`.
+- Khôi phục: file sao lưu chứa đúng cột `version`, `data` (đã mã hoá) của `app_private.app_state`.
+- Môi trường demo đã có dữ liệu: có thể dùng Công cụ demo → khôi phục dữ liệu mẫu (xoá đơn và thao tác đã có).
+- Mục "Câu chuyện từ vùng đất" và tab "Khảo sát sản phẩm" là mã giao diện: cần deploy bản mới lên Vercel.
