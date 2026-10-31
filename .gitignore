@@ -9,5 +9,5 @@ coverage/
 !.env.supabase.example
 test-results/
 playwright-report/
-data/
+/data/
 .npm-cache/

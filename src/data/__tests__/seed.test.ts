@@ -14,7 +14,7 @@ const seed = createSeedState(T0);
 const byId = (id: string) => seed.products.find((p) => p.id === id)!;
 
 describe('Danh mục mẫu của nhóm (mục 9.3)', () => {
-  it('đúng 9 sản phẩm trong bảng, đúng loại đơn và nhóm hàng', () => {
+  it('đúng 13 sản phẩm trong bảng (9 ban đầu + 4 bổ sung 01/11/2026), đúng loại đơn và nhóm hàng', () => {
     const rows = seed.products.filter((p) => !p.variantOf).map((p) => [p.name, p.kind, p.category]);
     expect(rows).toEqual([
       ['Chè Shan tuyết', 'ready', 'dry'],
@@ -26,6 +26,10 @@ describe('Danh mục mẫu của nhóm (mục 9.3)', () => {
       ['Mận tam hoa tươi', 'preorder', 'fresh'],
       ['Cốm Tú Lệ', 'preorder', 'processed'],
       ['Bưởi Đại Minh', 'preorder', 'fresh'],
+      ['Gạo nếp Tan', 'ready', 'dry'],
+      ['Miến dong (miến đao)', 'ready', 'processed'],
+      ['Mật ong hoa rừng', 'ready', 'processed'],
+      ['Cam Lục Yên', 'preorder', 'fresh'],
     ]);
   });
 
@@ -54,6 +58,9 @@ describe('Danh mục mẫu của nhóm (mục 9.3)', () => {
       ['prod-gao-5kg', 5, 45_000, 70_000],
       ['prod-phohong', 0.5, 120_000, 140_000],
       ['prod-man', 3, 50_000, 90_000],
+      ['prod-gaonep', 2, 50_000, 90_000],
+      ['prod-mien', 0.5, 70_000, 100_000],
+      ['prod-matong-mcc', 0.5, 450_000, 700_000],
     ];
     for (const [id, size, low, high] of ranges) {
       const perUnit = byId(id).price / size;
@@ -65,6 +72,7 @@ describe('Danh mục mẫu của nhóm (mục 9.3)', () => {
     // Chưa có giá khảo sát: hiện "giá mẫu".
     expect(isSamplePrice(byId('prod-com'))).toBe(true);
     expect(isSamplePrice(byId('prod-buoi'))).toBe(true);
+    expect(isSamplePrice(byId('prod-cam'))).toBe(true);
   });
 
   it('mọi sản phẩm là dữ liệu mẫu, không có ảnh ngoài, không có mã chứng nhận', () => {
@@ -75,10 +83,18 @@ describe('Danh mục mẫu của nhóm (mục 9.3)', () => {
     }
   });
 
-  it('chỉ Bưởi Đại Minh ghi OCOP, kèm "theo hồ sơ nhóm, chờ xác minh"', () => {
+  it('OCOP chỉ ghi ở ghi chú hồ sơ, luôn kèm "theo hồ sơ nhóm, chờ xác minh"', () => {
     const withOcop = seed.products.filter((p) => JSON.stringify(p).includes('OCOP'));
-    expect(withOcop.map((p) => p.id)).toEqual(['prod-buoi']);
-    expect(byId('prod-buoi').sample?.dossierNote).toContain('theo hồ sơ nhóm, chờ xác minh');
+    expect(withOcop.map((p) => p.id)).toEqual(['prod-buoi', 'prod-gaonep', 'prod-mien', 'prod-matong-mcc', 'prod-cam']);
+    for (const p of withOcop) {
+      expect(p.description, p.id).not.toContain('OCOP');
+      expect(p.sample?.dossierNote, p.id).toContain('theo hồ sơ nhóm, chờ xác minh');
+    }
+  });
+
+  it('không dùng tên chỉ dẫn địa lý / nhãn hiệu tập thể chưa được phép (tab 3)', () => {
+    const names = seed.products.map((p) => p.name.toLowerCase());
+    for (const banned of ['mật ong mù cang chải', 'miến đao giới phiên', 'chỉ dẫn địa lý']) expect(names.join('|'), banned).not.toContain(banned);
   });
 
   it('không có tên, cụm từ hay sản phẩm nhóm đã loại', () => {
@@ -92,7 +108,7 @@ describe('Danh mục mẫu của nhóm (mục 9.3)', () => {
     expect(byId('prod-man').preorder).toMatchObject({ deliveryFrom: '2027-05-01', deliveryTo: '2027-06-30' });
     const earliest = toDateKey(addMs(T0, DEFAULT_PARAMS.preorderMinLeadDays * DAY_MS));
     expect(byId('prod-com').preorder?.deliveryFrom).toBe(earliest);
-    for (const id of ['prod-man', 'prod-com', 'prod-buoi']) {
+    for (const id of ['prod-man', 'prod-com', 'prod-buoi', 'prod-cam']) {
       expect(byId(id).sample?.deliveryWindowIsSample, id).toBe(true);
       expect(deliveryWindow(byId(id), T0, DEFAULT_PARAMS), id).not.toBeNull();
     }
@@ -169,5 +185,24 @@ describe('Không còn nội dung cấm trong src (mục 9.1)', () => {
   it.each(BANNED)('không có "%s"', (phrase) => {
     const hits = files.filter((f) => readFileSync(f, 'utf8').toLowerCase().includes(phrase.toLowerCase()));
     expect(hits).toEqual([]);
+  });
+});
+
+describe('Dữ liệu khảo sát "DS sản phẩm Lào Cai"', () => {
+  it('mỗi sản phẩm mẫu nối được với một dòng khảo sát có câu chuyện', async () => {
+    const { surveyOf, PRODUCT_SURVEY_ID } = await import('../productSurvey');
+    const { LAO_CAI_SURVEY } = await import('../laoCaiSurvey');
+    expect(LAO_CAI_SURVEY).toHaveLength(31);
+    for (const p of seed.products) {
+      const s = surveyOf(p);
+      expect(s, p.id).toBeDefined();
+      expect(s?.content?.story, p.id).toBeTruthy();
+    }
+    expect(new Set(Object.values(PRODUCT_SURVEY_ID)).size).toBe(Object.keys(PRODUCT_SURVEY_ID).length);
+  });
+
+  it('mọi dòng khảo sát đều ghi chưa được phép dùng ảnh', async () => {
+    const { LAO_CAI_SURVEY } = await import('../laoCaiSurvey');
+    for (const s of LAO_CAI_SURVEY.filter((x) => x.content)) expect(s.content?.mediaRights, s.id).toMatch(/^Chưa/);
   });
 });

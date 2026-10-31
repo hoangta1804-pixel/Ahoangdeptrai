@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import {
-  BadgeCheck, BarChart3, BookOpen, ClipboardCheck, FileText, Gauge, History, Landmark, LayoutDashboard, MessageSquareWarning,
+  BadgeCheck, BarChart3, BookOpen, ClipboardCheck, ClipboardList, FileText, Gauge, History, Landmark, LayoutDashboard, MessageSquareWarning,
   Newspaper, PackageSearch, Receipt, ScrollText, Settings2, ShieldCheck, Star, Store, Ticket, Truck, Undo2, Users, Wallet, type LucideIcon,
 } from 'lucide-react';
 import {ContentManagementTab} from './ContentManagementTab';
@@ -29,6 +29,7 @@ import { FinanceRefundsTab } from './FinanceRefundsTab';
 import { FinanceSettlementTab } from './FinanceSettlementTab';
 import { QualityApplicationsTab } from './QualityApplicationsTab';
 import { QualityChangesTab } from './QualityChangesTab';
+import { SurveyTab } from './SurveyTab';
 
 type TabDef = { key: string; label: string; render: () => ReactNode };
 
@@ -54,6 +55,7 @@ const TAB_META: Record<string, { Icon: LucideIcon; hint: string }> = {
   cod: { Icon: Wallet, hint: 'Theo dõi tiền thu hộ COD.' },
   invoices: { Icon: Receipt, hint: 'Hoá đơn cho khách hàng công ty.' },
   audit: { Icon: History, hint: 'Nhật ký thao tác trên hệ thống.' },
+  survey: { Icon: ClipboardList, hint: 'Khảo sát của nhóm: danh mục tiềm năng, giá Hà Nội, câu chuyện, quyền dùng ảnh.' },
 };
 const metaOf = (key: string) => TAB_META[key] ?? { Icon: FileText, hint: '' };
 const greeting = (hour: number) => (hour < 5 ? 'Xin chào' : hour < 11 ? 'Chào buổi sáng' : hour < 14 ? 'Chào buổi trưa' : hour < 18 ? 'Chào buổi chiều' : 'Chào buổi tối');
@@ -61,6 +63,8 @@ const greeting = (hour: number) => (hour < 5 ? 'Xin chào' : hour < 11 ? 'Chào 
 const OVERVIEW: TabDef = { key: 'overview', label: 'Tổng quan', render: () => <AdminOverviewTab /> };
 /** Danh sách HTX (có SĐT, địa chỉ để Admin liên hệ HTX, sản phẩm đang bán của từng HTX): mọi nhóm quyền đều có. */
 const COOP_LIST: TabDef = { key: 'coop-list', label: 'Danh sách HTX', render: () => <AdminCoopsTab /> };
+/** Dữ liệu khảo sát sản phẩm Lào Cai của nhóm (src/data/laoCaiSurvey.ts). */
+const SURVEY: TabDef = { key: 'survey', label: 'Khảo sát sản phẩm', render: () => <SurveyTab /> };
 
 /** Chức năng theo nhóm quyền (mục 8). Nhóm quyền lấy từ tài khoản đăng nhập. */
 const TABS: Record<AdminSubGroup, TabDef[]> = {
@@ -73,6 +77,7 @@ const TABS: Record<AdminSubGroup, TabDef[]> = {
     { key: 'catalog', label: 'Danh mục dùng chung', render: () => <SharedCatalogTab /> },
     { key:'content',label:'Nội dung trang chủ',render:()=> <ContentManagementTab/> },
     { key: 'vouchers', label: 'Mã ưu đãi', render: () => <VouchersTab /> },
+    SURVEY,
     COOP_LIST,
   ],
   quality: [
@@ -80,6 +85,7 @@ const TABS: Record<AdminSubGroup, TabDef[]> = {
     { key: 'applications', label: 'Duyệt HTX mới', render: () => <QualityApplicationsTab /> },
     { key: 'changes', label: 'Duyệt sản phẩm & giá', render: () => <QualityChangesTab /> },
     { key: 'coops', label: 'Hồ sơ HTX & quyền bán', render: () => <QualityCoopsTab /> },
+    SURVEY,
     COOP_LIST,
   ],
   cskh: [

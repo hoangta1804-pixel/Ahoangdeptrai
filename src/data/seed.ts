@@ -1,11 +1,12 @@
 /**
  * Dữ liệu mẫu ban đầu (Giai đoạn 5, mục 9).
  *
- * - Danh mục là 9 sản phẩm trong danh sách của nhóm (mứt mận và gạo có thêm 1 quy cách mẫu: hộp 500 g, túi 5 kg,
+ * - Danh mục là 13 sản phẩm trong danh sách của nhóm (9 sản phẩm đầu + 4 sản phẩm bổ sung 01/11/2026 từ bảng
+ *   "DS sản phẩm Lào Cai": gạo nếp Tan, miến dong, mật ong hoa rừng Mù Cang Chải, cam Lục Yên) (mứt mận và gạo có thêm 1 quy cách mẫu: hộp 500 g, túi 5 kg,
  *   giá cùng mức đ/kg với quy cách gốc). Mỗi sản phẩm có `sample` để trang chi tiết hiện
  *   nhãn "Dữ liệu mẫu – chờ HTX xác nhận", khoảng giá nhóm khảo sát, và ghi chú hồ sơ nếu bảng có ghi.
  * - Giá mẫu chọn trong khoảng giá bán lẻ Hà Nội nhóm khảo sát; Cốm Tú Lệ và Bưởi Đại Minh chưa có giá nên ghi "giá mẫu".
- * - Không gắn mã chứng nhận. Chỉ Bưởi Đại Minh ghi OCOP, kèm "theo hồ sơ nhóm, chờ xác minh".
+ * - Không gắn mã chứng nhận. OCOP chỉ ghi ở ghi chú hồ sơ (sample.dossierNote), luôn kèm "theo hồ sơ nhóm, chờ xác minh".
  * - Mô tả chỉ ghi điều bảng của nhóm có; phần còn lại ghi "chờ HTX xác nhận".
  *   Không dùng tên chỉ dẫn địa lý, "thảo quả rừng", "mật bản địa", "Séng cù xanh".
  * - Không đưa vào giai đoạn 1: mật ong hoa bạc hà, đào Sa Pa, cá hồi, cá tầm, thịt gác bếp, rượu.
@@ -189,6 +190,64 @@ function products(now: Date): Product[] {
       preorder: { totalSlots: 80, deliveryFrom: dateFromNow(now, lead + 7), deliveryTo: dateFromNow(now, lead + 45), open: true },
       sample: { deliveryWindowIsSample: true, dossierNote: 'OCOP 4 sao năm 2025 (theo hồ sơ nhóm, chờ xác minh)' },
     },
+    // Bổ sung 01/11/2026 theo bảng "DS sản phẩm Lào Cai" (src/data/laoCaiSurvey.ts): 3 sản phẩm "Ưu tiên cao" còn thiếu
+    // và Cam Lục Yên ("Thử đặt trước"). Giá chọn trong khoảng giá lẻ Hà Nội của tab 2; tên không dùng chỉ dẫn địa lý/nhãn hiệu
+    // tập thể vì tab 3 yêu cầu hỏi chủ sở hữu trước.
+    {
+      ...ready,
+      id: 'prod-gaonep',
+      coopId: 'coop-tule',
+      name: 'Gạo nếp Tan',
+      category: 'dry',
+      region: 'Tú Lệ',
+      unit: 'túi 2 kg',
+      price: 140_000,
+      description: 'Nếp Tan ("khẩu Tan chạu") của người Thái trên ruộng bậc thang Tú Lệ, hạt tròn trắng, dùng đồ xôi. Gặt vụ mùa tháng 9–10. Quy cách túi hút chân không và hạn dùng là ước lượng, chờ HTX xác nhận.',
+      stockOnHand: 30,
+      expressApproved: true,
+      sample: { surveyedPrice: '50.000–90.000đ/kg (ước lượng)', dossierNote: 'Đã đạt OCOP (theo hồ sơ nhóm, chờ xác minh)' },
+    },
+    {
+      ...ready,
+      id: 'prod-mien',
+      coopId: 'coop-gioiphien',
+      name: 'Miến dong (miến đao)',
+      category: 'processed',
+      region: 'Giới Phiên, Quy Mông',
+      unit: 'gói 500 g',
+      price: 45_000,
+      description: 'Miến làm từ bột củ dong riềng, sợi nhỏ, dai, nấu không nát. Nghề làm miến ở Giới Phiên có từ đầu những năm 1960. Hạn dùng là ước lượng, chờ HTX xác nhận.',
+      stockOnHand: 40,
+      expressApproved: true,
+      sample: { surveyedPrice: '70.000–100.000đ/kg', dossierNote: 'OCOP 4 sao (theo hồ sơ nhóm, chờ xác minh)' },
+    },
+    {
+      ...ready,
+      id: 'prod-matong-mcc',
+      coopId: 'coop-mucangchai',
+      name: 'Mật ong hoa rừng',
+      category: 'processed',
+      region: 'Mù Cang Chải',
+      unit: 'chai 500 ml',
+      price: 280_000,
+      description: 'Mật ong hoa rừng vùng núi cao, khai thác bằng thùng quay, không cắt hết cầu ong. Mỗi năm có 2 kỳ thu hoạch chính; tháng cụ thể và hạn dùng chờ HTX xác nhận.',
+      stockOnHand: 15,
+      expressApproved: false,
+      sample: { surveyedPrice: '450.000–700.000đ/lít', dossierNote: 'OCOP 3 sao, VietGAP (theo hồ sơ nhóm, chờ xác minh)' },
+    },
+    {
+      ...preorder,
+      id: 'prod-cam',
+      coopId: 'coop-lucyen',
+      name: 'Cam Lục Yên',
+      category: 'fresh',
+      region: 'Lục Yên, Nghĩa Tâm',
+      unit: 'thùng 5 kg',
+      price: 175_000,
+      description: 'Cam đường canh, cam sen, cam V2 từ vùng cây có múi Lục Yên. Mùa thu – đông, bán khoảng tháng 11–12. Quy cách thùng 5 kg là quy cách mẫu.',
+      preorder: { totalSlots: 80, deliveryFrom: dateFromNow(now, lead + 7), deliveryTo: dateFromNow(now, lead + 40), open: true },
+      sample: { deliveryWindowIsSample: true, dossierNote: 'Cam sành Lục Yên đạt OCOP 3 sao (theo hồ sơ nhóm, chờ xác minh)' },
+    },
   ];
 }
 
@@ -216,6 +275,9 @@ export const DEMO_USERS: Omit<UserAccount, 'createdAt'>[] = [
   { id: 'u-htx-baoha', phone: '0900000105', name: 'HTX mẫu Bảo Hà', role: 'coop', coopId: 'coop-baoha', status: 'active' },
   { id: 'u-htx-tule', phone: '0900000106', name: 'HTX mẫu Tú Lệ', role: 'coop', coopId: 'coop-tule', status: 'active' },
   { id: 'u-htx-thacba', phone: '0900000107', name: 'HTX mẫu Thác Bà', role: 'coop', coopId: 'coop-thacba', status: 'active' },
+  { id: 'u-htx-gioiphien', phone: '0900000108', name: 'HTX mẫu Giới Phiên', role: 'coop', coopId: 'coop-gioiphien', status: 'active' },
+  { id: 'u-htx-mucangchai', phone: '0900000109', name: 'HTX mẫu Mù Cang Chải', role: 'coop', coopId: 'coop-mucangchai', status: 'active' },
+  { id: 'u-htx-lucyen', phone: '0900000110', name: 'HTX mẫu Lục Yên', role: 'coop', coopId: 'coop-lucyen', status: 'active' },
   { id: 'u-ad-vh', phone: '0900000201', name: 'Admin – Vận hành (mẫu)', role: 'admin', adminGroup: 'operations', status: 'active' },
   { id: 'u-ad-cl', phone: '0900000202', name: 'Admin – Chất lượng (mẫu)', role: 'admin', adminGroup: 'quality', status: 'active' },
   { id: 'u-ad-cskh', phone: '0900000203', name: 'Admin – CSKH (mẫu)', role: 'admin', adminGroup: 'cskh', status: 'active' },
@@ -243,6 +305,9 @@ function baseState(now: Date): DemoState {
       { id: 'coop-baoha', name: 'HTX mẫu Bảo Hà', region: 'Bảo Hà', phones: [...SAMPLE_COOP_PHONES['coop-baoha']], storeAddress: sampleCoopAddress('Bảo Hà'), payoutAccountMasked: '**** 0105', status: 'active', profileStatus: 'approved' },
       { id: 'coop-tule', name: 'HTX mẫu Tú Lệ', region: 'Tú Lệ', phones: [...SAMPLE_COOP_PHONES['coop-tule']], storeAddress: sampleCoopAddress('Tú Lệ'), payoutAccountMasked: '**** 0106', status: 'active', profileStatus: 'approved' },
       { id: 'coop-thacba', name: 'HTX mẫu Thác Bà', region: 'hồ Thác Bà', phones: [...SAMPLE_COOP_PHONES['coop-thacba']], storeAddress: sampleCoopAddress('hồ Thác Bà'), payoutAccountMasked: '**** 0107', status: 'active', profileStatus: 'approved' },
+      { id: 'coop-gioiphien', name: 'HTX mẫu Giới Phiên', region: 'Giới Phiên', phones: [...SAMPLE_COOP_PHONES['coop-gioiphien']], storeAddress: sampleCoopAddress('Giới Phiên'), payoutAccountMasked: '**** 0108', status: 'active', profileStatus: 'approved' },
+      { id: 'coop-mucangchai', name: 'HTX mẫu Mù Cang Chải', region: 'Mù Cang Chải', phones: [...SAMPLE_COOP_PHONES['coop-mucangchai']], storeAddress: sampleCoopAddress('Mù Cang Chải'), payoutAccountMasked: '**** 0109', status: 'active', profileStatus: 'approved' },
+      { id: 'coop-lucyen', name: 'HTX mẫu Lục Yên', region: 'Lục Yên', phones: [...SAMPLE_COOP_PHONES['coop-lucyen']], storeAddress: sampleCoopAddress('Lục Yên'), payoutAccountMasked: '**** 0110', status: 'active', profileStatus: 'approved' },
     ],
     products: products(now),
     productChanges: [],

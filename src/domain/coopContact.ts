@@ -24,7 +24,7 @@ export interface CoopContact {
 export const COOP_PHONE_COUNT = 2;
 
 /**
- * SĐT mẫu của 7 HTX mẫu, rõ ràng là giả (0900000xxx như mọi SĐT trong dữ liệu mẫu).
+ * SĐT mẫu của 10 HTX mẫu, rõ ràng là giả (0900000xxx như mọi SĐT trong dữ liệu mẫu).
  * Dùng cho dữ liệu mẫu và cho dữ liệu đã lưu từ bản trước (chưa có SĐT HTX), để không phải khôi phục dữ liệu mẫu.
  */
 export const SAMPLE_COOP_PHONES: Record<string, readonly [string, string]> = {
@@ -35,9 +35,12 @@ export const SAMPLE_COOP_PHONES: Record<string, readonly [string, string]> = {
   'coop-baoha': ['0900000451', '0900000452'],
   'coop-tule': ['0900000461', '0900000462'],
   'coop-thacba': ['0900000471', '0900000472'],
+  'coop-gioiphien': ['0900000481', '0900000482'],
+  'coop-mucangchai': ['0900000491', '0900000492'],
+  'coop-lucyen': ['0900000561', '0900000562'],
 };
 
-/** Ghi cuối địa chỉ mẫu của 7 HTX mẫu: chỉ có vùng, không có số nhà, thôn bản. */
+/** Ghi cuối địa chỉ mẫu của các HTX mẫu: chỉ có vùng, không có số nhà, thôn bản. */
 export const SAMPLE_ADDRESS_NOTE = '(địa chỉ mẫu – chờ HTX cập nhật)';
 
 /** Địa chỉ mẫu của HTX mẫu: lấy theo vùng, ghi rõ là mẫu. */

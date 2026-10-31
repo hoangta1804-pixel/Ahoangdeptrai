@@ -21,6 +21,7 @@ import { pushViewerList } from '../../store/viewerPrefs';
 import { FavoriteButton } from './FavoriteButton';
 import { SeasonWatchButton } from './SeasonWatchButton';
 import { useCartActions } from './useCartActions';
+import { ProductStory } from './ProductStory';
 
 export function ProductDetailSheet({ productId, onClose }: { productId: string; onClose: () => void }) {
   const { state, now } = useStore();
@@ -215,6 +216,8 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
                 </div>
               ))}
             </dl>
+
+            <ProductStory product={product} />
 
             {product.sample && (
               <div role="note" className="space-y-1 rounded-2xl border border-stone-300 bg-stone-50 p-3 text-sm text-stone-700">

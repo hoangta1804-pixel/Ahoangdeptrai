@@ -137,7 +137,7 @@ test('catalog filters, pagination and navigation work on desktop and mobile',asy
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
     await page.evaluate(async()=>{await document.fonts.ready;window.scrollTo(0,0);});
     await page.screenshot({path:testInfo.outputPath(`catalog-${width}.png`),fullPage:true});
-    await page.getByRole('button',{name:'Trang sau',exact:true}).click();await expect(page.locator('.catalog-grid .shop-product-card')).toHaveCount(3);
+    await page.getByRole('button',{name:'Trang sau',exact:true}).click();await expect(page.locator('.catalog-grid .shop-product-card')).toHaveCount(6);
     if(width===390)await page.getByRole('button',{name:'Bộ lọc tìm kiếm',exact:true}).click();
     const filters=page.getByRole('complementary',{name:'Bộ lọc sản phẩm'});
     await filters.getByRole('checkbox',{name:/^Bắc Hà/}).check();
@@ -248,7 +248,7 @@ test('storefront works on desktop and mobile: search, regions, stories and image
     if(width===390)await page.getByRole('button',{name:'Mở tìm kiếm',exact:true}).click();
     await page.getByRole('combobox',{name:'Tìm kiếm đặc sản'}).fill('chế biến');
     await page.getByRole('search').getByRole('button',{name:'Tìm kiếm',exact:true}).click();
-    await expect(page.locator('.shop-product-card')).toHaveCount(4);
+    await expect(page.locator('.shop-product-card')).toHaveCount(6);
     await page.getByRole('combobox',{name:'Tìm kiếm đặc sản'}).fill('chè shan');
     await page.getByRole('search').getByRole('button',{name:'Tìm kiếm',exact:true}).click();
     await expect(page.locator('.shop-product-card')).toHaveCount(1);
