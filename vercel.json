@@ -4,7 +4,7 @@
   "outputDirectory": "dist",
   "functions": {
     "api/backend.mjs": {
-      "includeFiles": "{server,src,supabase}/**",
+      "includeFiles": "{server,src,supabase,api,node_modules/@upstash,node_modules/uncrypto}/**",
       "maxDuration": 30
     }
   },
