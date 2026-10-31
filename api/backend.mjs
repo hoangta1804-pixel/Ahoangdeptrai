@@ -14,9 +14,14 @@ const REQUIRED_ENV = ['DATABASE_PROVIDER', 'SUPABASE_DB_URL', 'DATA_ENCRYPTION_K
 
 /** Lý do lỗi khởi động đã che chuỗi kết nối, mật khẩu và khoá dài. */
 function safeReason(e) {
+  // Host pooler (aws-0-<vùng>.pooler.supabase.com) không chứa mã project nên giữ lại để chẩn đoán.
+  const hosts = [];
   return `${e.code ? e.code + ': ' : ''}${String(e.message ?? e)}`
     .replace(/postgres(ql)?:\/\/\S+/gi, 'postgresql://***')
+    .replace(/\bdb\.[a-z0-9]+\.supabase\.co\b/gi, 'db.***.supabase.co (Direct connection)')
+    .replace(/\baws-\d+-[a-z0-9-]+\.pooler\.supabase\.com\b/gi, (host) => `@@${hosts.push(host) - 1}@@`)
     .replace(/[A-Za-z0-9_\-.]{32,}/g, '***')
+    .replace(/@@(\d+)@@/g, (_, i) => hosts[Number(i)])
     .slice(0, 300);
 }
 
