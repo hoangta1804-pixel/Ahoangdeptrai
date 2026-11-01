@@ -31,12 +31,12 @@ const ShipperScreen = lazy(lazyWithReload(() => import('../screens/shipper/Shipp
  */
 export function AppShell() {
   const { state, syncNotice, clearSyncNotice } = useStore();
-  const { user, logout, openModal, showToast } = useUi();
+  const { user, logout, openModal, closeModal, showToast } = useUi();
   const [guestBrowsing, setGuestBrowsing] = useState(!['/dang-nhap','/dang-ky'].includes(window.location.pathname));
   useEffect(() => {
     const authPath=()=>['/dang-nhap','/dang-ky'].includes(window.location.pathname);
     const browse=()=>{if(authPath()){history.pushState(null,'','/');window.dispatchEvent(new PopStateEvent('popstate'));}setGuestBrowsing(true);};
-    const login=()=>{if(!authPath()){history.pushState(null,'','/dang-nhap');window.dispatchEvent(new PopStateEvent('popstate'));}setGuestBrowsing(false);};
+    const login=()=>{closeModal();if(!authPath()){history.pushState(null,'','/dang-nhap');window.dispatchEvent(new PopStateEvent('popstate'));}setGuestBrowsing(false);};
     const sync=()=>setGuestBrowsing(!authPath());
     window.addEventListener('browse-catalog',browse);window.addEventListener('show-login',login);window.addEventListener('backend-logout',browse);window.addEventListener('popstate',sync);
     return()=>{window.removeEventListener('browse-catalog',browse);window.removeEventListener('show-login',login);window.removeEventListener('backend-logout',browse);window.removeEventListener('popstate',sync);};

@@ -159,7 +159,7 @@ export function UiProvider({ children }: { children: ReactNode }) {
       ordersFocus,
       takeOrdersFocus,
       modal,
-      openModal: (next) => { if(!user&&['checkout','cart','favorites','voucher_wallet','season_watch','address_book','invoice_default','review','complaint'].includes(next.type)){showToast('Vui lòng đăng nhập để tiếp tục.');window.dispatchEvent(new Event('show-login'));return;}setModal(next); },
+      openModal: (next) => { if(!user&&['checkout','cart','favorites','voucher_wallet','season_watch','address_book','invoice_default','review','complaint'].includes(next.type)){showToast('Vui lòng đăng nhập để tiếp tục.');setModal(null);window.dispatchEvent(new Event('show-login'));return;}setModal(next); },
       closeModal,
       toast,
       showToast,

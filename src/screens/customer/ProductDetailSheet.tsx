@@ -25,7 +25,7 @@ import { ProductStory } from './ProductStory';
 
 export function ProductDetailSheet({ productId, onClose }: { productId: string; onClose: () => void }) {
   const { state, now } = useStore();
-  const { openModal, showToast, customerActor } = useUi();
+  const { openModal, showToast, customerActor, user } = useUi();
   const { add, cart } = useCartActions();
   const [galleryImage,setGalleryImage]=useState('');
   const [quantity, setQuantity] = useState(1);
@@ -58,6 +58,20 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
   const reviewed = family.length > 1 ? family : [product];
   const reviews = reviewed.flatMap((v) => publicReviews(state, v.id).map((r) => ({ ...r, unit: v.unit }))).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const rating = reviewed.length > 1 ? combinedRating(reviewed.map((v) => averageRating(state, v.id))) : averageRating(state, product.id);
+
+  const buy = () => {
+    if (!user) {
+      showToast('Vui lòng đăng nhập để đặt hàng.');
+      window.location.hash = `#/san-pham/${product.id}`;
+      onClose();
+      window.dispatchEvent(new Event('show-login'));
+      return;
+    }
+    openModal({
+      type: 'checkout',
+      source: { type: 'buy_now', line: { productId: product.id, quantity: qty, deliveryDate: win?.min, seenPrice: product.price } },
+    });
+  };
 
   // Chia sẻ link sản phẩm (FR-TKSP-05): dùng chia sẻ của thiết bị nếu có, không thì sao chép link.
   const share = async () => {
@@ -109,19 +123,23 @@ export function ProductDetailSheet({ productId, onClose }: { productId: string; 
           <div className="grid grid-cols-2 gap-2">
             <button
               disabled={!!blocked}
-              onClick={async () => { if (await add(product.id, qty)) onClose(); }}
+              onClick={async () => {
+                if (!user) {
+                  showToast('Vui lòng đăng nhập để thêm vào giỏ.');
+                  window.location.hash = `#/san-pham/${product.id}`;
+                  onClose();
+                  window.dispatchEvent(new Event('show-login'));
+                  return;
+                }
+                if (await add(product.id, qty)) onClose();
+              }}
               className="min-h-12 rounded-2xl border border-forest-800 bg-white text-sm font-bold text-forest-800 disabled:border-stone-300 disabled:text-muted"
             >
               Thêm vào giỏ
             </button>
             <button
               disabled={!!blocked}
-              onClick={() =>
-                openModal({
-                  type: 'checkout',
-                  source: { type: 'buy_now', line: { productId: product.id, quantity: qty, deliveryDate: win?.min, seenPrice: product.price } },
-                })
-              }
+              onClick={buy}
               className="min-h-12 rounded-2xl bg-forest-800 text-sm font-bold text-white disabled:bg-stone-300 disabled:text-stone-600"
             >
               {blocked ?? (product.kind === 'preorder' ? 'Đặt trước' : 'Mua ngay')}
