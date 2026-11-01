@@ -87,18 +87,45 @@ export interface VietmapData {
     address?: string;
     boundaries?: VietmapBoundary[];
   };
+  data_new?: {
+    display?: string;
+    address?: string;
+    boundaries?: VietmapBoundary[];
+  };
 }
 
-export function parseVietmapResult(data: VietmapData): GeocodeResult | null {
-  const formattedAddress = data.display || data.address || '';
+export function parseVietmapResult(raw: unknown): GeocodeResult | null {
+  if (!raw) return null;
+  const item: VietmapData | undefined = Array.isArray(raw)
+    ? (raw[0] as VietmapData | undefined)
+    : (raw as any)?.data?.[0] ?? (raw as any)?.data ?? (raw as VietmapData);
+  if (!item || typeof item !== 'object') return null;
+
+  const formattedAddress = item.display || item.address || '';
   if (!formattedAddress) return null;
-  const street = data.name || '';
+
+  const firstPart = formattedAddress.split(',')[0]?.trim() ?? '';
+  const street = (item.name && item.name.length > 3 ? item.name : firstPart) || item.name || '';
+
   const areas: string[] = [];
-  const boundaries = [...(data.boundaries ?? []), ...(data.data_old?.boundaries ?? [])];
+  const boundaries = [
+    ...(item.boundaries ?? []),
+    ...(item.data_old?.boundaries ?? []),
+    ...(item.data_new?.boundaries ?? []),
+  ];
   for (const b of boundaries) {
-    if (b.name && !areas.includes(b.name)) areas.push(b.name);
+    if (b?.name && !areas.includes(b.name)) areas.push(b.name);
   }
-  const city = boundaries.find((b) => b.type === 1)?.name ?? '';
+
+  let city = boundaries.find((b) => b?.type === 1 || b?.type === 0)?.name ?? '';
+  if (!city && boundaries.length > 0) {
+    city = boundaries[boundaries.length - 1]?.name ?? '';
+  }
+  if (!city && formattedAddress.includes(',')) {
+    const parts = formattedAddress.split(',').map((s) => s.trim());
+    city = parts[parts.length - 1] ?? '';
+  }
+
   return { formattedAddress, street, areas, city };
 }
 

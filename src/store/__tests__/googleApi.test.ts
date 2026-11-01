@@ -138,7 +138,7 @@ describe('/api/geocode (Google Maps)', () => {
         provider: 'vietmap',
         fetch: async (u) => {
           url = u;
-          return json(200, vietmapSample);
+          return json(200, [vietmapSample]);
         },
       },
     );
