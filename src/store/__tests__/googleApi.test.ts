@@ -115,6 +115,44 @@ describe('/api/geocode (Google Maps)', () => {
     expect(url).toContain('https://rsapi.goong.io/geocode');
     expect(url).toContain('latlng=21.007500,105.800000');
     expect(url).toContain('api_key=goong-secret-key');
+  });
+
+  it('hỗ trợ Vietmap khi provider=vietmap', async () => {
+    let calls = 0;
+    let url = '';
+    const vietmapSample = {
+      lat: 21.0075,
+      lng: 105.8,
+      name: '18 Ngõ 42 Trần Duy Hưng',
+      display: '18 Ngõ 42 Trần Duy Hưng, Phường Trung Hoà, Quận Cầu Giấy, Hà Nội',
+      boundaries: [
+        { id: 1, name: 'Phường Trung Hoà', type: 4 },
+        { id: 2, name: 'Quận Cầu Giấy', type: 2 },
+        { id: 3, name: 'Hà Nội', type: 1 },
+      ],
+    };
+    const r = await handleGeocodeRequest(
+      { method: 'GET', query: { lat: '21.0075', lng: '105.8' } },
+      {
+        apiKey: 'vietmap-key',
+        provider: 'vietmap',
+        fetch: async (u) => {
+          url = u;
+          return json(200, vietmapSample);
+        },
+      },
+    );
+    expect(url).toContain('https://maps.vietmap.vn/api/reverse/v4');
+    expect(url).toContain('apikey=vietmap-key');
+    expect(url).toContain('lat=21.007500');
+    expect(url).toContain('lng=105.800000');
+    expect(r.status).toBe(200);
+    expect(r.body).toEqual({
+      formattedAddress: '18 Ngõ 42 Trần Duy Hưng, Phường Trung Hoà, Quận Cầu Giấy, Hà Nội',
+      street: '18 Ngõ 42 Trần Duy Hưng',
+      areas: ['Phường Trung Hoà', 'Quận Cầu Giấy', 'Hà Nội'],
+      city: 'Hà Nội',
+    });
     expect(r.status).toBe(200);
     expect(calls).toBe(0);
   });

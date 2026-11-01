@@ -71,11 +71,42 @@ export function parseGoogleResults(results: GoogleResult[]): GeocodeResult | nul
   return { formattedAddress: best.formatted_address, street, areas, city };
 }
 
+export interface VietmapBoundary {
+  id?: number;
+  name: string;
+  type?: number;
+}
+
+export interface VietmapData {
+  display?: string;
+  address?: string;
+  name?: string;
+  boundaries?: VietmapBoundary[];
+  data_old?: {
+    display?: string;
+    address?: string;
+    boundaries?: VietmapBoundary[];
+  };
+}
+
+export function parseVietmapResult(data: VietmapData): GeocodeResult | null {
+  const formattedAddress = data.display || data.address || '';
+  if (!formattedAddress) return null;
+  const street = data.name || '';
+  const areas: string[] = [];
+  const boundaries = [...(data.boundaries ?? []), ...(data.data_old?.boundaries ?? [])];
+  for (const b of boundaries) {
+    if (b.name && !areas.includes(b.name)) areas.push(b.name);
+  }
+  const city = boundaries.find((b) => b.type === 1)?.name ?? '';
+  return { formattedAddress, street, areas, city };
+}
+
 type FetchLike = (url: string) => Promise<{ ok: boolean; status: number; json(): Promise<unknown> }>;
 
 export interface GeocodeDeps {
   apiKey?: string;
-  provider?: 'goong' | 'google';
+  provider?: 'vietmap' | 'goong' | 'google';
   fetch: FetchLike;
   /** Tăng và trả về số lượt đã dùng hôm nay (không có thì không giới hạn ở app). */
   countToday?: () => Promise<number>;
@@ -98,7 +129,7 @@ export async function handleGeocodeRequest(req: { method?: string; query?: Recor
   const lng = Number(first(req.query?.lng));
   if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return { status: 400, body: { error: 'Toạ độ không hợp lệ.' } };
   if (!inVietnamBounds(lat, lng)) return { status: 422, body: { error: 'Vị trí hiện tại nằm ngoài phạm vi Việt Nam.', outside: true } };
-  if (!deps.apiKey) return { status: 503, body: { error: 'Chưa bật định vị bản đồ cho bản này (thiếu GOONG_API_KEY hoặc GOOGLE_MAPS_API_KEY).', configured: false } };
+  if (!deps.apiKey) return { status: 503, body: { error: 'Chưa bật định vị bản đồ cho bản này (thiếu VIETMAP_API_KEY, GOONG_API_KEY hoặc GOOGLE_MAPS_API_KEY).', configured: false } };
 
   if (deps.countToday) {
     // Redis lỗi thì vẫn tra (không chặn người dùng), giới hạn của dịch vụ bản đồ vẫn còn.
@@ -106,16 +137,33 @@ export async function handleGeocodeRequest(req: { method?: string; query?: Recor
     if (used > (deps.dailyLimit ?? DEFAULT_DAILY_LIMIT)) return { status: 429, body: { error: 'Hôm nay bản demo đã dùng hết lượt tra địa chỉ. Vui lòng nhập tay.' } };
   }
 
+  const isVietmap = deps.provider === 'vietmap';
   const isGoong = deps.provider === 'goong';
-  const url = isGoong
-    ? `https://rsapi.goong.io/geocode?latlng=${lat.toFixed(6)},${lng.toFixed(6)}&api_key=${encodeURIComponent(deps.apiKey)}`
-    : `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat.toFixed(6)},${lng.toFixed(6)}&language=vi&region=vn&key=${encodeURIComponent(deps.apiKey)}`;
+  const providerName = isVietmap ? 'Vietmap' : isGoong ? 'Goong' : 'Google';
+
+  const url = isVietmap
+    ? `https://maps.vietmap.vn/api/reverse/v4?apikey=${encodeURIComponent(deps.apiKey)}&lat=${lat.toFixed(6)}&lng=${lng.toFixed(6)}&display_type=6`
+    : isGoong
+      ? `https://rsapi.goong.io/geocode?latlng=${lat.toFixed(6)},${lng.toFixed(6)}&api_key=${encodeURIComponent(deps.apiKey)}`
+      : `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat.toFixed(6)},${lng.toFixed(6)}&language=vi&region=vn&key=${encodeURIComponent(deps.apiKey)}`;
+
   const res = await deps.fetch(url);
-  const data = (await res.json().catch(() => null)) as { status?: string; results?: GoogleResult[]; error?: { message?: string }; error_message?: string } | null;
-  if (!res.ok || !data) return { status: 502, body: { error: isGoong ? 'Không gọi được Goong Maps.' : 'Không gọi được Google Maps.' } };
+  const data = (await res.json().catch(() => null)) as (GoogleResult & VietmapData & { status?: string; results?: GoogleResult[]; error?: { message?: string }; error_message?: string }) | null;
+
+  if (!res.ok || !data) {
+    if (res.status === 401) return { status: 502, body: { error: `${providerName} từ chối: Khoá API không hợp lệ hoặc đã hết hạn.` } };
+    return { status: 502, body: { error: `Không gọi được ${providerName} Maps.` } };
+  }
+
+  if (isVietmap) {
+    const parsed = parseVietmapResult(data);
+    if (!parsed) return { status: 404, body: { error: 'Vietmap không tìm thấy địa chỉ tại vị trí này.' } };
+    return { status: 200, body: { ...parsed }, cacheable: true };
+  }
+
   if (data.error) {
-    console.error('Goong Maps error:', data.error);
-    return { status: 502, body: { error: `Goong Maps từ chối: ${data.error.message || 'Kiểm tra GOONG_API_KEY'}.` } };
+    console.error(`${providerName} Maps error:`, data.error);
+    return { status: 502, body: { error: `${providerName} Maps từ chối: ${data.error.message || 'Kiểm tra khoá API'}.` } };
   }
   switch (data.status) {
     case 'OK': {
@@ -129,8 +177,8 @@ export async function handleGeocodeRequest(req: { method?: string; query?: Recor
     case 'OVER_DAILY_LIMIT':
       return { status: 429, body: { error: 'Dịch vụ bản đồ đang hết lượt. Vui lòng nhập tay.' } };
     default:
-      console.error(isGoong ? 'Goong Geocoding:' : 'Google Geocoding:', data.status, data.error_message);
-      return { status: 502, body: { error: `${isGoong ? 'Goong' : 'Google'} Maps từ chối yêu cầu (kiểm tra khoá API).` } };
+      console.error(`${providerName} Geocoding:`, data.status, data.error_message);
+      return { status: 502, body: { error: `${providerName} Maps từ chối yêu cầu (kiểm tra khoá API).` } };
   }
 }
 
@@ -161,10 +209,11 @@ interface VercelLikeResponse {
 
 export default async function handler(req: VercelLikeRequest, res: VercelLikeResponse): Promise<void> {
   try {
+    const vietmapKey = process.env.VIETMAP_API_KEY?.trim();
     const goongKey = process.env.GOONG_API_KEY?.trim();
     const googleKey = process.env.GOOGLE_MAPS_API_KEY?.trim();
-    const apiKey = goongKey || googleKey;
-    const provider = goongKey ? 'goong' : 'google';
+    const apiKey = vietmapKey || goongKey || googleKey;
+    const provider: 'vietmap' | 'goong' | 'google' = vietmapKey ? 'vietmap' : goongKey ? 'goong' : 'google';
 
     const result = await handleGeocodeRequest(req, {
       apiKey,
