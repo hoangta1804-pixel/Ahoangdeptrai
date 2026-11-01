@@ -255,7 +255,7 @@ export async function createApplication(config = {}) {
                 });
             }
             if (path === '/api/geocode' && req.method === 'GET') {
-                const r = await handleGeocodeRequest({ method: 'GET', query: Object.fromEntries(url.searchParams) }, { apiKey: options.mapsKey, fetch: u => fetch(u, { signal: AbortSignal.timeout(10000) }) });
+                const r = await handleGeocodeRequest({ method: 'GET', query: Object.fromEntries(url.searchParams) }, { apiKey: options.mapsKey, provider: options.mapsProvider, fetch: u => fetch(u, { signal: AbortSignal.timeout(10000) }) });
                 return json(res, r.status, r.body);
             }
             const optional = path === '/api/v1/state' || path.startsWith('/api/v1/products') || path === '/api/v1/commands'||path==='/api/v1/media/sign'||(req.method==='GET'&&path.startsWith('/api/v1/lots'));

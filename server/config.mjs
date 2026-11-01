@@ -14,7 +14,7 @@ export function configuration(){
     // SUPABASE_DB_CA: nội dung PEM (dùng trên Vercel, không có file); SUPABASE_DB_CA_PATH: đường dẫn file.
     ca:env.SUPABASE_DB_CA?.trim()?env.SUPABASE_DB_CA.replace(/\\n/g,'\n'):env.SUPABASE_DB_CA_PATH?readFileSync(env.SUPABASE_DB_CA_PATH,'utf8'):undefined,
     publicUrl:env.PUBLIC_URL,accountLinkUrl:env.ACCOUNT_LINK_DELIVERY_URL,accountLinkToken:env.ACCOUNT_LINK_DELIVERY_TOKEN,
-    smsUrl:env.SMS_OTP_URL,smsToken:env.SMS_OTP_TOKEN,googleClientId:env.GOOGLE_CLIENT_ID||env.VITE_GOOGLE_CLIENT_ID,mapsKey:env.GOOGLE_MAPS_API_KEY,
+    smsUrl:env.SMS_OTP_URL,smsToken:env.SMS_OTP_TOKEN,googleClientId:env.GOOGLE_CLIENT_ID||env.VITE_GOOGLE_CLIENT_ID,mapsKey:env.GOONG_API_KEY||env.GOOGLE_MAPS_API_KEY,mapsProvider:env.GOONG_API_KEY?'goong':'google',
     webhookSecrets:{payment:env.PAYMENT_WEBHOOK_SECRET,refund:env.REFUND_WEBHOOK_SECRET,payout:env.PAYOUT_WEBHOOK_SECRET,carrier:env.CARRIER_WEBHOOK_SECRET},
     webPush:{subject:env.WEB_PUSH_SUBJECT,publicKey:env.WEB_PUSH_PUBLIC_KEY,privateKey:env.WEB_PUSH_PRIVATE_KEY},
     paymentAdapter:{url:env.PAYMENT_SESSION_URL,token:env.PAYMENT_SESSION_TOKEN,checkoutOrigins:(env.PAYMENT_CHECKOUT_ORIGINS??'').split(',').map(value=>value.trim()).filter(Boolean)},

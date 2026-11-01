@@ -33,7 +33,7 @@ describe('/api/geocode (Google Maps)', () => {
     expect((await handleGeocodeRequest({ method: 'POST' }, { apiKey: 'k', fetch })).status).toBe(405);
     expect((await handleGeocodeRequest({ method: 'GET', query: { lat: 'x', lng: '105.8' } }, { apiKey: 'k', fetch })).status).toBe(400);
     // TP. Hồ Chí Minh: ngoài Hà Nội
-    expect(await handleGeocodeRequest({ method: 'GET', query: { lat: '10.77', lng: '106.70' } }, { apiKey: 'k', fetch })).toMatchObject({ status: 422, body: { outside: true } });
+    expect(await handleGeocodeRequest({ method: 'GET', query: { lat: '1.35', lng: '103.82' } }, { apiKey: 'k', fetch })).toMatchObject({ status: 422, body: { outside: true } });
     expect(await handleGeocodeRequest({ method: 'GET', query: { lat: '21.0', lng: '105.8' } }, { fetch })).toMatchObject({ status: 503, body: { configured: false } });
     expect(calls).toBe(0);
   });
@@ -95,6 +95,27 @@ describe('/api/geocode (Google Maps)', () => {
     const r = await handleGeocodeRequest({ method: 'GET', query: { status: '1' } }, { ...deps, apiKey: 'secret-key' });
     expect(r).toEqual({ status: 200, body: { configured: true } });
     expect(JSON.stringify(r)).not.toContain('secret-key');
+    expect(calls).toBe(0);
+  });
+
+  it('hỗ trợ Goong Maps khi provider=goong', async () => {
+    let calls = 0;
+    let url = '';
+    const r = await handleGeocodeRequest(
+      { method: 'GET', query: { lat: '21.0075', lng: '105.8' } },
+      {
+        apiKey: 'goong-secret-key',
+        provider: 'goong',
+        fetch: async (u) => {
+          url = u;
+          return json(200, sample);
+        },
+      },
+    );
+    expect(url).toContain('https://rsapi.goong.io/geocode');
+    expect(url).toContain('latlng=21.007500,105.800000');
+    expect(url).toContain('api_key=goong-secret-key');
+    expect(r.status).toBe(200);
     expect(calls).toBe(0);
   });
 });

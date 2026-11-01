@@ -97,11 +97,11 @@ export function GpsAddressButton({ wards, onFill }: { wards: Ward[]; onFill: (fi
         <LocateFixed size={16} aria-hidden="true" />
         {busy ? 'Đang lấy vị trí…' : 'Dùng vị trí hiện tại (GPS)'}
       </SecondaryButton>
-      <p className="text-xs text-muted">Toạ độ được gửi tới Google Maps qua máy chủ của app để tìm địa chỉ; app không lưu toạ độ.</p>
+      <p className="text-xs text-muted">Toạ độ được gửi tới máy chủ của app để tìm địa chỉ; app không lưu toạ độ.</p>
       {found && (
         <div role="status" className="space-y-1 rounded-xl bg-white p-2.5 text-sm text-stone-700">
           <p>
-            <strong className="text-ink">Theo Google Maps:</strong> {found.formattedAddress}
+            <strong className="text-ink">Địa chỉ tìm được:</strong> {found.formattedAddress}
           </p>
           <p className="text-xs text-muted">
             Sai số khoảng ±{found.accuracy} m.{' '}
