@@ -279,6 +279,9 @@ export interface Address {
   receiverPhone: string;
   houseType: HouseType;
   wardId: string;
+  /** Thành phố/tỉnh và phường/xã nhập tự do để hỗ trợ địa chỉ ngoài danh mục mẫu. */
+  city?: string;
+  wardName?: string;
   /** Số nhà, đường. Bắt buộc với nhà mặt đất. */
   street: string;
   /** Toà (chung cư). */
@@ -321,6 +324,8 @@ export interface GiftRecipient {
   name: string;
   phone: string;
   wardId: string;
+  city?: string;
+  wardName?: string;
   street: string;
 }
 

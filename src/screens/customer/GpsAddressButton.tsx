@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { ExternalLink, LocateFixed } from 'lucide-react';
 import { SecondaryButton } from '../../components/form';
-import { inHanoiBounds, matchWard, roundCoord } from '../../domain/geo';
-import { normalizeVi } from '../../domain/text';
+import { inVietnamBounds, matchWard, roundCoord } from '../../domain/geo';
 import type { Ward } from '../../domain/types';
 
 export interface GpsFill {
   street: string;
   wardId?: string;
+  wardName: string;
+  city: string;
 }
 
 interface Found {
@@ -57,8 +58,8 @@ export function GpsAddressButton({ wards, onFill }: { wards: Ward[]; onFill: (fi
       }
       const lat = roundCoord(pos.coords.latitude);
       const lng = roundCoord(pos.coords.longitude);
-      if (!inHanoiBounds(lat, lng)) {
-        setError('Vị trí hiện tại không nằm trong Hà Nội. App chỉ giao trong Hà Nội.');
+      if (!inVietnamBounds(lat, lng)) {
+        setError('Vị trí hiện tại nằm ngoài phạm vi Việt Nam.');
         return;
       }
       let res: Response;
@@ -73,20 +74,16 @@ export function GpsAddressButton({ wards, onFill }: { wards: Ward[]; onFill: (fi
         setError(body?.error ?? (res.status === 404 ? 'Bản đang mở chưa có chức năng tra địa chỉ. Vui lòng nhập tay.' : `Không tra được địa chỉ (lỗi ${res.status}). Vui lòng nhập tay.`));
         return;
       }
-      if (body.city && !normalizeVi(body.city).includes('ha noi')) {
-        setError('Vị trí hiện tại không nằm trong Hà Nội. App chỉ giao trong Hà Nội.');
-        return;
-      }
       const ward = matchWard(wards, body.areas ?? [], body.formattedAddress);
       // Không có số nhà / đường thì điền phần đầu của địa chỉ đầy đủ (bỏ thành phố, quốc gia).
       const street = body.street || body.formattedAddress.split(',').slice(0, 2).join(',').trim();
-      onFill({ street, wardId: ward?.id });
+      onFill({ street, wardId: ward?.id, wardName: ward?.name ?? body.areas?.[0] ?? '', city: body.city ?? '' });
       setFound({
         formattedAddress: body.formattedAddress,
         accuracy: Math.round(pos.coords.accuracy),
         lat,
         lng,
-        wardName: ward?.name,
+        wardName: ward?.name ?? body.areas?.[0],
         unmatchedArea: ward ? undefined : body.areas?.[0],
       });
     } finally {

@@ -5,7 +5,6 @@
  */
 import { useEffect, useId, type ReactNode } from 'react';
 import { X } from 'lucide-react';
-import { DemoBand } from './DemoBand';
 
 interface BottomSheetProps {
   title: ReactNode;
@@ -36,7 +35,6 @@ export function BottomSheet({ title, onClose, children, footer, closeLabel = 'Đ
       onClick={onClose}
       role="presentation"
     >
-      <DemoBand className="pointer-events-none absolute inset-x-0 top-0" />
       <div
         role="dialog"
         aria-modal="true"

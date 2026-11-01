@@ -15,7 +15,7 @@ import {DemoPaymentQr} from '../../components/DemoPaymentQr';
 /** Cổng thanh toán – MÔ PHỎNG (mục 5.4). Kết quả chỉ ghi nhận qua applyGatewayResult(). */
 export function PaymentSheet({ txId, onClose }: { txId: string; onClose: () => void }) {
   const { state, run,demoMode } = useStore();
-  const { showToast, openOrders } = useUi();
+  const { showToast, openOrders, openModal } = useUi();
   const at = useNow(1000);
   const [busy,setBusy]=useState(false),[error,setError]=useState('');
   const tx = state.transactions.find((t) => t.id === txId);
@@ -42,8 +42,13 @@ export function PaymentSheet({ txId, onClose }: { txId: string; onClose: () => v
       },
     );
     showToast(r.ok ? message : r.error);
+    if (!r.ok) return;
     onClose();
     openOrders('all');
+  };
+  const changePaymentMethod = () => {
+    const orderId = tx.orderIds[0];
+    if (orderId) openModal({ type: 'order_detail', orderId });
   };
 
   return (
@@ -56,7 +61,7 @@ export function PaymentSheet({ txId, onClose }: { txId: string; onClose: () => v
       onClose={onClose}
       closeLabel="Đóng cổng thanh toán (giao dịch vẫn giữ, không gia hạn)"
       footer={
-        pending && !demoMode ? <div className="space-y-2"><button disabled={busy} onClick={async()=>{setBusy(true);setError('');try{const session=await api<{checkoutUrl:string}>('/api/v1/transactions/'+tx.id+'/session',{});window.location.assign(session.checkoutUrl);}catch(e){setError(e instanceof Error?e.message:'Chưa mở được cổng thanh toán.');}finally{setBusy(false);}}} className="min-h-12 w-full rounded-2xl bg-forest-600 px-4 text-sm font-bold text-white disabled:opacity-50">{busy?'Đang kết nối…':'Tiếp tục đến cổng thanh toán'}</button>{error&&<p role="alert" className="text-sm text-rose-800">{error}</p>}<p className="text-sm text-stone-600">Kết quả được xác nhận từ cổng thanh toán. Quay lại ứng dụng không tự xác nhận đã trả tiền.</p></div> : pending ? (
+        pending && !demoMode ? <div className="space-y-2"><button disabled={busy} onClick={async()=>{setBusy(true);setError('');try{const session=await api<{checkoutUrl:string}>('/api/v1/transactions/'+tx.id+'/session',{});window.location.assign(session.checkoutUrl);}catch(e){setError(e instanceof Error?e.message:'Chưa mở được cổng thanh toán.');}finally{setBusy(false);}}} className="min-h-12 w-full rounded-2xl bg-forest-600 px-4 text-sm font-bold text-white disabled:opacity-50">{busy?'Đang kết nối…':'Tiếp tục đến cổng thanh toán'}</button><button type="button" onClick={changePaymentMethod} className="min-h-11 w-full rounded-xl border border-forest-700 bg-white px-4 text-sm font-semibold text-forest-900 hover:bg-forest-50">Thay đổi phương thức thanh toán</button>{!isRemaining&&<p className="text-xs text-stone-600">Mở chi tiết đơn để huỷ giao dịch hiện tại; sản phẩm sẽ về giỏ để bạn đặt lại bằng phương thức khác.</p>}{error&&<p role="alert" className="text-sm text-rose-800">{error}</p>}<p className="text-sm text-stone-600">Kết quả được xác nhận từ cổng thanh toán. Quay lại ứng dụng không tự xác nhận đã trả tiền.</p></div> : pending ? (
           <div className="space-y-2">
             <button onClick={() => send('success')} className="min-h-12 w-full rounded-2xl bg-forest-600 text-sm font-bold text-white hover:bg-forest-500">
               Thanh toán thành công
@@ -69,6 +74,7 @@ export function PaymentSheet({ txId, onClose }: { txId: string; onClose: () => v
                 Huỷ
               </button>
             </div>
+            <button type="button" onClick={changePaymentMethod} className="min-h-11 w-full rounded-xl border border-forest-700 bg-white px-4 text-sm font-semibold text-forest-900">Thay đổi phương thức thanh toán</button>
           </div>
         ) : (
           <button onClick={onClose} className="min-h-12 w-full rounded-2xl bg-stone-900 text-sm font-bold text-white">

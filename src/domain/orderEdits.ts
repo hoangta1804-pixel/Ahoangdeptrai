@@ -67,14 +67,17 @@ export function customerEditGift(state: DemoState, actor: Actor, orderId: string
     if (!recipient?.name.trim() || !recipient.street.trim()) return fail('Vui lòng nhập đủ tên và địa chỉ người nhận.');
     if (!isValidPhone(normalizePhone(recipient.phone))) return fail(`SĐT người nhận không hợp lệ. ${PHONE_RULE}`);
     const ward = findWard(state, recipient.wardId);
-    if (!ward) return fail('Vui lòng chọn phường/xã của người nhận.');
-    if (order.shipping === 'express' && expressSurchargeFor(ward.distanceKm, order.params.expressTiers) !== order.pricing.expressSurcharge) {
+    const wardName = recipient.wardName?.trim() || ward?.name || '';
+    const city = recipient.city?.trim() || 'Hà Nội';
+    if (!wardName || !city) return fail('Vui lòng nhập tỉnh/thành phố và phường/xã của người nhận.');
+    const distanceKm = ward?.distanceKm ?? Number.POSITIVE_INFINITY;
+    if (order.shipping === 'express' && expressSurchargeFor(distanceKm, order.params.expressTiers) !== order.pricing.expressSurcharge) {
       return fail('Địa chỉ mới làm thay đổi phụ phí hoả tốc nên không đổi được.');
     }
     updated = {
       ...updated,
       gift: { ...updated.gift!, recipient },
-      address: { receiverName: recipient.name.trim(), receiverPhone: normalizePhone(recipient.phone), text: `${recipient.street.trim()}, ${ward.name}, Hà Nội`, wardName: ward.name, distanceKm: ward.distanceKm },
+      address: { receiverName: recipient.name.trim(), receiverPhone: normalizePhone(recipient.phone), text: `${recipient.street.trim()}, ${wardName}, ${city}`, wardName, distanceKm },
     };
   }
   return ok(replaceOrder(state, updated));

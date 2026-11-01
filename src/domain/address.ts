@@ -1,15 +1,23 @@
 /**
  * Sổ địa chỉ (BR-DAT-04, FR-TK-04).
- * - Giai đoạn 1 chỉ giao trong Hà Nội; địa chỉ gồm Hà Nội (cố định), phường/xã (danh sách cấu hình), số nhà/đường, toà–căn.
+ * - Địa chỉ hỗ trợ nhập tỉnh/thành phố và phường/xã tự do; khu vực đã có khoảng cách mẫu sẽ hỗ trợ tính phí hoả tốc.
  * - Chung cư bắt buộc nhập toà và căn; nhà mặt đất bắt buộc số nhà.
  * - Tối đa 10 địa chỉ, đặt được một địa chỉ mặc định.
  */
 import { generateId } from './ids';
 import { isValidPhone, normalizePhone, PHONE_RULE } from './phone';
 import { findWard } from './state';
+import { wardKey } from './geo';
+import { normalizeVi } from './text';
 import { fail, ok, type Address, type DemoState, type HouseType, type Result } from './types';
 
 export const MAX_ADDRESSES = 10;
+
+function knownWardFor(state: DemoState, input: Pick<AddressInput, 'city' | 'wardId' | 'wardName'>) {
+  const city = input.city?.trim() || (findWard(state, input.wardId) ? 'Hà Nội' : '');
+  if (!normalizeVi(city).includes('ha noi')) return undefined;
+  return findWard(state, input.wardId) ?? state.wards.find((ward) => wardKey(ward.name) === wardKey(input.wardName ?? ''));
+}
 
 export interface AddressInput {
   label: string;
@@ -17,6 +25,8 @@ export interface AddressInput {
   receiverPhone: string;
   houseType: HouseType;
   wardId: string;
+  city?: string;
+  wardName?: string;
   street: string;
   building?: string;
   unit?: string;
@@ -26,7 +36,8 @@ export interface AddressInput {
 export function validateAddressInput(state: DemoState, input: AddressInput): Result<AddressInput> {
   if (!input.receiverName.trim()) return fail('Vui lòng nhập tên người nhận.');
   if (!isValidPhone(normalizePhone(input.receiverPhone))) return fail(`Số điện thoại người nhận không hợp lệ. ${PHONE_RULE}`);
-  if (!findWard(state, input.wardId)) return fail('Vui lòng chọn phường/xã trong danh sách.');
+  if (!input.city?.trim() && !knownWardFor(state, input)) return fail('Vui lòng nhập tỉnh/thành phố.');
+  if (!input.wardName?.trim() && !knownWardFor(state, input)) return fail('Vui lòng nhập phường/xã.');
   if (input.houseType === 'apartment') {
     if (!input.building?.trim() || !input.unit?.trim()) return fail('Chung cư bắt buộc nhập toà và căn hộ.');
   } else {
@@ -52,7 +63,9 @@ export function addAddress(state: DemoState, customerId: string, input: AddressI
     receiverName: input.receiverName.trim(),
     receiverPhone: normalizePhone(input.receiverPhone),
     houseType: input.houseType,
-    wardId: input.wardId,
+    wardId: knownWardFor(state, input)?.id ?? '',
+    city: input.city?.trim() || 'Hà Nội',
+    wardName: input.wardName?.trim() || knownWardFor(state, input)?.name || '',
     street: input.street.trim(),
     building: input.houseType === 'apartment' ? input.building?.trim() : undefined,
     unit: input.houseType === 'apartment' ? input.unit?.trim() : undefined,
@@ -74,7 +87,9 @@ export function updateAddress(state: DemoState, customerId: string, id: string, 
     receiverName: input.receiverName.trim(),
     receiverPhone: normalizePhone(input.receiverPhone),
     houseType: input.houseType,
-    wardId: input.wardId,
+    wardId: knownWardFor(state, input)?.id ?? '',
+    city: input.city?.trim() || 'Hà Nội',
+    wardName: input.wardName?.trim() || knownWardFor(state, input)?.name || '',
     street: input.street.trim(),
     building: input.houseType === 'apartment' ? input.building?.trim() : undefined,
     unit: input.houseType === 'apartment' ? input.unit?.trim() : undefined,

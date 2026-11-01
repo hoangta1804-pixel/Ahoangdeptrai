@@ -35,7 +35,7 @@ export function AddressBookSheet({ onClose }: { onClose: () => void }) {
         <>
             Sổ địa chỉ
             <span className="block font-sans text-sm font-normal text-muted">
-              {mine.length}/{MAX_ADDRESSES} địa chỉ · chỉ giao trong Hà Nội
+              {mine.length}/{MAX_ADDRESSES} địa chỉ đã lưu
             </span>
         </>
       }
@@ -52,7 +52,7 @@ export function AddressBookSheet({ onClose }: { onClose: () => void }) {
       }
     >
       {mine.length === 0 ? (
-        <EmptyState>Chưa có địa chỉ nào. Bấm "Thêm địa chỉ" để thêm địa chỉ giao hàng tại Hà Nội.</EmptyState>
+        <EmptyState>Chưa có địa chỉ nào. Bấm "Thêm địa chỉ" để nhập địa chỉ nhận hàng.</EmptyState>
       ) : (
         <>
           <p className="text-sm text-stone-600">Bấm vào một địa chỉ để chọn làm địa chỉ nhận hàng khi đặt đơn.</p>

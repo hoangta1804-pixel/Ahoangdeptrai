@@ -116,7 +116,8 @@ function validateRecipient(state: DemoState, r: GiftRecipient | undefined): stri
   if (!r) return 'Vui lòng nhập thông tin người nhận quà.';
   if (!r.name.trim()) return 'Vui lòng nhập tên người nhận quà.';
   if (!isValidPhone(normalizePhone(r.phone))) return `SĐT người nhận quà không hợp lệ. ${PHONE_RULE}`;
-  if (!findWard(state, r.wardId)) return 'Vui lòng chọn phường/xã (Hà Nội) của người nhận.';
+  if (!(r.wardName?.trim() || findWard(state, r.wardId))) return 'Vui lòng nhập phường/xã của người nhận.';
+  if (!r.city?.trim()) return 'Vui lòng nhập tỉnh/thành phố của người nhận.';
   if (!r.street.trim()) return 'Vui lòng nhập số nhà, đường của người nhận.';
   return null;
 }
@@ -161,7 +162,7 @@ export function planCheckout(state: DemoState, input: CheckoutInput, at: Date): 
   const params = state.params;
   const errors: string[] = [];
   const address = state.addresses.find((a) => a.id === input.addressId && a.customerId === input.customerId);
-  if (!address) errors.push('Vui lòng chọn địa chỉ giao hàng tại Hà Nội.');
+  if (!address) errors.push('Vui lòng chọn địa chỉ giao hàng.');
   const mainAddress = address ? snapshotAddress(state, address) : undefined;
 
   // 1. Gom dòng theo HTX + loại đơn (+ ngày giao với đơn đặt trước).
@@ -237,13 +238,15 @@ export function planCheckout(state: DemoState, input: CheckoutInput, at: Date): 
           if (rErr) errors.push(`${coop?.name}: ${rErr}`);
           else {
             const r = opts.gift.recipient!;
-            const ward = findWard(state, r.wardId)!;
+            const ward = findWard(state, r.wardId);
+            const wardName = r.wardName?.trim() || ward?.name || '';
+            const city = r.city?.trim() || 'Hà Nội';
             orderAddress = {
               receiverName: r.name.trim(),
               receiverPhone: normalizePhone(r.phone),
-              text: `${r.street.trim()}, ${ward.name}, Hà Nội`,
-              wardName: ward.name,
-              distanceKm: ward.distanceKm,
+              text: `${r.street.trim()}, ${wardName}, ${city}`,
+              wardName,
+              distanceKm: ward?.distanceKm ?? Number.POSITIVE_INFINITY,
             };
           }
         }

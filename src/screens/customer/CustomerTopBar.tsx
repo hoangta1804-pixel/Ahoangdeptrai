@@ -34,7 +34,7 @@ export function CustomerTopBar() {
           <MapPin size={15} aria-hidden="true" />
         </span>
         <span className="min-w-0">
-          <span className="block truncate text-xs font-semibold text-champagne-700">Nhận hàng tại (Hà Nội)</span>
+          <span className="block truncate text-xs font-semibold text-champagne-700">Nhận hàng tại</span>
           <span className="block truncate text-sm font-bold text-forest-900">{address ? snapshotAddress(state, address).text : 'Thêm địa chỉ giao hàng'}</span>
         </span>
       </button>

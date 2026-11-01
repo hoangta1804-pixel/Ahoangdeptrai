@@ -525,14 +525,14 @@ function StepDelivery(props: {
       {props.addresses.length === 0 ? (
         <div className="space-y-2 rounded-2xl border border-dashed border-stone-300 bg-white p-4 text-center text-sm text-stone-700">
           <p className="font-semibold text-ink">Bạn chưa có địa chỉ giao hàng.</p>
-          <p>Giai đoạn 1 chỉ giao trong Hà Nội. Thêm địa chỉ rồi quay lại đây để đặt hàng.</p>
+          <p>Thêm địa chỉ nhận hàng để tiếp tục đặt hàng.</p>
           <PrimaryButton className="w-full" onClick={props.onAddAddress}>
             Thêm địa chỉ giao hàng
           </PrimaryButton>
         </div>
       ) : (
         <div className="space-y-1">
-          <Field label="Địa chỉ giao hàng (Hà Nội)">
+          <Field label="Địa chỉ giao hàng">
             <Select value={props.addressId} onChange={(e) => props.setAddressId(e.target.value)}>
               <option value="">— Chọn địa chỉ —</option>
               {props.addresses.map((a) => (
@@ -626,7 +626,7 @@ function StepDelivery(props: {
                       checked={gift.sendToOther}
                       onChange={(e) =>
                         props.setOpt(o.key, {
-                          gift: { ...gift, sendToOther: e.target.checked, recipient: e.target.checked ? gift.recipient ?? { name: '', phone: '', wardId: '', street: '' } : undefined },
+                          gift: { ...gift, sendToOther: e.target.checked, recipient: e.target.checked ? gift.recipient ?? { name: '', phone: '', wardId: '', city: '', wardName: '', street: '' } : undefined },
                           paymentMethod: e.target.checked ? 'online' : props.options[o.key]?.paymentMethod ?? 'online',
                         })
                       }
@@ -641,15 +641,11 @@ function StepDelivery(props: {
                       <Field label="SĐT người nhận" hint={PHONE_RULE}>
                         <Input inputMode="tel" value={gift.recipient.phone} onChange={(e) => props.setOpt(o.key, { gift: { ...gift, recipient: { ...gift.recipient!, phone: e.target.value } } })} />
                       </Field>
-                      <Field label="Phường/xã (Hà Nội)">
-                        <Select value={gift.recipient.wardId} onChange={(e) => props.setOpt(o.key, { gift: { ...gift, recipient: { ...gift.recipient!, wardId: e.target.value } } })}>
-                          <option value="">— Chọn —</option>
-                          {state.wards.map((w) => (
-                            <option key={w.id} value={w.id}>
-                              {w.name}
-                            </option>
-                          ))}
-                        </Select>
+                      <Field label="Tỉnh/thành phố">
+                        <Input value={gift.recipient.city ?? ''} onChange={(e) => props.setOpt(o.key, { gift: { ...gift, recipient: { ...gift.recipient!, city: e.target.value } } })} placeholder="Ví dụ: Lào Cai" />
+                      </Field>
+                      <Field label="Phường/xã">
+                        <Input value={gift.recipient.wardName ?? ''} onChange={(e) => props.setOpt(o.key, { gift: { ...gift, recipient: { ...gift.recipient!, wardId: '', wardName: e.target.value } } })} placeholder="Nhập phường/xã" />
                       </Field>
                       <Field label="Số nhà, đường, toà–căn">
                         <Input value={gift.recipient.street} onChange={(e) => props.setOpt(o.key, { gift: { ...gift, recipient: { ...gift.recipient!, street: e.target.value } } })} />

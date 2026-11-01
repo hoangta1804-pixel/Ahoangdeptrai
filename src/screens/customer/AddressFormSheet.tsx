@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useUi, type ModalState } from '../../app/UiContext';
 import { BottomSheet } from '../../components/BottomSheet';
-import { Field, Input, PrimaryButton, Select } from '../../components/form';
+import { Field, Input, PrimaryButton } from '../../components/form';
 import { addAddress, updateAddress, type AddressInput } from '../../store/commands/address';
 import { PHONE_RULE } from '../../domain/phone';
 import type { HouseType } from '../../domain/types';
@@ -9,7 +9,7 @@ import { GpsAddressButton } from './GpsAddressButton';
 import { useStore } from '../../store/AppDataContext';
 
 /**
- * Form địa chỉ (BR-DAT-04, L14): Hà Nội cố định; phường/xã chọn từ danh sách; không dùng quận/huyện.
+ * Form địa chỉ: tỉnh/thành phố và phường/xã có thể nhập tự do; GPS giúp điền nhanh địa chỉ.
  * Chung cư bắt buộc toà và căn; nhà mặt đất bắt buộc số nhà.
  * Nút GPS (chủ repo yêu cầu sau Giai đoạn 6): điền sẵn số nhà / đường và phường từ Google Maps, khách kiểm tra rồi lưu.
  * (L14 đã bỏ nút GPS cũ vì nút đó điền một địa chỉ bịa sẵn; nút mới lấy vị trí thật.)
@@ -22,8 +22,8 @@ export function AddressFormSheet({ addressId, returnTo, onClose }: { addressId?:
   const customer = state.customers.find((c) => c.id === customerActor.id);
   const [form, setForm] = useState<AddressInput>(
     existing
-      ? { ...existing, isDefault: existing.isDefault }
-      : { label: '', receiverName: customer?.name ?? '', receiverPhone: customer?.phone ?? '', houseType: 'apartment', wardId: '', street: '', building: '', unit: '', isDefault: false },
+      ? { ...existing, city: existing.city ?? 'Hà Nội', wardName: existing.wardName ?? '', isDefault: existing.isDefault }
+      : { label: '', receiverName: customer?.name ?? '', receiverPhone: customer?.phone ?? '', houseType: 'apartment', wardId: '', city: '', wardName: '', street: '', building: '', unit: '', isDefault: false },
   );
   const set = (patch: Partial<AddressInput>) => setForm((f) => ({ ...f, ...patch }));
 
@@ -70,19 +70,12 @@ export function AddressFormSheet({ addressId, returnTo, onClose }: { addressId?:
           <Input inputMode="tel" value={form.receiverPhone} onChange={(e) => set({ receiverPhone: e.target.value })} placeholder="0900 000 000" />
         </Field>
       </div>
-      <GpsAddressButton wards={state.wards} onFill={({ street, wardId }) => set(wardId ? { street, wardId } : { street })} />
-      <Field label="Tỉnh/thành phố" hint="Giai đoạn 1 chỉ giao trong Hà Nội.">
-        <Input value="Hà Nội" disabled />
+      <GpsAddressButton wards={state.wards} onFill={({ street, wardId, wardName, city }) => set({ street, wardId: wardId ?? '', wardName, city })} />
+      <Field label="Tỉnh/thành phố">
+        <Input value={form.city} onChange={(e) => set({ city: e.target.value })} placeholder="Ví dụ: Lào Cai" />
       </Field>
-      <Field label="Phường/xã" hint="Danh sách mẫu, chờ nhóm nạp danh mục chính thức.">
-        <Select value={form.wardId} onChange={(e) => set({ wardId: e.target.value })}>
-          <option value="">— Chọn phường/xã —</option>
-          {state.wards.map((w) => (
-            <option key={w.id} value={w.id}>
-              {w.name}
-            </option>
-          ))}
-        </Select>
+      <Field label="Phường/xã">
+        <Input value={form.wardName} onChange={(e) => set({ wardName: e.target.value, wardId: '' })} placeholder="Ví dụ: Phường Cam Đường" />
       </Field>
       <fieldset className="space-y-1">
         <legend className="text-sm font-semibold text-stone-700">Loại nhà</legend>

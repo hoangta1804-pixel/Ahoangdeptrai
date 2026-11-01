@@ -1,7 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { Bell, FlaskConical, LogOut } from 'lucide-react';
 import { BrandEmblem, BrandWordmark } from '../components/Brand';
-import { DemoBand } from '../components/DemoBand';
 import { ListBoundary } from '../components/ListBoundary';
 import { Toast } from '../components/Toast';
 import { ACCOUNT_ROLE_LABEL, ADMIN_GROUP_LABEL } from '../domain/types';
@@ -94,7 +93,7 @@ export function AppShell() {
 
   return (
     <div className={`flex min-h-dvh flex-col text-ink ${storefront ? 'shop-shell' : 'bg-stone-100'}`}>
-      <header ref={headerRef} className={storefront ? "shop-site-header" : "staff-header sticky top-0 z-40 bg-forest-950 text-forest-100"}>{storefront ? <StorefrontHeader /> : <><DemoBand />
+      <header ref={headerRef} className={storefront ? "shop-site-header" : "staff-header sticky top-0 z-40 bg-forest-950 text-forest-100"}>{storefront ? <StorefrontHeader /> : <>
 
         <div className={`flex w-full items-center gap-1 py-1.5 ${PAGE_X}`}>
           {/* Logo và chữ thương hiệu. Trên điện thoại, tài khoản HTX / Admin / QLNN hiện tên và vai trò thay cho chữ thương hiệu. */}

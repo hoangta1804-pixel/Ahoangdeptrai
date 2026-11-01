@@ -3,7 +3,7 @@
  * Tra địa chỉ từ toạ độ GPS bằng Google Maps (Vercel Serverless Function): GET /api/geocode?lat=…&lng=…
  *
  * - Khoá Google Maps chỉ nằm ở server (biến môi trường GOOGLE_MAPS_API_KEY), trình duyệt không thấy.
- * - Chỉ nhận toạ độ trong khung Hà Nội (app chỉ giao trong Hà Nội), để khoá không bị dùng cho nơi khác.
+ * - Chỉ nhận toạ độ trong khung Việt Nam, để khoá không bị dùng cho nơi khác.
  * - Có Upstash Redis (cùng cơ sở dữ liệu với /api/state) thì giới hạn số lượt tra mỗi ngày
  *   (GEOCODE_DAILY_LIMIT, mặc định 300) để không phát sinh phí ngoài ý muốn.
  * - Kết quả được CDN của Vercel giữ 1 ngày theo toạ độ (app làm tròn toạ độ ~11 m), cùng chỗ thì không gọi lại Google.
@@ -11,7 +11,7 @@
  *
  *   200 { formattedAddress, street, areas, city }
  *   GET /api/geocode?status=1 → 200 { configured }: chỉ cho biết đã có khoá hay chưa (Công cụ demo), không gọi Google, không tính lượt.
- *   400 toạ độ sai · 422 ngoài Hà Nội · 404 Google không tìm thấy địa chỉ · 429 hết lượt
+ *   400 toạ độ sai · 422 ngoài Việt Nam · 404 Google không tìm thấy địa chỉ · 429 hết lượt
  *   502 Google từ chối (khoá sai, chưa bật Geocoding API, chưa bật thanh toán) · 503 chưa có khoá
  *
  * File này tự chứa (chỉ import @upstash/redis) giống api/state.ts.
@@ -20,11 +20,16 @@ import { Redis } from '@upstash/redis';
 
 /** Khung toạ độ gần đúng của Hà Nội (rộng hơn ranh giới thật một chút). */
 export const HANOI_BOUNDS = { south: 20.53, north: 21.39, west: 105.28, east: 106.03 };
+export const VIETNAM_BOUNDS = { south: 8.0, north: 23.6, west: 102.0, east: 110.0 };
 
 export const DEFAULT_DAILY_LIMIT = 300;
 
 export function inHanoiBounds(lat: number, lng: number): boolean {
   return lat >= HANOI_BOUNDS.south && lat <= HANOI_BOUNDS.north && lng >= HANOI_BOUNDS.west && lng <= HANOI_BOUNDS.east;
+}
+
+export function inVietnamBounds(lat: number, lng: number): boolean {
+  return lat >= VIETNAM_BOUNDS.south && lat <= VIETNAM_BOUNDS.north && lng >= VIETNAM_BOUNDS.west && lng <= VIETNAM_BOUNDS.east;
 }
 
 export interface GeocodeResult {
@@ -91,7 +96,7 @@ export async function handleGeocodeRequest(req: { method?: string; query?: Recor
   const lat = Number(first(req.query?.lat));
   const lng = Number(first(req.query?.lng));
   if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return { status: 400, body: { error: 'Toạ độ không hợp lệ.' } };
-  if (!inHanoiBounds(lat, lng)) return { status: 422, body: { error: 'Vị trí hiện tại không nằm trong Hà Nội. App chỉ giao trong Hà Nội.', outside: true } };
+  if (!inVietnamBounds(lat, lng)) return { status: 422, body: { error: 'Vị trí hiện tại nằm ngoài phạm vi Việt Nam.', outside: true } };
   if (!deps.apiKey) return { status: 503, body: { error: 'Chưa bật Google Maps cho bản này (thiếu GOOGLE_MAPS_API_KEY).', configured: false } };
 
   if (deps.countToday) {

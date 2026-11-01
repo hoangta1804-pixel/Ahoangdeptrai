@@ -8,6 +8,13 @@ import type { Ward } from './types';
 /** Khung toạ độ gần đúng của Hà Nội (giống api/geocode.ts). */
 export const HANOI_BOUNDS = { south: 20.53, north: 21.39, west: 105.28, east: 106.03 };
 
+/** Approximate bounds covering mainland Vietnam for address lookup. */
+export const VIETNAM_BOUNDS = { south: 8.0, north: 23.6, west: 102.0, east: 110.0 };
+
+export function inVietnamBounds(lat: number, lng: number): boolean {
+  return lat >= VIETNAM_BOUNDS.south && lat <= VIETNAM_BOUNDS.north && lng >= VIETNAM_BOUNDS.west && lng <= VIETNAM_BOUNDS.east;
+}
+
 export function inHanoiBounds(lat: number, lng: number): boolean {
   return lat >= HANOI_BOUNDS.south && lat <= HANOI_BOUNDS.north && lng >= HANOI_BOUNDS.west && lng <= HANOI_BOUNDS.east;
 }

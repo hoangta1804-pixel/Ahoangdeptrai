@@ -68,7 +68,7 @@ const CATEGORY_ICON: Record<Category, LucideIcon> = { dry: Wheat, processed: Coo
 const STEPS = [
   { Icon: Sprout, title: 'Chọn đặc sản', text: 'Hàng mua sẵn đặt là giao; nông sản theo mùa đặt trước, cọc để giữ suất.' },
   { Icon: PackageCheck, title: 'HTX chuẩn bị đơn', text: 'HTX xác nhận đơn, đóng gói và bàn giao cho đơn vị vận chuyển.' },
-  { Icon: Truck, title: 'Nhận hàng tại Hà Nội', text: 'Theo dõi đơn ở Tài khoản › Đơn mua; xem nguồn gốc lô hàng ở trang sản phẩm.' },
+  { Icon: Truck, title: 'Nhận hàng tận nơi', text: 'Theo dõi đơn ở Tài khoản › Đơn mua; xem nguồn gốc lô hàng ở trang sản phẩm.' },
 ];
 
 /** Thẻ đại diện của nhóm quy cách: quy cách còn đặt được, không thì quy cách giá thấp nhất. */
@@ -152,7 +152,7 @@ export function ExploreTab() {
             <span aria-hidden="true" className="h-px w-7 bg-champagne-400" />
             Từ các hợp tác xã vùng cao Lào Cai
           </p>
-          <h2 className="text-gold font-display text-[1.65rem] font-semibold leading-[1.12] text-balance md:text-4xl">Đặc sản núi rừng, giao tận nhà tại Hà Nội</h2>
+          <h2 className="text-gold font-display text-[1.65rem] font-semibold leading-[1.12] text-balance md:text-4xl">Đặc sản núi rừng, giao tận nhà</h2>
           <p className="max-w-md text-sm leading-relaxed text-forest-100">
             {familyCount} sản phẩm từ {coopCount} HTX · hàng mua sẵn và nông sản theo mùa.
           </p>

@@ -69,12 +69,12 @@ export function remainingFor(state: DemoState, product: Product): number {
   return availableStock(product.stockOnHand, product.id, state.orders);
 }
 
-export function addressText(address: Pick<Address, 'houseType' | 'street' | 'building' | 'unit'>, wardName: string): string {
+export function addressText(address: Pick<Address, 'houseType' | 'street' | 'building' | 'unit'>, wardName: string, city = 'Hà Nội'): string {
   const parts =
     address.houseType === 'apartment'
       ? [`Toà ${address.building}, căn ${address.unit}`, address.street]
       : [address.street];
-  return [...parts.filter(Boolean), wardName, 'Hà Nội'].join(', ');
+  return [...parts.filter(Boolean), wardName, city].filter(Boolean).join(', ');
 }
 
 export function snapshotAddress(state: DemoState, address: Address): AddressSnapshot {
@@ -82,8 +82,8 @@ export function snapshotAddress(state: DemoState, address: Address): AddressSnap
   return {
     receiverName: address.receiverName,
     receiverPhone: address.receiverPhone,
-    text: addressText(address, ward?.name ?? ''),
-    wardName: ward?.name ?? '',
+    text: addressText(address, address.wardName || ward?.name || '', address.city || 'Hà Nội'),
+    wardName: address.wardName || ward?.name || '',
     distanceKm: ward?.distanceKm ?? Number.POSITIVE_INFINITY,
   };
 }
