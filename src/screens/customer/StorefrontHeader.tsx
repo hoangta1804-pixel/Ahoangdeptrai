@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ArrowUpRight, Bell, LogOut, Menu, Search, ShoppingBag, Sprout, UserRound, X } from 'lucide-react';
 import { useStorefront } from '../../app/StorefrontContext';
 import { useUi } from '../../app/UiContext';
 import { useStore } from '../../store/AppDataContext';
+import { normalizeVi } from '../../domain/text';
 const LINKS = [['home', 'Trang chủ'], ['products', 'Sản phẩm'], ['regions', 'Đặc sản vùng miền'], ['about', 'Giới thiệu'], ['journal', 'Câu chuyện'], ['contact', 'Liên hệ']] as const;
 export function StorefrontHeader() {
     const { query, setQuery, goTo, openCatalog } = useStorefront();
@@ -11,7 +12,8 @@ export function StorefrontHeader() {
     const [menu, setMenu] = useState(false), [search, setSearch] = useState(false);
     const cartCount = (state.carts[customerActor.id ?? ''] ?? []).reduce((sum, line) => sum + line.quantity, 0);
     const [history,setHistory]=useState<string[]>(()=>{try{const value=JSON.parse(localStorage.getItem('dac-san-so-lao-cai:search-history')??'[]');return Array.isArray(value)?value.filter(x=>typeof x==='string').slice(0,10):[];}catch{return [];}});
-    const suggestions=[...new Set([...history,...state.products.filter(p=>p.status==='active').map(p=>p.name),...state.coops.map(c=>c.name)])].filter(s=>!query||s.toLocaleLowerCase('vi').includes(query.toLocaleLowerCase('vi'))).slice(0,12);
+    const searchTerms=useMemo(()=>[...new Set([...history,...state.products.filter(p=>p.status==='active').map(p=>p.name),...state.coops.map(c=>c.name)])],[history,state.products,state.coops]);
+    const suggestions=useMemo(()=>{const needle=normalizeVi(query);return searchTerms.filter(s=>!needle||normalizeVi(s).includes(needle)).slice(0,12);},[searchTerms,query]);
     const saveSearch=()=>{if(!query.trim())return;const next=[query.trim(),...history.filter(h=>h!==query.trim())].slice(0,10);setHistory(next);try{localStorage.setItem('dac-san-so-lao-cai:search-history',JSON.stringify(next));}catch{}};
     const unread = state.notifications.filter(n => n.userId === user?.id && !n.read).length;
     const account = () => { setMenu(false); if (!user)

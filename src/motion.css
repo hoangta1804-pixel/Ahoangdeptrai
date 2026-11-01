@@ -160,6 +160,19 @@
 .admin-panel tbody tr{transition:background-color .2s}
 .admin-panel tbody tr:hover{background:#f2f8f5}
 @media(max-width:1023px){.admin-hero{padding:18px}.admin-hero-stats>div{min-width:88px;padding:8px 12px}}
+.admin-shell{width:min(100%,1600px);margin-inline:auto}
+.checkout-progress{gap:8px!important}
+.checkout-progress>li{display:flex;align-items:center;justify-content:center;min-height:38px;border-radius:999px!important;padding-inline:12px!important;line-height:1.25;transition:background-color .2s,color .2s,transform .2s}
+.checkout-progress>li[aria-current="step"]{box-shadow:0 6px 18px -10px #173a2c;transform:translateY(-1px)}
+.app-sheet-footer{box-shadow:0 -10px 24px -24px #173a2c}
+.app-sheet-body{scrollbar-gutter:stable}
+.admin-nav-item{overflow:hidden;text-overflow:ellipsis}
+.admin-panel{min-width:0;border:1px solid #e9e6de;border-radius:24px;background:#fff;padding:clamp(14px,2vw,24px);box-shadow:0 20px 55px -48px #173a2c}
+.admin-panel :is(input,select,textarea){max-width:100%}
+.admin-panel :is(button,a):focus-visible,.admin-nav-item:focus-visible{outline:2px solid #668b75;outline-offset:3px}
+@media(max-width:1023px){.admin-shell{padding-top:12px}.admin-nav{position:sticky;top:var(--app-header-h,0px);z-index:20;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin;border-radius:14px}.admin-nav-item{min-height:42px;padding-inline:12px}.admin-panel{border-radius:18px}}
+@media(max-width:520px){.checkout-progress{gap:4px!important}.checkout-progress>li{min-height:34px;padding-inline:6px!important;font-size:10px}.app-sheet-footer{padding-inline:14px}}
+@media(prefers-reduced-motion:reduce){.shop-article-copy,.shop-story-card,.catalog-grid .shop-product-card{transition:none}}
 
 /* Thẻ có hiệu ứng rê chuột riêng: giữ hiện dần (opacity có lệch thời gian) mà không làm chậm hiệu ứng rê. */
 :is(.shop-product-card,.shop-region-card,.shop-promise-card,.shop-review-card,.shop-story-card).reveal-init{transition:opacity .8s var(--ease-out-expo) var(--reveal-delay,0ms),transform .6s var(--ease-out-expo),box-shadow .35s,border-color .35s}

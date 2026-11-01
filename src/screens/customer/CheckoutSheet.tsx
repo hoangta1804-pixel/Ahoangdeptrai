@@ -193,7 +193,7 @@ export function CheckoutSheet({ source, preferredAddressId, onClose }: { source:
       title={
         <div className="space-y-2">
           <span className="block">Đặt hàng</span>
-          <ol className="flex gap-1 font-sans text-xs font-semibold" aria-label="Các bước đặt hàng">
+          <ol className="checkout-progress flex gap-1 font-sans text-xs font-semibold" aria-label="Các bước đặt hàng">
             {([1, 2, 3] as Step[]).map((s) => (
               <li key={s} aria-current={step === s ? 'step' : undefined} className={`flex-1 rounded-lg px-2 py-1 text-center ${step === s ? 'bg-forest-800 text-white' : s < step ? 'bg-forest-100 text-forest-800' : 'bg-stone-100 text-muted'}`}>
                 {s}. {STEP_LABEL[s]}
