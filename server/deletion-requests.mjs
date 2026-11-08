@@ -1,5 +1,5 @@
 import {randomUUID} from 'node:crypto';
-import {assert} from './security.mjs';
+import {assert,inAdminGroup} from './security.mjs';
 import {verifyPassword} from './passwords.mjs';
 import {isTicketOpen} from '../src/domain/complaint.ts';
 
@@ -21,7 +21,7 @@ export function accountDeletionChecks(state,userId){
 
 // OI-19 leaves retention/anonymization undecided. This workflow never deletes records.
 export async function deletionRequestsRoute(method,body,{db,auth}){
-  const user=auth.user,operations=user.role==='admin'&&user.adminGroup==='operations',owner=['customer','coop'].includes(user.role);
+  const user=auth.user,operations=inAdminGroup(user,'operations'),owner=['customer','coop'].includes(user.role);
   assert(owner||operations,403,'Chỉ khách/HTX gửi yêu cầu và Vận hành xử lý.');
   const records=await db.sql.prepare("SELECT id,owner_id,data FROM feature_records WHERE kind='account-deletion-request'").all();
   const items=records.filter(r=>operations||r.owner_id===user.id).map(r=>({id:r.id,userId:r.owner_id,...db.decodeJSON(r.data)}));

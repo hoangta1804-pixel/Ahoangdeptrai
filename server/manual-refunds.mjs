@@ -1,11 +1,11 @@
-import {assert} from './security.mjs';
+import {assert,inAdminGroup} from './security.mjs';
 import {confirmRefundBySimBank} from '../src/domain/finance.ts';
 import {deriveNotifications} from '../src/domain/notifications.ts';
 
 // Records checked evidence of a bank transfer performed outside this application.
 // It cannot send funds or substitute for an original-source gateway refund.
 export async function recordManualRefund(id,body,{db,auth}){
-  assert(auth.user.role==='admin'&&auth.user.adminGroup==='finance',403,'Chỉ Tài chính ghi nhận chứng từ hoàn tiền.');
+  assert(inAdminGroup(auth.user,'finance'),403,'Chỉ Tài chính ghi nhận chứng từ hoàn tiền.');
   const {state}=await db.read(),refund=state.refunds.find(r=>r.id===id);assert(refund,404,'Không tìm thấy khoản hoàn.');
   assert(refund.destination==='bank_account',409,'Hoàn về nguồn thanh toán ban đầu phải nhận kết quả từ cổng; không dùng chứng từ chuyển khoản khác nguồn.');
   assert(Number.isSafeInteger(body.amount)&&body.amount===refund.amount&&body.amount>0,400,'Số tiền phải khớp khoản hoàn.');

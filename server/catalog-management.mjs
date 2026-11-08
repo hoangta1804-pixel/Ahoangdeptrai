@@ -1,4 +1,4 @@
-import {assert} from './security.mjs';
+import {assert,inAdminGroup} from './security.mjs';
 import {validateMediaReferences} from './media.mjs';
 import {requireProductLock} from './product-locks.mjs';
 import * as productDomain from '../src/domain/productChanges.ts';
@@ -6,7 +6,7 @@ import {coopAddVariant} from '../src/domain/variants.ts';
 import {audit} from '../src/domain/state.ts';
 
 export async function manageCatalog(productId,body,{db,auth}){
-  assert(auth.user.role==='admin'&&auth.user.adminGroup==='quality',403,'Chỉ Admin – Chất lượng quản lý sản phẩm.');
+  assert(inAdminGroup(auth.user,'quality'),403,'Chỉ Admin – Chất lượng quản lý sản phẩm.');
   const {state}=await db.read(),at=new Date(Date.now()+state.clockOffsetMs),old=productId?state.products.find(p=>p.id===productId):null;
   assert(!productId||old,404,'Không tìm thấy sản phẩm.');
   const coopId=old?.coopId??body.coopId,coop=state.coops.find(c=>c.id===coopId);

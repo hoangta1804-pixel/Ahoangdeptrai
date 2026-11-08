@@ -8,6 +8,7 @@ import type { User } from '../mock/types';
 import type { UserAccount } from '../domain/types';
 import { api, acceptLogin, backendLogout, hasBackendSession, type LoginResponse } from '../store/backend';
 import { supabase } from '../store/supabase';
+import { saveSession } from '../store/persistence';
 import { GOOGLE_CLIENT_ID } from '../store/serviceStatus';
 
 const GOOGLE_PENDING = 'dac-san-so-lao-cai:google-oauth';
@@ -36,8 +37,19 @@ export function saveProfile(user: User) {
 }
 
 function toUser(account: UserAccount): User {
-  return { id: account.id, name: account.name, phone: account.phone || '', ...loadProfile(account.id) };
+  // Cổng quản trị (giao diện có sẵn) đọc phiên bằng mã người dùng này
+  saveSession(account.id);
+  return {
+    id: account.id,
+    name: account.name,
+    phone: account.phone || '',
+    role: account.role,
+    ...loadProfile(account.id),
+  };
 }
+
+/** Tài khoản nhân viên (admin, HTX, QLNN, giao hàng) — được vào /quan-tri. */
+export const isStaff = (user: User | null | undefined) => Boolean(user?.role && user.role !== 'customer');
 
 export async function loginWithPassword(phone: string, password: string): Promise<User> {
   const result = await api<LoginResponse>('/api/v1/auth/password/login', { phone, password });
@@ -144,5 +156,6 @@ export async function saveFirstPhone(phone: string): Promise<User> {
 }
 
 export async function logoutAccount() {
+  saveSession(null);
   await backendLogout();
 }

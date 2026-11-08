@@ -10,10 +10,8 @@ import { Header } from '../components/layout/Header';
 import { BottomNav } from '../components/layout/BottomNav';
 import { Footer } from '../components/layout/Footer';
 import { Toast, ToastMessage } from '../components/ui/Toast';
-import { DevPanel } from '../components/ui/DevPanel';
 import { FloatingCart } from '../components/cart/FloatingCart';
 import { QuickAddSheet } from '../components/product/QuickAddSheet';
-import { OtpSheet } from '../components/checkout/OtpSheet';
 import { HomePage } from '../screens/HomePage';
 import { CatalogPage } from '../screens/CatalogPage';
 import { ProductDetailPage } from '../components/product/ProductDetailPage';
@@ -26,13 +24,14 @@ import { MediaManager } from '../components/admin/MediaManager';
 import { AboutPage, StoriesPage, PolicyPage } from '../screens/ContentPages';
 import { RegionsPage, ProducersPage } from '../screens/DirectoryPages';
 import { registerNavigate } from '../lib/nav';
+import { useScrollReveal } from './useScrollReveal';
+import { SiteIntro } from '../components/layout/SiteIntro';
 import { AuthPage } from '../screens/AuthPage';
-import { isDevToolsEnabled } from '../lib/devMode';
 import { track } from '../lib/analytics';
 import { checkCanAddToCart } from '../lib/stock';
 
 export function Phase2App() {
-  const [showDevTools] = useState(isDevToolsEnabled);
+  useScrollReveal();
   const [products, setProducts] = useState<Product[]>(initialMockProducts);
   const [currentPath, setCurrentPath] = useState<string>(() => {
     return window.location.pathname || '/';
@@ -64,12 +63,16 @@ export function Phase2App() {
 
   // Điều hướng nội bộ
   const navigate = (path: string) => {
+    if (path === '/quan-tri' || path.startsWith('/quan-tri/')) {
+      window.location.assign(path);
+      return;
+    }
     if (path.startsWith('/')) {
       const [pathname, search] = path.split('?');
       history.pushState(null, '', path);
       setCurrentPath(pathname);
       setSearchParams(new URLSearchParams(search || ''));
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: 0, behavior: 'auto' });
     }
   };
 
@@ -218,8 +221,6 @@ export function Phase2App() {
             if (isBuyNow) clearBuyNow();
             navigate('/');
           }}
-          simulatedRaceCondition={simulatedRaceCondition}
-          onClearSimulatedRace={() => setSimulatedRaceCondition(false)}
         />
       );
     }
@@ -335,6 +336,7 @@ export function Phase2App() {
 
   return (
     <div className="flex flex-col min-h-screen bg-[#FAF7F0] text-[#1B1B1F]">
+      <SiteIntro />
       {/* Header dính có nền kính khi cuộn */}
       <Header
         products={products}
@@ -347,10 +349,10 @@ export function Phase2App() {
       />
 
       {/* View chính */}
-      <div className="flex-1">{renderCurrentView()}</div>
+      <div className="flex-1 page-enter" key={currentPath}>{renderCurrentView()}</div>
 
       {/* Footer ấm áp sang trọng */}
-      <Footer onNavigate={navigate} showAdminLink={showDevTools} />
+      <Footer onNavigate={navigate} />
 
       {/* Bottom Nav cho Mobile */}
       <BottomNav
@@ -387,54 +389,11 @@ export function Phase2App() {
         onBuyNow={handleBuyNow}
       />
 
-      {/* OtpSheet xác thực số điện thoại */}
-      <OtpSheet
-        isOpen={isOtpOpen}
-        onClose={closeOtpModal}
-        onSuccess={handleOtpSuccess}
-      />
 
       {/* Toast thông báo hoàn tác */}
       <Toast toast={toastMessage} onDismiss={() => setToastMessage(null)} />
 
-      {/* Dev & Simulator Panel (SRS 5.8) — chỉ hiện khi bật cờ dev */}
-      {showDevTools && (
-      <DevPanel
-        currentUserType={persona}
-        onSwitchUser={(p) => setPersona(p)}
-        currentDevice={deviceId as any}
-        onSwitchDevice={(d) => setDeviceId(d)}
-        onSimulateOutOfStockRace={() => {
-          setSimulatedRaceCondition(true);
-          setToastMessage({
-            id: `race_${Date.now()}`,
-            text: 'Đã kích hoạt giả lập: Người khác vừa mua mất món cuối!',
-            durationMs: 4000,
-          });
-        }}
-        onSimulatePriceChange={() => {
-          setToastMessage({
-            id: `price_${Date.now()}`,
-            text: 'Giả lập máy chủ: Cập nhật giá sản phẩm mới nhất.',
-            durationMs: 4000,
-          });
-        }}
-        onSimulatePaymentFailure={() => {
-          setToastMessage({
-            id: `pay_fail_${Date.now()}`,
-            text: 'Giả lập: Giao dịch thanh toán online thất bại.',
-            durationMs: 4000,
-          });
-        }}
-        onSimulateLatePaymentArrival={() => {
-          setToastMessage({
-            id: `late_${Date.now()}`,
-            text: 'Giả lập: Tiền về muộn sau khi đơn bị huỷ (chuyển sang hoàn tiền).',
-            durationMs: 4000,
-          });
-        }}
-      />
-      )}
+
     </div>
   );
 }

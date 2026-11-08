@@ -290,7 +290,7 @@ export const AddressSheet: React.FC<AddressSheetProps> = ({
         <div className="p-3.5 bg-[#FEF7EA] border border-[#B7791F]/30 rounded-2xl text-xs space-y-2 mt-4">
           <div className="flex items-center gap-1.5 font-semibold text-[#B7791F]">
             <AlertTriangle size={15} />
-            <span>Thử nghiệm: Bạn ở tỉnh thành khác ngoài Hà Nội?</span>
+            <span>Bạn ở tỉnh thành khác ngoài Hà Nội?</span>
           </div>
           <p className="text-[#6B4A32]">
             Hiện chúng tôi chỉ giao trong Hà Nội. Để lại số điện thoại, chúng tôi sẽ báo khi mở thêm vùng giao.

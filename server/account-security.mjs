@@ -72,7 +72,6 @@ export async function accountSecurityRoute(path,req,body,{db,options,ip}){
     const {user:admin}=await authenticate(db,req,true,options);assert(admin.role==='admin'&&['root','operations'].includes(admin.adminGroup),403,'Chỉ quản trị được cấp liên kết kích hoạt.');
     const user=(await db.read()).state.users.find(u=>u.id===body.userId&&u.status==='active');assert(user,404,'Không tìm thấy tài khoản.');
     assert(user.adminGroup!=='root'||admin.adminGroup==='root',403,'Chỉ Quản trị gốc được cấp liên kết cho tài khoản Quản trị gốc.');
-    assert(admin.adminGroup!=='root'||user.role==='admin',403,'Root chỉ cấp liên kết cho tài khoản Admin.');
     assert(admin.adminGroup!=='operations'||user.role!=='admin',403,'Vận hành không được cấp liên kết đặt mật khẩu cho Admin.');
     const issued=await db.transaction(()=>issueAccountLink(db,user,options));await db.audit(admin.id,'account-activation-link',user.id);
     return {status:200,body:{setupLink:issued.link,expiresAt:issued.expiresAt}};

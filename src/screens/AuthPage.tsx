@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, Phone, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../stores/authStore';
-import { googleAvailable } from '../lib/accountApi';
+import { googleAvailable, isStaff } from '../lib/accountApi';
+import { useAuthStore } from '../stores/authStore';
 import { GoogleButton } from '../components/ui/GoogleButton';
 import { isValidPhone, normalizePhone, PHONE_RULE } from '../domain/phone';
 import '../styles/amora-home.css';
@@ -89,7 +90,9 @@ const PhoneStep: React.FC<{ onDone: () => void }> = ({ onDone }) => {
   );
 };
 
-export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login', onDone }) => {
+export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login', onDone: onDoneProp }) => {
+  // Tài khoản nhân viên (admin, HTX…) đăng nhập xong thì vào thẳng cổng quản trị
+  const onDone = () => (isStaff(useAuthStore.getState().user) ? window.location.assign('/quan-tri') : onDoneProp());
   const { user, authLoading, authError, login, register } = useAuth();
   const [mode, setMode] = useState(initialMode);
   const [name, setName] = useState('');

@@ -1,9 +1,9 @@
-import {assert} from './security.mjs';
+import {assert,inAdminGroup} from './security.mjs';
 import {normalizePhone,isValidPhone} from '../src/domain/phone.ts';
 import {randomUUID} from 'node:crypto';
 
 export async function savePickupPoint(id,body,{db,auth}){
-  assert(auth.user.role==='admin'&&auth.user.adminGroup==='operations',403,'Chỉ Vận hành cập nhật điểm bàn giao.');
+  assert(inAdminGroup(auth.user,'operations'),403,'Chỉ Vận hành cập nhật điểm bàn giao.');
   const {state}=await db.read(),order=state.orders.find(o=>o.id===id);assert(order,404,'Không tìm thấy đơn.');
   assert(['confirmed','awaiting_harvest','preparing','shipping'].includes(order.status)&&!order.shipment?.pickedUpAt&&!order.carrierDeliveredAt,409,'Không đổi điểm nhận khi shipper đã lấy hàng hoặc đơn đã kết thúc.');
   const fields={name:120,address:500,contactName:100,note:500,reason:1000};

@@ -103,12 +103,26 @@ const TABS: Record<AdminSubGroup, TabDef[]> = {
     { key: 'invoices', label: 'Hoá đơn công ty', render: () => <FinanceInvoicesTab /> },
     COOP_LIST,
   ],
-  root: [
-    { key: 'accounts', label: 'Phân quyền', render: () => <AdminAccountsTab /> },
-    { key: 'audit', label: 'Nhật ký', render: () => <AdminAuditTab /> },
-    { key:'params',label:'Tham số (chỉ xem)',render:()=> <AdminParamsTab/> },
-  ],
+  root: [],
 };
+
+/** Quản trị gốc: làm được mọi chức năng — gộp tab của tất cả nhóm (bỏ trùng), thêm Phân quyền & Nhật ký. */
+TABS.root = (() => {
+  const seen = new Set<string>();
+  const all: TabDef[] = [];
+  for (const group of ['operations', 'quality', 'cskh', 'finance'] as const) {
+    for (const tab of TABS[group]) {
+      if (seen.has(tab.key)) continue;
+      seen.add(tab.key);
+      all.push(tab);
+    }
+  }
+  all.push(
+    { key: 'root-accounts', label: 'Phân quyền Admin', render: () => <AdminAccountsTab /> },
+    { key: 'audit', label: 'Nhật ký', render: () => <AdminAuditTab /> },
+  );
+  return all;
+})();
 
 /** Admin theo nhóm quyền (mục 8). Giao diện rộng cho máy tính: thanh mục bên trái, nội dung bên phải. */
 export function AdminScreen() {

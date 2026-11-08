@@ -1,9 +1,9 @@
 import {randomUUID} from 'node:crypto';
-import {assert} from './security.mjs';
+import {assert,inAdminGroup} from './security.mjs';
 import {validateMediaReferences} from './media.mjs';
 export async function productDraftRoute(path,method,body,{db,auth}){
   if(!path.startsWith('/api/v1/product-drafts'))return null;
-  assert(auth.user.role==='admin'&&auth.user.adminGroup==='quality',403,'Chỉ Admin – Chất lượng sử dụng bản nháp sản phẩm.');
+  assert(inAdminGroup(auth.user,'quality'),403,'Chỉ Admin – Chất lượng sử dụng bản nháp sản phẩm.');
   const owner=auth.user.id;
   const {state}=await db.read();
   await db.sql.prepare("DELETE FROM feature_records WHERE kind='product-draft' AND expires_at<?").run(Date.now());

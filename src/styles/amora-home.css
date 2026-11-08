@@ -113,3 +113,90 @@
 .ah-suggest a:hover,.ah-suggest a:focus-visible{background:#f3eee2}
 .ah-suggest small{color:#6f756e;font-size:12px;white-space:nowrap}
 .ah-suggest p{padding:14px 16px;margin:0;color:#6f756e;font-size:14px}
+
+/* ================= CHUYỂN ĐỘNG ================= */
+:root{--ease-smooth:cubic-bezier(.22,1,.36,1)}
+
+/* Chuyển trang: nội dung mới mờ dần + trồi nhẹ */
+.page-enter{animation:ah-page-in .55s var(--ease-smooth) both}
+@keyframes ah-page-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+/* Hero: ảnh phóng nhẹ rồi dừng, chữ hiện lần lượt */
+.ah-hero__photo{animation:ah-hero-zoom 2.4s var(--ease-smooth) both}
+@keyframes ah-hero-zoom{from{transform:scale(1.08)}to{transform:scale(1)}}
+.ah-hero__frame::before{animation:ah-fade .9s ease both}
+.ah-hero__copy>*{animation:ah-rise .9s var(--ease-smooth) both}
+.ah-hero__copy>:nth-child(1){animation-delay:.15s}
+.ah-hero__copy>:nth-child(2){animation-delay:.28s}
+.ah-hero__copy>:nth-child(3){animation-delay:.41s}
+.ah-hero__copy>:nth-child(4){animation-delay:.54s}
+.ah-trust{animation:ah-rise .9s var(--ease-smooth) .6s both}
+@keyframes ah-rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+@keyframes ah-fade{from{opacity:0}to{opacity:1}}
+
+/* Header: bóng nhẹ khi đã cuộn */
+.ah-header{transition:box-shadow .35s ease,background-color .35s ease}
+.ah-header.is-scrolled{box-shadow:0 8px 24px -14px rgba(26,43,32,.28)}
+
+/* Gạch chân menu trượt mượt */
+.ah-nav a{position:relative;border-bottom-color:transparent!important}
+.ah-nav a::after{content:'';position:absolute;left:0;right:0;bottom:4px;height:2px;background:#c0a06a;transform:scaleX(0);transform-origin:left;transition:transform .35s var(--ease-smooth)}
+.ah-nav a:hover::after,.ah-nav a.on::after{transform:scaleX(1)}
+
+/* Thẻ danh mục, vùng, trang danh bạ: nhấc nhẹ khi rê chuột */
+.ah-cat,.ah-region,.ah-dir-card{transition:transform .35s var(--ease-smooth),box-shadow .35s ease,background-color .25s ease}
+@media (hover:hover){.ah-dir-card:hover{transform:translateY(-4px);box-shadow:0 18px 40px -16px rgba(32,38,28,.25)}}
+
+/* Nút: phản hồi khi bấm */
+.ah-btn{transition:transform .2s var(--ease-smooth),filter .2s,box-shadow .2s}
+.ah-btn:active{transform:translateY(0) scale(.97)}
+
+/* Gợi ý tìm kiếm trượt xuống */
+.ah-search{animation:ah-drop .28s var(--ease-smooth) both}
+@keyframes ah-drop{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+
+/* Tôn trọng "giảm chuyển động" và chế độ kiểm thử tự động */
+@media (prefers-reduced-motion:reduce){
+  .page-enter,.ah-hero__photo,.ah-hero__frame::before,.ah-hero__copy>*,.ah-trust,.ah-search{animation:none!important}
+}
+
+/* ================= INTRO (SiteIntro) ================= */
+.si{position:fixed;inset:0;z-index:100;display:grid;place-items:center;background:#F5F1E8;color:#1a2b20;cursor:pointer;
+  transition:transform .8s cubic-bezier(.76,0,.24,1),border-radius .8s cubic-bezier(.76,0,.24,1)}
+.si--leave{transform:translateY(-100%);border-radius:0 0 50% 50%/0 0 12% 12%}
+.si--leave .si__center{opacity:0;transform:translateY(-24px);transition:opacity .35s ease,transform .5s ease}
+.si__glow{position:absolute;width:min(70vw,560px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,#E3D3B4 0%,rgba(245,241,232,0) 68%);animation:si-glow 2.6s ease-out both}
+@keyframes si-glow{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:scale(1)}}
+.si__center{position:relative;display:flex;flex-direction:column;align-items:center;gap:14px;padding:24px;text-align:center}
+
+/* Mầm cây mọc: mặt đất → thân vươn → lá trái → lá phải */
+.si__ground{stroke-dasharray:16;stroke-dashoffset:16;opacity:.35;animation:si-draw .5s ease-out .1s forwards}
+.si__stem{stroke-dasharray:17;stroke-dashoffset:17;animation:si-draw .6s cubic-bezier(.22,1,.36,1) .3s forwards}
+@keyframes si-draw{to{stroke-dashoffset:0}}
+.si__leaf{transform-box:fill-box;transform:scale(0) rotate(-25deg);opacity:0;animation:si-leaf .75s cubic-bezier(.34,1.56,.64,1) forwards}
+.si__leaf--l{transform-origin:100% 100%;animation-delay:.7s}
+.si__leaf--r{transform-origin:0% 100%;animation-delay:.88s}
+@keyframes si-leaf{to{transform:none;opacity:1}}
+.si__sprout{animation:si-sway 3s ease-in-out 1.6s infinite;transform-origin:50% 90%}
+@keyframes si-sway{0%,100%{transform:rotate(0)}50%{transform:rotate(-2.5deg)}}
+
+.si__title{font-family:var(--font-display);font-size:clamp(38px,8vw,64px);font-weight:600;letter-spacing:-.01em;line-height:1.1;color:#1F5A41;display:flex;margin:0}
+.si__title>span{display:inline-block;opacity:0;transform:translateY(22px);animation:si-letter .8s cubic-bezier(.22,1,.36,1) forwards}
+@keyframes si-letter{to{opacity:1;transform:none}}
+.si__caption{margin:0;font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:#8F6A4D;opacity:0;animation:ah-rise .8s cubic-bezier(.22,1,.36,1) 1.6s forwards}
+.si__bar{display:block;width:150px;height:2px;margin-top:8px;border-radius:2px;background:#DED8CA;overflow:hidden}
+.si__bar>span{display:block;height:100%;transform:scaleX(0);transform-origin:left;background:linear-gradient(90deg,#2A6F50,#C0A06A);animation:si-bar 1.9s cubic-bezier(.65,0,.35,1) .4s forwards}
+@keyframes si-bar{to{transform:scaleX(1)}}
+.si__skip{position:absolute;right:20px;bottom:calc(20px + env(safe-area-inset-bottom));min-height:44px;padding:0 18px;border:1px solid #DED8CA;border-radius:999px;background:#FFFDF8;color:#2A6F50;font-size:14px;font-weight:600;cursor:pointer}
+.si__skip:hover{background:#2A6F50;color:#fff;border-color:#2A6F50}
+.si__skip:focus-visible{outline:2px solid #2A6F50;outline-offset:3px}
+
+/* Hero chờ intro xong mới chạy hiệu ứng */
+.intro-active .ah-hero__photo,.intro-active .ah-hero__frame::before,.intro-active .ah-hero__copy>*,.intro-active .ah-trust{animation-play-state:paused}
+
+@media (prefers-reduced-motion:reduce){
+  .si,.si *{animation-duration:.01ms!important;animation-delay:0s!important;transition-duration:.2s!important}
+}
+
+.ah-admin-link{display:inline-flex;align-items:center;min-height:40px;padding:0 14px;margin-right:4px;border-radius:999px;background:#2A6F50;color:#fff;font-size:13px;font-weight:700;text-decoration:none}
+.ah-admin-link:hover{background:#1F5A41}

@@ -1,12 +1,11 @@
 import React from 'react';
 import { Leaf, ShieldCheck, MapPin, Phone, Mail, ArrowRight } from 'lucide-react';
 import { Link } from '../ui/Link';
+import { SproutMark } from './SproutMark';
 import '../../styles/amora-shell.css';
 
 export interface FooterProps {
   onNavigate: (path: string) => void;
-  /** Link quản trị chỉ hiện khi bật cờ dev (xem lib/devMode). */
-  showAdminLink?: boolean;
 }
 
 const EXPLORE = [
@@ -24,11 +23,11 @@ const STORY = [
   { to: '/chinh-sach', label: 'Chính sách chất lượng' },
 ];
 
-export const Footer: React.FC<FooterProps> = ({ showAdminLink = false }) => (
+export const Footer: React.FC<FooterProps> = () => (
   <footer className="amora-footer">
     <div className="amora-footer__top">
       <div className="amora-footer__brand">
-        <div className="amora-footer__logo"><Leaf size={18} /></div>
+        <div className="amora-footer__logo"><SproutMark size={24} leaf="#2A6F50" accent="#FFFDF8" stem="#2A6F50" /></div>
         <strong>Đặc Sản Số</strong>
         <p>Tuyển chọn sản vật đặc trưng từ nhiều miền đất, kết nối người làm nghề với những căn bếp yêu hương vị Việt.</p>
         <span><Leaf size={14} /> Từ tâm huyết địa phương đến bàn ăn gia đình</span>
@@ -44,7 +43,6 @@ export const Footer: React.FC<FooterProps> = ({ showAdminLink = false }) => (
         {STORY.map((l) => (
           <Link key={l.to} to={l.to} className="amora-footer__link">{l.label}</Link>
         ))}
-        {showAdminLink && <Link to="/admin/phuong-tien" className="amora-footer__link">Quản trị phương tiện (Admin)</Link>}
       </nav>
       <div>
         <h3>Liên hệ & hỗ trợ</h3>

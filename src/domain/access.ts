@@ -68,10 +68,10 @@ export function readAuditLogs(state: DemoState, actor: Actor): Result<AuditLog[]
 export function viewRefundAccount(state: DemoState, actor: Actor, customerId: string): Result<BankAccount | null> {
   const customer = state.customers.find((c) => c.id === customerId);
   if (!customer) return fail('Không tìm thấy khách hàng.');
-  const ownerOrFinance = (actor.kind === 'customer' && actor.id === customerId) || (actor.kind === 'admin' && actor.adminGroup === 'finance');
+  const ownerOrFinance = (actor.kind === 'customer' && actor.id === customerId) || (actor.kind === 'admin' && (actor.adminGroup === 'finance' || actor.adminGroup === 'root'));
   if (!ownerOrFinance) return fail('Bạn không có quyền xem tài khoản của khách.');
   const acc = customer.refundAccount;
   if (!acc) return ok(null);
-  const full = actor.kind === 'admin' && actor.adminGroup === 'finance';
+  const full = actor.kind === 'admin' && (actor.adminGroup === 'finance' || actor.adminGroup === 'root');
   return ok(full ? acc : { ...acc, accountNumber: maskAccount(acc.accountNumber) });
 }
