@@ -3,6 +3,8 @@ import { OrderGroup } from '../../mock/types';
 import { formatMoney } from '../../lib/pricing';
 import { useOrders } from '../../stores/orderStore';
 import { Button } from '../ui/Button';
+import { VietQrPayment } from './VietQrPayment';
+import { isDevToolsEnabled } from '../../lib/devMode';
 import {
   CheckCircle2,
   Clock,
@@ -34,9 +36,12 @@ export const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
   });
   const [isGatewayOpen, setIsGatewayOpen] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState(orderGroup.paymentStatus);
+  // Khách báo đã chuyển khoản: dừng đếm ngược, chờ cửa hàng đối soát (chưa tự xác nhận được)
+  const [transferClaimed, setTransferClaimed] = useState(false);
+  const [showDevGateway] = useState(isDevToolsEnabled);
 
   useEffect(() => {
-    if (paymentStatus === 'paid' || paymentStatus === 'timeout_cancelled') return;
+    if (paymentStatus === 'paid' || paymentStatus === 'timeout_cancelled' || transferClaimed) return;
 
     const timer = setInterval(() => {
       const remaining = Math.max(0, Math.floor((orderGroup.paymentExpiresAt - Date.now()) / 1000));
@@ -50,7 +55,7 @@ export const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [orderGroup.paymentExpiresAt, paymentStatus, orderGroup.id, cancelOrderGroup]);
+  }, [orderGroup.paymentExpiresAt, paymentStatus, transferClaimed, orderGroup.id, cancelOrderGroup]);
 
   const handleSimulatePayment = (result: 'success' | 'fail' | 'cancel') => {
     setIsGatewayOpen(false);
@@ -116,21 +121,55 @@ export const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
               </div>
             )}
 
-            <div className="flex gap-2 pt-1">
-              <Button
-                variant="primary"
-                size="md"
-                className="flex-1"
-                onClick={() => setIsGatewayOpen(true)}
-                rightIcon={<ExternalLink size={16} />}
-              >
-                Thanh toán ngay ({formatMoney(orderGroup.payNowTotal)})
-              </Button>
-              <Button variant="ghost" size="md" onClick={handleCancelOrder}>
-                Huỷ đơn
-              </Button>
-            </div>
+            {!transferClaimed && (
+              <>
+                <VietQrPayment amount={orderGroup.payNowTotal} orderCode={orderGroup.orderGroupCode} />
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <Button variant="primary" size="md" className="flex-1" onClick={() => setTransferClaimed(true)}>
+                    Tôi đã chuyển khoản
+                  </Button>
+                  {showDevGateway && (
+                    <Button variant="outline" size="md" onClick={() => setIsGatewayOpen(true)} rightIcon={<ExternalLink size={16} />}>
+                      Cổng giả lập (dev)
+                    </Button>
+                  )}
+                  <Button variant="ghost" size="md" onClick={handleCancelOrder}>
+                    Huỷ đơn
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
+        )}
+
+        {transferClaimed && paymentStatus !== 'paid' && (
+          <div role="status" className="p-4 bg-[#EAF4EE] text-[#2F6B4F] rounded-2xl border border-[#2F6B4F]/30 text-small space-y-1">
+            <strong className="block">Đã ghi nhận bạn chuyển khoản {formatMoney(orderGroup.payNowTotal)}.</strong>
+            <span>
+              Cửa hàng sẽ đối soát theo nội dung chuyển khoản và xác nhận đơn. Nếu chưa chuyển, bạn có thể{' '}
+              <button type="button" className="underline font-semibold min-h-[44px]" onClick={() => setTransferClaimed(false)}>
+                xem lại mã QR
+              </button>
+              .
+            </span>
+          </div>
+        )}
+
+        {/* Đơn trả khi nhận hàng: cho phép chuyển khoản trước thay tiền mặt */}
+        {orderGroup.payOnDeliveryTotal > 0 && paymentStatus !== 'timeout_cancelled' && (
+          <details className="group rounded-2xl border border-[#E7DFCF] bg-white">
+            <summary className="min-h-[48px] px-4 py-3 cursor-pointer font-serif font-bold text-small text-[#1B1B1F] list-none flex items-center justify-between">
+              Muốn chuyển khoản {formatMoney(orderGroup.payOnDeliveryTotal)} thay vì trả tiền mặt?
+              <span aria-hidden="true" className="text-[#2A6F50] group-open:rotate-180 transition-transform">▾</span>
+            </summary>
+            <div className="px-4 pb-4">
+              <VietQrPayment
+                amount={orderGroup.payOnDeliveryTotal}
+                orderCode={orderGroup.orderGroupCode}
+                title="Quét mã để trả trước tiền hàng"
+              />
+            </div>
+          </details>
         )}
 
         {paymentStatus === 'timeout_cancelled' && (

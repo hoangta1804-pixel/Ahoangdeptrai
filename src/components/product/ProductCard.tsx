@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, MapPin, Box } from 'lucide-react';
+import { Plus, MapPin } from 'lucide-react';
 import { Product, Variant } from '../../mock/types';
 import { getDefaultVariant } from '../../lib/variants';
 import { formatMoney } from '../../lib/pricing';
@@ -36,7 +36,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   // Xác định trạng thái chính của sản phẩm
   const isOutOfStock = variants.every((v) => v.status === 'out_of_stock' || (v.stock === 0 && (!v.preorderSlots || v.preorderSlots === 0)));
   const isPreorder = !isOutOfStock && variants.some((v) => v.status === 'preorder');
-  const has3D = product.media.some((m) => m.type === 'model3d' && m.approvalStatus === 'approved');
 
   // Xác định badge nhãn trạng thái
   let badgeLabel = '';
@@ -95,16 +94,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           </div>
         )}
 
-        {/* Badge 3D ở góc trên bên phải */}
-        {has3D && (
-          <div
-            className="absolute top-2.5 right-2.5 z-10 flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#2F6650]/80 text-[#CDA25A] text-xs font-mono font-semibold border border-[#B8893B]/40 shadow-xs"
-            title="Có mô hình 3D"
-          >
-            <Box size={11} />
-            <span>3D</span>
-          </div>
-        )}
       </div>
 
       {/* Thông tin sản phẩm */}

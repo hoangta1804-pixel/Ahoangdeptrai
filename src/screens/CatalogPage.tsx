@@ -47,7 +47,6 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [selectedRegion, setSelectedRegion] = useState(initialRegion);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [only3D, setOnly3D] = useState(false);
   const [onlyInStock, setOnlyInStock] = useState(false);
   const [onlyPreorder, setOnlyPreorder] = useState(false);
   const [priceRange, setPriceRange] = useState<'all' | 'under100' | '100to300' | 'over300'>('all');
@@ -89,11 +88,6 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
         return false;
       }
 
-      // 5. Lọc chỉ xem sản phẩm có 3D
-      if (only3D) {
-        const has3D = product.media.some((m) => m.type === 'model3d' && m.approvalStatus === 'approved');
-        if (!has3D) return false;
-      }
 
       // 6. Lọc chỉ xem còn hàng
       if (onlyInStock) {
@@ -121,7 +115,6 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
     searchQuery,
     selectedRegion,
     selectedCategory,
-    only3D,
     onlyInStock,
     onlyPreorder,
     priceRange,
@@ -143,7 +136,6 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
     setSearchQuery('');
     setSelectedRegion('');
     setSelectedCategory('all');
-    setOnly3D(false);
     setOnlyInStock(false);
     setOnlyPreorder(false);
     setPriceRange('all');
@@ -154,7 +146,6 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
     Boolean(searchQuery) ||
     Boolean(selectedRegion) ||
     selectedCategory !== 'all' ||
-    only3D ||
     onlyInStock ||
     onlyPreorder ||
     priceRange !== 'all';
@@ -214,16 +205,6 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
                 <span className="w-2 h-2 rounded-full bg-[#B8893B] ml-0.5" />
               )}
             </button>
-
-            {/* Filter nhanh có 3D */}
-            <Chip
-              active={only3D}
-              onClick={() => setOnly3D(!only3D)}
-              className="min-h-[40px] text-xs"
-            >
-              <Box size={14} className="mr-1 inline" />
-              <span>Có mô hình 3D</span>
-            </Chip>
 
             {/* Filter nhanh còn hàng */}
             <Chip
