@@ -30,15 +30,9 @@ export const PaymentSheet: React.FC<PaymentSheetProps> = ({
     },
     {
       id: 'online_qr' as PaymentMethod,
-      title: 'Chuyển khoản VietQR tự động',
-      desc: 'Quét mã VietQR trên ứng dụng ngân hàng. Hệ thống xác nhận thanh toán tức thì trong 3 giây.',
+      title: 'Chuyển khoản ngân hàng (VietQR)',
+      desc: 'Sau khi đặt hàng, quét mã VietQR bằng ứng dụng ngân hàng — số tiền và nội dung đã điền sẵn.',
       icon: QrCode,
-    },
-    {
-      id: 'online_card' as PaymentMethod,
-      title: 'Thẻ ATM nội địa / Visa / Mastercard',
-      desc: 'Cổng thanh toán bảo mật tiêu chuẩn PCI-DSS.',
-      icon: CreditCard,
     },
   ];
 

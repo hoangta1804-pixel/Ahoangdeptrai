@@ -79,3 +79,6 @@ export async function verifyOtp(db, body, purpose) {
     });
     assert(!result.error,401,result.error);return result.phone;
 }
+
+/** Admin thuộc nhóm quyền cho trước. Quản trị gốc (root) được coi là thuộc mọi nhóm — làm được mọi chức năng quản trị. */
+export const inAdminGroup=(user,...groups)=>user?.role==='admin'&&(user.adminGroup==='root'||groups.includes(user.adminGroup));

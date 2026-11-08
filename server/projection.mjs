@@ -5,7 +5,7 @@ import { remainingFor } from '../src/domain/state.ts';
 
 export function project(state,user) {
   const role=user?.role,group=user?.adminGroup,cid=user?.customerId,coopId=user?.coopId;
-  const admin=role==='admin',root=admin&&group==='root',finance=admin&&group==='finance',ops=admin&&['root','operations'].includes(group),quality=admin&&group==='quality',cskh=admin&&group==='cskh';
+  const admin=role==='admin',root=admin&&group==='root',finance=admin&&['root','finance'].includes(group),ops=admin&&['root','operations'].includes(group),quality=admin&&['root','quality'].includes(group),cskh=admin&&['root','cskh'].includes(group);
   const actor=user?{kind:role,id:cid??coopId??user.id}:null;
   const out={clockOffsetMs:state.clockOffsetMs,params:state.params??DEFAULT_PARAMS};
   out.homepage=state.homepage;
@@ -23,18 +23,18 @@ export function project(state,user) {
   out.products=out.products.map(p=>({...p,soldCount:sales.get(p.id)??0}));
   out.vouchers=state.vouchers;
   out.users=ops?state.users: user?[user]:[];
-  out.customers=state.customers.filter(c=>(admin&&!root)||(role==='customer'&&c.id===cid)).map(c=>{
+  out.customers=state.customers.filter(c=>admin||(role==='customer'&&c.id===cid)).map(c=>{
     const copy={...c}; if(copy.refundAccount&&!finance&&!(role==='customer'&&c.id===cid))delete copy.refundAccount;return copy;
   });
   if (user && role!=='regulator') {
-    out.orders=root?[]:state.orders.filter(o=>canReadOrder(actor,o)).map(o=>{
-      if((admin&&group==='operations')||role==='coop'||role==='shipper')return o;
+    out.orders=state.orders.filter(o=>canReadOrder(actor,o)).map(o=>{
+      if(ops||role==='coop'||role==='shipper')return o;
       const {pickupPoint,...copy}=o;return copy;
     });
     const orderIds=new Set(out.orders.map(o=>o.id));
     out.addresses=state.addresses.filter(a=>role==='customer'&&a.customerId===cid);
     if(role==='customer')out.carts={[cid]:state.carts[cid]??[]};
-    out.checkouts=state.checkouts.filter(c=>(admin&&!root)||(role==='customer'&&c.customerId===cid));
+    out.checkouts=state.checkouts.filter(c=>admin||(role==='customer'&&c.customerId===cid));
     out.transactions=state.transactions.filter(t=>finance||(role==='customer'&&t.customerId===cid));
     out.refunds=state.refunds.filter(r=>finance||cskh||(role==='customer'&&r.customerId===cid));
     out.tickets=state.tickets.filter(t=>cskh||(role==='customer'&&t.customerId===cid)||(role==='coop'&&t.coopId===coopId));

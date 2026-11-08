@@ -33,7 +33,7 @@ export const RegionsPage: React.FC<{ products: Product[] }> = ({ products }) => 
         {REGION_INFO.map((r) => {
           const items = products.filter((p) => p.region === r.name);
           return (
-            <article key={r.name} style={{ background: 'var(--ah-surface)', border: '1px solid var(--ah-line)', borderRadius: 14, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <article key={r.name} className="ah-dir-card" style={{ background: 'var(--ah-surface)', border: '1px solid var(--ah-line)', borderRadius: 14, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
               <div style={{ height: 160, background: `linear-gradient(0deg,rgba(20,60,42,.6),transparent 60%),url(${r.img}) center 65%/cover` }} role="img" aria-label={`Cảnh ${r.name}`} />
               <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
                 <p className="ah-eyebrow" style={{ margin: 0 }}>{r.tag}</p>
@@ -68,7 +68,7 @@ export const ProducersPage: React.FC<{ products: Product[] }> = ({ products }) =
         {mockSuppliers.map((s) => {
           const items = products.filter((p) => p.supplierId === s.id);
           return (
-            <li key={s.id} style={{ background: 'var(--ah-surface)', border: '1px solid var(--ah-line)', borderRadius: 14, padding: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <li key={s.id} className="ah-dir-card" style={{ background: 'var(--ah-surface)', border: '1px solid var(--ah-line)', borderRadius: 14, padding: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--ah-green)', fontSize: 12, fontWeight: 700 }}>
                 {s.type === 'enterprise' ? <Store size={16} /> : <Home size={16} />}
                 {s.type === 'enterprise' ? 'Doanh nghiệp' : 'Hộ kinh doanh'}

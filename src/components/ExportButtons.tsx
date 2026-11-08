@@ -34,8 +34,8 @@ export function ExportButtons({filters={},snapshotId,snapshotRequired=false}:{fi
         <Download size={16} /> Xuất danh sách đơn ẩn danh ({format.toUpperCase()})
       </SecondaryButton>
       {actor.kind!=='coop'&&<><SecondaryButton disabled={busy} onClick={()=>download('coops')}>Xuất danh sách HTX</SecondaryButton><SecondaryButton disabled={busy} onClick={()=>download('products')}>Xuất danh sách sản phẩm</SecondaryButton></>}</>:null}
-      {(actor.kind==='coop'||(actor.kind==='admin'&&actor.adminGroup==='finance'))&&<SecondaryButton disabled={busy} onClick={()=>download('settlements')}>Xuất đối soát HTX</SecondaryButton>}
-      {actor.kind==='admin'&&actor.adminGroup==='finance'&&<SecondaryButton disabled={busy} onClick={()=>download('ledger')}>Xuất sổ giao dịch</SecondaryButton>}
+      {(actor.kind==='coop'||(actor.kind==='admin'&&(actor.adminGroup==='finance'||actor.adminGroup==='root')))&&<SecondaryButton disabled={busy} onClick={()=>download('settlements')}>Xuất đối soát HTX</SecondaryButton>}
+      {actor.kind==='admin'&&(actor.adminGroup==='finance'||actor.adminGroup==='root')&&<SecondaryButton disabled={busy} onClick={()=>download('ledger')}>Xuất sổ giao dịch</SecondaryButton>}
       {actor.kind==='admin'&&actor.adminGroup==='root'&&<SecondaryButton disabled={busy} onClick={()=>download('audit')}>Xuất nhật ký</SecondaryButton>}
       {actor.kind==='admin'&&['root','cskh'].includes(actor.adminGroup??'')&&<><SecondaryButton disabled={busy} onClick={()=>download('tickets')}>Xuất ticket</SecondaryButton><SecondaryButton disabled={busy} onClick={()=>download('reviews')}>Xuất đánh giá</SecondaryButton></>}
       <ExportHistory />

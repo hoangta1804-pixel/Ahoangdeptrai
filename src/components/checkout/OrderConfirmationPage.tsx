@@ -4,7 +4,6 @@ import { formatMoney } from '../../lib/pricing';
 import { useOrders } from '../../stores/orderStore';
 import { Button } from '../ui/Button';
 import { VietQrPayment } from './VietQrPayment';
-import { isDevToolsEnabled } from '../../lib/devMode';
 import {
   CheckCircle2,
   Clock,
@@ -34,11 +33,10 @@ export const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
   const [timeLeft, setTimeLeft] = useState(() => {
     return Math.max(0, Math.floor((orderGroup.paymentExpiresAt - Date.now()) / 1000));
   });
-  const [isGatewayOpen, setIsGatewayOpen] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState(orderGroup.paymentStatus);
   // Khách báo đã chuyển khoản: dừng đếm ngược, chờ cửa hàng đối soát (chưa tự xác nhận được)
   const [transferClaimed, setTransferClaimed] = useState(false);
-  const [showDevGateway] = useState(isDevToolsEnabled);
+
 
   useEffect(() => {
     if (paymentStatus === 'paid' || paymentStatus === 'timeout_cancelled' || transferClaimed) return;
@@ -57,16 +55,6 @@ export const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
     return () => clearInterval(timer);
   }, [orderGroup.paymentExpiresAt, paymentStatus, transferClaimed, orderGroup.id, cancelOrderGroup]);
 
-  const handleSimulatePayment = (result: 'success' | 'fail' | 'cancel') => {
-    setIsGatewayOpen(false);
-    if (result === 'success') {
-      markPaymentSuccess(orderGroup.id);
-      setPaymentStatus('paid');
-    } else if (result === 'fail') {
-      markPaymentFailed(orderGroup.id);
-      setPaymentStatus('failed');
-    }
-  };
 
   const handleCancelOrder = () => {
     cancelOrderGroup(orderGroup.id);
@@ -128,11 +116,6 @@ export const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
                   <Button variant="primary" size="md" className="flex-1" onClick={() => setTransferClaimed(true)}>
                     Tôi đã chuyển khoản
                   </Button>
-                  {showDevGateway && (
-                    <Button variant="outline" size="md" onClick={() => setIsGatewayOpen(true)} rightIcon={<ExternalLink size={16} />}>
-                      Cổng giả lập (dev)
-                    </Button>
-                  )}
                   <Button variant="ghost" size="md" onClick={handleCancelOrder}>
                     Huỷ đơn
                   </Button>
@@ -280,59 +263,6 @@ export const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
           </Button>
         </div>
 
-        {/* CỔNG THANH TOÁN GIẢ LẬP (MÔ PHỎNG) */}
-        {isGatewayOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#2F6650]/80 backdrop-blur-sm">
-            <div className="w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl space-y-4 text-center border border-[#E7DFCF]">
-              <div className="w-12 h-12 rounded-full bg-[#FAF7F0] text-[#B8893B] flex items-center justify-center mx-auto">
-                <CreditCard size={24} />
-              </div>
-
-              <div>
-                <h3 className="font-serif text-lg font-bold text-[#1B1B1F]">
-                  Cổng thanh toán giả lập
-                </h3>
-                <p className="text-caption text-[#6B4A32] mt-1">
-                  Mô phỏng thanh toán online gộp một giao dịch duy nhất cho toàn bộ khoản cọc / trả ngay
-                </p>
-              </div>
-
-              <div className="p-3 bg-[#FAF7F0] rounded-xl text-center">
-                <span className="text-caption text-[#8F6A4D] block">Số tiền cần thanh toán</span>
-                <span className="price-tag text-2xl font-bold">
-                  {formatMoney(orderGroup.payNowTotal)}
-                </span>
-              </div>
-
-              <div className="space-y-2 pt-2">
-                <Button
-                  variant="primary"
-                  size="md"
-                  className="w-full"
-                  onClick={() => handleSimulatePayment('success')}
-                >
-                  Xác nhận thành công (Thành công)
-                </Button>
-                <Button
-                  variant="danger"
-                  size="md"
-                  className="w-full"
-                  onClick={() => handleSimulatePayment('fail')}
-                >
-                  Mô phỏng lỗi giao dịch (Thất bại)
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full"
-                  onClick={() => handleSimulatePayment('cancel')}
-                >
-                  Huỷ / Đóng cổng
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
       </main>
     </div>
   );

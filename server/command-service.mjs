@@ -18,7 +18,6 @@ function authorize(name, user, options) {
     }
     assert(user, 401, 'Vui lòng đăng nhập.');
     assert(name!=='carrierSimulate',403,'Theo quyết định vận hành, chỉ shipper được phân công tự cập nhật giao hàng. Admin không cập nhật thay.');
-    if(user.role==='admin'&&user.adminGroup==='root')assert(['opsCreateAccount','rootSetAdminGroup','rootSetDemoCode','rootClearDemoCode','markNotificationsRead'].includes(name),403,'Quản trị gốc chỉ quản lý tài khoản Admin, phân quyền và nhật ký.');
     assert(!['coopCreateProduct','coopRequestContentChange','coopSetProductHidden','coopRequestExpress','coopRequestCertification','coopRequestPriceChange','coopRequestPreorder','coopAddVariant'].includes(name),403,'Quản lý sản phẩm đã chuyển sang Admin – Chất lượng theo SRS 29/10.');
     let allowed;
     if (customerModules.has(module) || /^customer|^submitComplaint$|^submitReview$/.test(name))
@@ -47,7 +46,7 @@ function authorize(name, user, options) {
             group = 'root';
         if (name === 'demoGatewaySuccess')
             group = 'operations';
-        allowed = user.role === 'admin' && group && (user.adminGroup === group || (user.adminGroup === 'root'&&name==='opsCreateAccount'));
+        allowed = user.role === 'admin' && group && (user.adminGroup === group || user.adminGroup === 'root');
     }
     assert(allowed, 403, 'Bạn không có quyền thực hiện thao tác này.');
     if (['applyGatewayResult', 'carrierSimulate', 'confirmRefundBySimBank', 'recordPayout', 'linkRefundAccount', 'demoGatewaySuccess', 'rootSetDemoCode', 'rootClearDemoCode'].includes(name))
@@ -123,7 +122,6 @@ function validateObject(name, args, state, user) {
     if (name === 'opsCreateAccount'){
         assert(input && ['coop', 'admin', 'regulator', 'shipper'].includes(input.role) && (!input.adminGroup || ['operations', 'quality', 'cskh', 'finance'].includes(input.adminGroup)), 400, 'Vai trò hoặc nhóm quyền không hợp lệ.');
         assert(input.role!=='admin'||user.adminGroup==='root',403,'Chỉ Root được tạo tài khoản Admin.');
-        assert(user.adminGroup!=='root'||input.role==='admin',403,'Root chỉ tạo tài khoản Admin.');
     }
     if (name === 'rootSetAdminGroup')
         assert(['operations', 'quality', 'cskh', 'finance'].includes(args[3]), 400, 'Nhóm quyền không hợp lệ.');

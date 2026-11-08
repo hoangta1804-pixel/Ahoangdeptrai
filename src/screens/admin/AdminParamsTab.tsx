@@ -27,7 +27,7 @@ function formatValue(key: ParamKey, params: Params, unit: string): string {
 export function AdminParamsTab() {
   const { state } = useStore();
   const { adminGroup } = useUi();
-  const canEdit = adminGroup === 'operations';
+  const canEdit = adminGroup === 'operations' || adminGroup === 'root';
   return (
     <div className="space-y-4">
       <DemoCodeSection />

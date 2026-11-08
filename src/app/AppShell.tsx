@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { Bell, FlaskConical, LogOut } from 'lucide-react';
 import { BrandEmblem, BrandWordmark } from '../components/Brand';
+import { SproutMark } from '../components/layout/SproutMark';
 import { ListBoundary } from '../components/ListBoundary';
 import { Toast } from '../components/Toast';
 import { ACCOUNT_ROLE_LABEL, ADMIN_GROUP_LABEL } from '../domain/types';
@@ -29,8 +30,8 @@ const ShipperScreen = lazy(lazyWithReload(() => import('../screens/shipper/Shipp
  * Mọi vai trò dùng toàn bộ bề rộng màn hình trên máy tính: trang giãn ra lưới nhiều cột thay vì một cột hẹp như điện thoại;
  * HTX có thanh mục bên trái từ màn hình lớn.
  */
-export function AppShell() {
-  const { state, syncNotice, clearSyncNotice } = useStore();
+export function AppShell({ portal = false }: { portal?: boolean } = {}) {
+  const { state, syncNotice, clearSyncNotice, demoMode } = useStore();
   const { user, logout, openModal, closeModal, showToast } = useUi();
   const [guestBrowsing, setGuestBrowsing] = useState(!['/dang-nhap','/dang-ky'].includes(window.location.pathname));
   useEffect(() => {
@@ -42,7 +43,8 @@ export function AppShell() {
     return()=>{window.removeEventListener('browse-catalog',browse);window.removeEventListener('show-login',login);window.removeEventListener('backend-logout',browse);window.removeEventListener('popstate',sync);};
   },[]);
   useScrollReveal();
-  const storefront = !user || user.role === 'customer';
+  // Ở cổng quản trị luôn dùng khung nhân viên, không hiện cửa hàng cũ
+  const storefront = !portal && (!user || user.role === 'customer');
   // Khách đăng nhập bằng Google chưa có số điện thoại: bắt buộc nhập trước khi dùng cửa hàng.
   const needsPhone = !!user && user.role === 'customer' && !user.phone;
   const unread = user ? state.notifications.filter((n) => n.userId === user.id && !n.read).length : 0;
@@ -92,16 +94,25 @@ export function AppShell() {
   }, [user?.id, state.products]);
 
   return (
-    <div className={`flex min-h-dvh flex-col text-ink ${storefront ? 'shop-shell' : 'bg-stone-100'}`}>
+    <div className={`flex min-h-dvh flex-col text-ink ${storefront ? 'shop-shell' : 'bg-stone-100'} ${portal ? 'staff-portal' : ''}`}>
       <header ref={headerRef} className={storefront ? "shop-site-header" : "staff-header sticky top-0 z-40 bg-forest-950 text-forest-100"}>{storefront ? <StorefrontHeader /> : <>
 
         <div className={`flex w-full items-center gap-1 py-1.5 ${PAGE_X}`}>
           {/* Logo và chữ thương hiệu. Trên điện thoại, tài khoản HTX / Admin / QLNN hiện tên và vai trò thay cho chữ thương hiệu. */}
           <div className="flex min-w-0 flex-1 items-center gap-2.5">
-            <BrandEmblem size={38} />
-            <span className={storefront ? 'flex' : 'hidden sm:flex'}>
-              <BrandWordmark />
-            </span>
+            {portal ? (
+              <a href="/quan-tri" className="sp-brand" aria-label="Đặc Sản Số — Trang quản trị">
+                <SproutMark size={34} />
+                <span className="hidden sm:inline"><b>Đặc Sản Số</b><small>Quản trị</small></span>
+              </a>
+            ) : (
+              <>
+                <BrandEmblem size={38} />
+                <span className={storefront ? 'flex' : 'hidden sm:flex'}>
+                  <BrandWordmark />
+                </span>
+              </>
+            )}
             {user && (
               <span className={`min-w-0 ${storefront ? 'hidden md:block' : 'block'} sm:ml-1 sm:border-l sm:border-champagne-400/30 sm:pl-3`}>
                 <span className="block truncate text-sm font-bold text-white">{user.name}</span>
@@ -119,14 +130,19 @@ export function AppShell() {
               {unread > 0 && <span className="absolute top-1 right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-champagne-500 px-1 text-xs font-bold text-ink">{unread}</span>}
             </button>
           )}
-          <button
+          {demoMode && <button
             onClick={() => openModal({ type: 'demo_panel' })}
             aria-label="Công cụ demo: tua thời gian, mô phỏng cổng thanh toán, khôi phục dữ liệu mẫu"
             className="flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-champagne-400/50 px-2.5 text-sm font-semibold text-champagne-300 hover:bg-forest-900"
           >
             <FlaskConical size={16} />
             <span className="hidden sm:inline">Công cụ demo</span>
-          </button>
+          </button>}
+          {portal && (
+            <a href="/" className="flex min-h-11 shrink-0 items-center rounded-xl px-2.5 text-sm text-forest-100 hover:bg-forest-900">
+              Về cửa hàng
+            </a>
+          )}
           {user && (
             <button
               onClick={() => {
@@ -148,10 +164,21 @@ export function AppShell() {
         {user&&user.role!=='customer'&&<AccountSecuritySettings/>}
         <ListBoundary key={user?.id ?? 'guest'} label="màn này" resetKey={state}>
           <Suspense fallback={<p className="p-6 text-center text-sm text-stone-600">Đang tải…</p>}>
-            {!user && !guestBrowsing && <LoginScreen />}
-            {!user && guestBrowsing && <CustomerScreen />}
-            {needsPhone && <GooglePhoneGate />}
-            {user?.role === 'customer' && !needsPhone && <CustomerScreen />}
+            {portal && !user && <p role="status" className="p-10 text-center text-sm text-stone-600">Đang tải tài khoản…</p>}
+            {portal && user?.role === 'customer' && (
+              <div className="mx-auto max-w-md p-10 text-center space-y-3">
+                <h1 className="text-xl font-bold text-forest-950">Tài khoản này không có quyền quản trị</h1>
+                <p className="text-sm text-stone-600">Bạn đang đăng nhập bằng tài khoản khách hàng. Hãy dùng tài khoản quản trị hoặc quay lại cửa hàng.</p>
+                <p className="flex justify-center gap-3 pt-2">
+                  <a href="/" className="rounded-xl bg-forest-900 px-4 py-2.5 text-sm font-semibold text-white">Về cửa hàng</a>
+                  <button type="button" onClick={() => logout()} className="rounded-xl border border-stone-300 px-4 py-2.5 text-sm">Đăng xuất</button>
+                </p>
+              </div>
+            )}
+            {!portal && !user && !guestBrowsing && <LoginScreen />}
+            {!portal && !user && guestBrowsing && <CustomerScreen />}
+            {!portal && needsPhone && <GooglePhoneGate />}
+            {!portal && user?.role === 'customer' && !needsPhone && <CustomerScreen />}
             {user?.role === 'coop' && <CoopScreen />}
             {user?.role === 'regulator' && <RegulatorScreen />}
             {user?.role === 'shipper' && <ShipperScreen />}
@@ -162,7 +189,7 @@ export function AppShell() {
 
       {!needsPhone && <ModalHost />}
       <Toast />
-      <IntroSplash />
+      {!portal && <IntroSplash />}
     </div>
   );
 }

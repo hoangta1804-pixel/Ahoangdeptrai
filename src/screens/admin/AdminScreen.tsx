@@ -1,9 +1,9 @@
 import { useState, type ReactNode } from 'react';
 import {
   BadgeCheck, BarChart3, BookOpen, ClipboardCheck, ClipboardList, FileText, Gauge, History, Landmark, LayoutDashboard, MessageSquareWarning,
-  Newspaper, PackageSearch, Receipt, ScrollText, Settings2, ShieldCheck, Star, Store, Ticket, Truck, Undo2, Users, Wallet, type LucideIcon,
-} from 'lucide-react';
+  Newspaper, PackageSearch, Receipt, ScrollText, Settings2, ShieldCheck, Star, Store, Ticket, Truck, Undo2, Users, Wallet, type LucideIcon, ShoppingBasket } from 'lucide-react';
 import {ContentManagementTab} from './ContentManagementTab';
+import { StorefrontProductsTab } from './StorefrontProductsTab';
 import { useUi } from '../../app/UiContext';
 import { PAGE_X } from '../../app/layout';
 import { ListBoundary } from '../../components/ListBoundary';
@@ -35,6 +35,7 @@ type TabDef = { key: string; label: string; render: () => ReactNode };
 
 /** Biểu tượng và mô tả ngắn cho từng mục quản trị. */
 const TAB_META: Record<string, { Icon: LucideIcon; hint: string }> = {
+  'storefront-products': { Icon: ShoppingBasket, hint: 'Sản phẩm hiển thị trên cửa hàng: thêm, sửa, ẩn, xoá.' },
   overview: { Icon: LayoutDashboard, hint: 'Số liệu chính của sàn trong nháy mắt.' },
   'coop-list': { Icon: Store, hint: 'Liên hệ và sản phẩm đang bán của từng hợp tác xã.' },
   orders: { Icon: PackageSearch, hint: 'Theo dõi và xử lý đơn hàng toàn sàn.' },
@@ -60,6 +61,7 @@ const TAB_META: Record<string, { Icon: LucideIcon; hint: string }> = {
 const metaOf = (key: string) => TAB_META[key] ?? { Icon: FileText, hint: '' };
 const greeting = (hour: number) => (hour < 5 ? 'Xin chào' : hour < 11 ? 'Chào buổi sáng' : hour < 14 ? 'Chào buổi trưa' : hour < 18 ? 'Chào buổi chiều' : 'Chào buổi tối');
 
+const STOREFRONT: TabDef = { key: 'storefront-products', label: 'Sản phẩm cửa hàng', render: () => <StorefrontProductsTab /> };
 const OVERVIEW: TabDef = { key: 'overview', label: 'Tổng quan', render: () => <AdminOverviewTab /> };
 /** Danh sách HTX (có SĐT, địa chỉ để Admin liên hệ HTX, sản phẩm đang bán của từng HTX): mọi nhóm quyền đều có. */
 const COOP_LIST: TabDef = { key: 'coop-list', label: 'Danh sách HTX', render: () => <AdminCoopsTab /> };
@@ -70,6 +72,7 @@ const SURVEY: TabDef = { key: 'survey', label: 'Khảo sát sản phẩm', rende
 const TABS: Record<AdminSubGroup, TabDef[]> = {
   operations: [
     OVERVIEW,
+    STOREFRONT,
     { key: 'orders', label: 'Đơn hàng', render: () => <AdminOrdersTab /> },
     { key: 'carrier', label: 'Giao hàng', render: () => <CarrierSimTab /> },
     { key: 'accounts', label: 'Cấp & khoá tài khoản', render: () => <OpsAccountsTab /> },
@@ -82,6 +85,7 @@ const TABS: Record<AdminSubGroup, TabDef[]> = {
   ],
   quality: [
     OVERVIEW,
+    STOREFRONT,
     { key: 'applications', label: 'Duyệt HTX mới', render: () => <QualityApplicationsTab /> },
     { key: 'changes', label: 'Duyệt sản phẩm & giá', render: () => <QualityChangesTab /> },
     { key: 'coops', label: 'Hồ sơ HTX & quyền bán', render: () => <QualityCoopsTab /> },
@@ -103,12 +107,26 @@ const TABS: Record<AdminSubGroup, TabDef[]> = {
     { key: 'invoices', label: 'Hoá đơn công ty', render: () => <FinanceInvoicesTab /> },
     COOP_LIST,
   ],
-  root: [
-    { key: 'accounts', label: 'Phân quyền', render: () => <AdminAccountsTab /> },
-    { key: 'audit', label: 'Nhật ký', render: () => <AdminAuditTab /> },
-    { key:'params',label:'Tham số (chỉ xem)',render:()=> <AdminParamsTab/> },
-  ],
+  root: [],
 };
+
+/** Quản trị gốc: làm được mọi chức năng — gộp tab của tất cả nhóm (bỏ trùng), thêm Phân quyền & Nhật ký. */
+TABS.root = (() => {
+  const seen = new Set<string>();
+  const all: TabDef[] = [];
+  for (const group of ['operations', 'quality', 'cskh', 'finance'] as const) {
+    for (const tab of TABS[group]) {
+      if (seen.has(tab.key)) continue;
+      seen.add(tab.key);
+      all.push(tab);
+    }
+  }
+  all.push(
+    { key: 'root-accounts', label: 'Phân quyền Admin', render: () => <AdminAccountsTab /> },
+    { key: 'audit', label: 'Nhật ký', render: () => <AdminAuditTab /> },
+  );
+  return all;
+})();
 
 /** Admin theo nhóm quyền (mục 8). Giao diện rộng cho máy tính: thanh mục bên trái, nội dung bên phải. */
 export function AdminScreen() {

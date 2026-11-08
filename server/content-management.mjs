@@ -1,8 +1,8 @@
 import {randomUUID} from 'node:crypto';
-import {assert} from './security.mjs';
+import {assert,inAdminGroup} from './security.mjs';
 import {validateMediaReferences} from './media.mjs';
 export async function saveContent(kind,body,{db,auth}){
-  assert(auth.user.role==='admin'&&auth.user.adminGroup==='operations',403,'Chỉ Vận hành quản lý danh mục và nội dung trang chủ.');
+  assert(inAdminGroup(auth.user,'operations'),403,'Chỉ Vận hành quản lý danh mục và nội dung trang chủ.');
   const {state}=await db.read();
   if(kind==='homepage'){
     for(const [field,max]of [['title',160],['subtitle',160],['description',1000],['collectionTitle',160]])assert(typeof body[field]==='string'&&body[field].trim().length>0&&body[field].length<=max,400,'Nhập đầy đủ nội dung trang chủ trong giới hạn.');

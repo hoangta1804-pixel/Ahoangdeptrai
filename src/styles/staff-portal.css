@@ -1,0 +1,206 @@
+/* ================= TRANG QUẢN TRỊ — đồng bộ nhận diện với cửa hàng =================
+   Nền kem, xanh lá dịu (#2A6F50), vàng đồng (#C0A06A), logo mầm cây.
+   Chỉ áp trong .staff-portal để không ảnh hưởng màn HTX/khách cũ. */
+
+.staff-portal {
+  /* Thang màu forest của Tailwind → tông xanh của cửa hàng (nút, viền focus, chữ nhấn) */
+  --color-forest-50: #f1f7f3;
+  --color-forest-100: #e2efe7;
+  --color-forest-200: #c6dfd0;
+  --color-forest-300: #9cc6ad;
+  --color-forest-400: #6aa585;
+  --color-forest-500: #4b8a6c;
+  --color-forest-600: #3a7d5d;
+  --color-forest-700: #348262;
+  --color-forest-800: #2a6f50;
+  --color-forest-900: #1f5a41;
+  --color-forest-950: #17452f;
+  --color-champagne-300: #e3cf9f;
+  --color-champagne-500: #c0a06a;
+  background: #f5f1e8 !important;
+  color: #1a2b20;
+}
+.staff-portal .staff-main {
+  background: #f5f1e8 !important;
+}
+
+/* ---------- Header ---------- */
+.staff-portal .staff-header {
+  background: rgba(255, 253, 248, 0.94) !important;
+  color: #1a2b20 !important;
+  border-bottom: 1px solid #ded8ca;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 8px 24px -18px rgba(26, 43, 32, 0.35);
+}
+.staff-portal .staff-header .brocade-dark {
+  display: none;
+}
+.staff-portal .staff-header :is(.text-white, .text-forest-100, .text-forest-200, .text-champagne-300) {
+  color: #2a6f50 !important;
+}
+.staff-portal .staff-header .text-white.font-bold {
+  color: #1a2b20 !important;
+}
+.staff-portal .staff-header :is(button, a):hover {
+  background: #efeadc !important;
+}
+.staff-portal .staff-header .sm\:border-champagne-400\/30 {
+  border-color: #ded8ca !important;
+}
+.sp-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: #1f5a41;
+}
+.sp-brand b {
+  font: 600 21px/1 var(--font-display);
+  letter-spacing: -0.01em;
+}
+.sp-brand small {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: #e8f2ec;
+  color: #2a6f50;
+  font: 700 11px/1.3 var(--font-sans);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+/* ---------- Bảo mật tài khoản: gọn lại ---------- */
+.staff-portal .staff-main > details:first-child {
+  width: min(1600px, calc(100% - 32px));
+  margin: 14px auto 0;
+  padding: 10px 16px;
+  border-radius: 14px;
+  border-color: #ded8ca;
+  background: #fffdf8;
+}
+.staff-portal .staff-main > details:first-child > summary {
+  color: #2a6f50;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+}
+
+/* ---------- Sidebar ---------- */
+.staff-portal .admin-badge {
+  background: linear-gradient(140deg, #348262 0%, #2a6f50 55%, #1f5a41 100%) !important;
+  box-shadow: 0 18px 40px -24px #1f5a41;
+}
+.staff-portal .admin-nav {
+  background: #fffdf8;
+  border-color: #ded8ca;
+}
+.staff-portal .admin-nav-item {
+  color: #33433a;
+}
+.staff-portal .admin-nav-item > svg {
+  color: #7a9a86;
+}
+.staff-portal .admin-nav-item:hover {
+  background: #f3eee2;
+  color: #1f5a41;
+}
+.staff-portal .admin-nav-item:hover > svg {
+  color: #2a6f50;
+}
+.staff-portal .admin-nav-item.is-active {
+  background: linear-gradient(135deg, #348262, #2a6f50);
+  color: #fff;
+  box-shadow: 0 10px 22px -12px #2a6f50;
+}
+.staff-portal .admin-nav-item.is-active > svg {
+  color: #f0d9a9;
+}
+.staff-portal .admin-nav-item.is-active::before {
+  background: #c0a06a;
+}
+
+/* ---------- Khung tiêu đề & nội dung ---------- */
+.staff-portal .admin-hero {
+  background: linear-gradient(120deg, #fffdf8 0%, #faf6ec 60%, #f3eee2 100%);
+  border-color: #e7dfcf;
+  box-shadow: 0 16px 40px -30px #1f5a41;
+}
+.staff-portal .admin-hero-title {
+  color: #1f5a41;
+  font-family: var(--font-display);
+}
+.staff-portal .admin-hero-icon {
+  background: #2a6f50 !important;
+  color: #fff !important;
+}
+.staff-portal .admin-hero-stats > div {
+  background: #fffdf8;
+  border-color: #e7dfcf;
+}
+.staff-portal .admin-panel {
+  border-color: #e7dfcf;
+  background: #fffdf8;
+  box-shadow: 0 20px 55px -48px #1f5a41;
+}
+.staff-portal .admin-panel tbody tr:hover {
+  background: #f3eee2;
+}
+.staff-portal :is(button, a, input, select, textarea):focus-visible {
+  outline: 2px solid #2a6f50;
+  outline-offset: 2px;
+}
+
+/* ---------- Mục "Sản phẩm cửa hàng" ---------- */
+.sp-icon {
+  display: grid;
+  place-items: center;
+  min-width: 40px;
+  min-height: 40px;
+  border-radius: 12px;
+  color: #2a6f50;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+.sp-icon:hover {
+  background: #e8f2ec;
+}
+.sp-icon--danger {
+  color: #a63d3d;
+}
+.sp-icon--danger:hover {
+  background: #fdf1f1;
+}
+.sp-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(26, 43, 32, 0.45);
+  backdrop-filter: blur(3px);
+  animation: sp-fade 0.2s ease both;
+}
+.sp-dialog {
+  width: 100%;
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  padding: 22px;
+  border-radius: 20px;
+  background: #fffdf8;
+  border: 1px solid #e7dfcf;
+  box-shadow: 0 30px 70px -30px rgba(26, 43, 32, 0.5);
+  animation: sp-pop 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes sp-fade {
+  from { opacity: 0; }
+}
+@keyframes sp-pop {
+  from { opacity: 0; transform: translateY(14px) scale(0.98); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sp-overlay, .sp-dialog { animation: none; }
+}

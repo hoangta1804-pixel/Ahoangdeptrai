@@ -5,6 +5,8 @@ const SELECTOR=[
   '.shop-section-heading','.shop-centered-heading','.shop-product-card','.shop-region-card','.shop-promise-card',
   '.shop-review-card','.shop-story-card','.shop-farmer-image','.shop-about-copy','.shop-catalog-footer','.shop-footer-grid>div',
   '.admin-card','.reveal',
+  // Giao diện Phase 2
+  '.ah-head','.ah-cat','.ah-region','.ah-grid4>*','.ah-trust__item','.ah-story__art','.ah-story__copy','.ah-maker__in','.ah-dir-card',
 ].join(',');
 
 /**

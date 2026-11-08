@@ -115,6 +115,8 @@ export interface User {
   id: string;
   name: string;
   phone: string;
+  /** Vai trò trên máy chủ: customer | admin | coop | regulator | shipper */
+  role?: string;
   addresses: Address[];
   defaultPaymentMethod?: 'cod' | 'online_qr' | 'online_card';
   favoriteProductIds: string[];

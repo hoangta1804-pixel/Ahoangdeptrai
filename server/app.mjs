@@ -1,3 +1,5 @@
+import { ensureAdminAccount } from './admin-account.mjs';
+import { storefrontProductsRoute } from './storefront-products.mjs';
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { resolve, extname, sep } from 'node:path';
@@ -72,6 +74,11 @@ async function transactionReply(res, db, fn) {
 export async function createApplication(config = {}) {
     const options = { demo: config.demo ?? false, ...config, ...supabaseServices(config) };
     const db = config.db ?? await openDatabase({ ...options, databasePath: config.databasePath ?? resolve('data/app.sqlite') });
+    // Tài khoản Quản trị gốc từ biến môi trường ADMIN_PHONE / ADMIN_PASSWORD (bỏ qua khi chạy test có db riêng)
+    if (!config.db && !config.skipAdminAccount) {
+        try { await ensureAdminAccount(db); }
+        catch (e) { console.error('[admin] Không tạo được tài khoản admin từ biến môi trường:', e?.message ?? e); }
+    }
     const handle = async (req, res) => {
         const correlationId = auditContext.getStore()?.correlationId??randomUUID();
         res.setHeader('Cache-Control', 'no-store');
@@ -258,8 +265,12 @@ export async function createApplication(config = {}) {
                 const r = await handleGeocodeRequest({ method: 'GET', query: Object.fromEntries(url.searchParams) }, { apiKey: options.mapsKey, provider: options.mapsProvider, fetch: u => fetch(u, { signal: AbortSignal.timeout(10000) }) });
                 return json(res, r.status, r.body);
             }
-            const optional = path === '/api/v1/state' || path.startsWith('/api/v1/products') || path === '/api/v1/commands'||path==='/api/v1/media/sign'||(req.method==='GET'&&path.startsWith('/api/v1/lots'));
+            const optional = (path.startsWith('/api/v1/storefront/products')&&req.method==='GET') || path === '/api/v1/state' || path.startsWith('/api/v1/products') || path === '/api/v1/commands'||path==='/api/v1/media/sign'||(req.method==='GET'&&path.startsWith('/api/v1/lots'));
             let auth = await authenticate(db, req, !(optional||(path==='/api/v1/coop-reviews'&&req.method==='GET')),options);
+            if(path.startsWith('/api/v1/storefront/products')){
+                if(req.method==='GET'){const r=await storefrontProductsRoute(path,'GET',body,{db,auth});if(r)return json(res,r.status,r.body);}
+                else return await transactionReply(res,db,async()=>(await storefrontProductsRoute(path,req.method,body,{db,auth}))??{status:404,body:{error:'Không tìm thấy.'}});
+            }
             if(path==='/api/v1/settlement-policy'&&req.method==='POST')return await transactionReply(res,db,async()=>({status:200,body:await saveSettlementPolicy(body,{db,auth})}));
             const paymentSession=path.match(/^\/api\/v1\/transactions\/([\w-]+)\/session$/);
             if(paymentSession&&req.method==='POST'){
@@ -272,10 +283,6 @@ export async function createApplication(config = {}) {
             }
             if(['/api/v1/me/profile','/api/v1/me/phone/start','/api/v1/me/phone/confirm','/api/v1/me/phone/first'].includes(path)&&req.method==='POST')return json(res,200,await manageProfile(path,body,{db,auth,options,ip}));
             if(['/api/v1/homepage','/api/v1/catalog-dictionaries'].includes(path)&&req.method==='POST')return await transactionReply(res,db,async()=>({status:200,body:await saveContent(path.endsWith('/homepage')?'homepage':'dictionary',body,{db,auth})}));
-            if(auth?.user.adminGroup==='root'&&['POST','PUT','PATCH','DELETE'].includes(req.method)){
-                const allowed=['/api/v1/commands','/api/v1/auth/logout','/api/v1/demo/tools','/api/v1/media/sign'].includes(path)||(path==='/api/v1/exports'&&body.kind==='audit')||/^\/api\/v1\/exports\/[\w-]+\/retry$/.test(path);
-                assert(allowed,403,'Quản trị gốc không thao tác nghiệp vụ.');
-            }
             const catalogProduct=path.match(/^\/api\/v1\/catalog\/products(?:\/([\w-]+))?$/);
             const pickupPoint=path.match(/^\/api\/v1\/orders\/([\w-]+)\/pickup-point$/);
             if(pickupPoint&&req.method==='POST')return await transactionReply(res,db,async()=>({status:200,body:await savePickupPoint(pickupPoint[1],body,{db,auth})}));
@@ -465,7 +472,6 @@ export async function createApplication(config = {}) {
                 const job = await db.sql.prepare('SELECT * FROM export_jobs WHERE id=? AND user_id=?').get(download[1], auth.user.id);
                 assert(job, 404, 'Không tìm thấy báo cáo.');
                 assert(canExportKind(auth.user,job.kind),403,'Quyền xuất loại báo cáo này đã bị thu hồi.');
-                if(auth.user.adminGroup==='root')assert(job.kind==='audit',403,'Root chỉ xuất nhật ký.');
                 if(auth.user.role==='coop')assert(['summary','orders','settlements'].includes(job.kind)&&JSON.parse(job.filters).coopId===auth.user.coopId,403,'Phạm vi báo cáo không còn thuộc HTX này.');
                 if(job.kind==='audit')assert(auth.user.adminGroup==='root',403,'Quyền xuất nhật ký đã bị thu hồi.');
                 if(job.kind==='ledger')assert(['root','finance'].includes(auth.user.adminGroup),403,'Quyền Tài chính đã bị thu hồi.');

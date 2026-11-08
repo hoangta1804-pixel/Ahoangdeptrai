@@ -8,7 +8,7 @@ export function canExportKind(user,kind){
   if(user.role==='coop')return ['summary','orders','settlements'].includes(kind);
   if(user.role==='regulator')return general.includes(kind);
   if(user.role!=='admin')return false;
-  if(user.adminGroup==='root')return kind==='audit';
+  if(user.adminGroup==='root')return true;
   if(user.adminGroup==='finance')return [...general,'ledger','settlements'].includes(kind);
   if(user.adminGroup==='operations')return general.includes(kind);
   return user.adminGroup==='cskh'&&['tickets','reviews'].includes(kind);
@@ -40,7 +40,7 @@ export async function filteredReport(db,auth,body,now,frozenSource){
   }
   if(['summary','orders'].includes(body.kind)){const r=exportReport(state,seller?{kind:'regulator'}:auth.actor,body.kind,now);assert(r.ok,403,r.error);return {...r.value,filters,version:source.version,...(source.dataAsOf?{dataAsOf:source.dataAsOf}:{} )};}
   if(body.kind==='settlements'){
-    assert(seller||(auth.user.role==='admin'&&auth.user.adminGroup==='finance'),403,'Chỉ HTX xem của mình hoặc Tài chính xuất đối soát.');
+    assert(seller||(auth.user.role==='admin'&&['finance','root'].includes(auth.user.adminGroup)),403,'Chỉ HTX xem của mình hoặc Tài chính xuất đối soát.');
     const periods=state.payoutPeriods.filter(p=>ids.has(p.coopId)&&time(p.closedAt));
     rows=[['Kỳ','HTX','Đơn','Tiền hàng','Đã hoàn','Thực giữ','Hoa hồng','Phí giao (không thuộc HTX)','Chi trả','Trạng thái'],...periods.flatMap(p=>p.lines.map(l=>[p.id,p.coopId,l.orderId,l.goods,l.refunded,l.retained,l.commission,l.shippingFee??'',l.payout,p.status]))];
     return {filename,content:csvRows(rows),filters,version:source.version};

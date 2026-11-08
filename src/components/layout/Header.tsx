@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { Product } from '../../mock/types';
 import { ShoppingBag, Search, User as UserIcon, X } from 'lucide-react';
 import { Link } from '../ui/Link';
+import { SproutMark } from './SproutMark';
+import { isStaff } from '../../lib/accountApi';
 import { useCart } from '../../stores/cartStore';
 import { useAuth } from '../../stores/authStore';
 import '../../styles/amora-home.css';
@@ -14,13 +16,6 @@ export interface HeaderProps {
   onOpenAuth: () => void;
 }
 
-const MountainMark: React.FC = () => (
-  <svg width="34" height="28" viewBox="0 0 34 28" fill="none" aria-hidden="true">
-    <path d="M1 26 12 6l6 10 4-6 11 16" stroke="#2A6F50" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M9 26l8-13" stroke="#c0a06a" strokeWidth="2" strokeLinecap="round" />
-  </svg>
-);
-
 const fold = (t: string) =>
   t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
 
@@ -29,6 +24,14 @@ export const Header: React.FC<HeaderProps> = ({ products = [], currentPath, onNa
   const { user } = useAuth();
   const [searchOpen, setSearchOpen] = useState(false);
   const [q, setQ] = useState('');
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   const headerRef = useRef<HTMLElement>(null);
 
@@ -77,10 +80,10 @@ export const Header: React.FC<HeaderProps> = ({ products = [], currentPath, onNa
   ];
 
   return (
-    <header className="ah-header" ref={headerRef}>
+    <header className={`ah-header ${scrolled ? 'is-scrolled' : ''}`} ref={headerRef}>
       <div className="ah-header__in">
         <Link to="/" className="ah-logo" aria-label="Đặc Sản Số — về trang chủ">
-          <MountainMark />
+          <SproutMark size={34} />
           <b>Đặc Sản Số</b>
         </Link>
 
@@ -93,6 +96,11 @@ export const Header: React.FC<HeaderProps> = ({ products = [], currentPath, onNa
         </nav>
 
         <div className="ah-icons">
+          {isStaff(user) && (
+            <a href="/quan-tri" className="ah-admin-link">
+              Quản trị
+            </a>
+          )}
           <button type="button" className="ah-icon" aria-label="Tìm kiếm" onClick={() => setSearchOpen((o) => !o)}>
             {searchOpen ? <X size={20} /> : <Search size={20} />}
           </button>

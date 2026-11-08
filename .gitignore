@@ -11,3 +11,6 @@ test-results/
 playwright-report/
 /data/
 .npm-cache/
+
+# Chứng chỉ CA Supabase tải về để chạy script (không cần trong repo)
+*.crt
