@@ -33,6 +33,23 @@ import { checkCanAddToCart } from '../lib/stock';
 export function Phase2App() {
   useScrollReveal();
   const [products, setProducts] = useState<Product[]>(initialMockProducts);
+
+  // Sản phẩm do Admin quản lý trên máy chủ; lỗi mạng thì giữ danh sách mẫu ban đầu.
+  // Gọi không kèm đăng nhập để luôn nhận danh sách công khai (không có sản phẩm đang ẩn).
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/v1/storefront/products', { headers: { Accept: 'application/json' }, cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((data: { products?: Product[] }) => {
+        if (!cancelled && Array.isArray(data.products)) setProducts(data.products.filter((p) => p.status !== 'hidden'));
+      })
+      .catch(() => {
+        /* giữ dữ liệu mẫu */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const [currentPath, setCurrentPath] = useState<string>(() => {
     return window.location.pathname || '/';
   });

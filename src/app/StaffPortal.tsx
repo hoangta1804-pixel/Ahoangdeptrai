@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import '../styles/staff-portal.css';
 import { AppShell } from './AppShell';
 import { StorefrontProvider } from './StorefrontContext';
 import { UiProvider } from './UiContext';

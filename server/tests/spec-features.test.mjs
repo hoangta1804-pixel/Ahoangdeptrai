@@ -599,3 +599,35 @@ test('Quản trị gốc (root) làm được chức năng của mọi nhóm adm
   const all=(await f.db.read()).state.orders.length,seen=(await f.request('/api/v1/state',{as:root})).data.state.orders.length;
   assert.equal(seen,all);
 });
+
+test('sản phẩm cửa hàng: ai cũng xem được, chỉ admin được thêm/sửa/xoá, dữ liệu được kiểm tra', async t=>{
+  const f=await fixture(t),root=f.user('admin','root'),ops=f.user('admin','operations'),finance=f.user('admin','finance'),customer=f.user('customer');
+  const base='/api/v1/storefront/products';
+  const initial=await f.request(base);
+  assert.equal(initial.status,200);assert.ok(initial.data.products.length>=10,'lần đầu lấy danh sách mẫu');
+  const product={name:'Măng khô Bát Xát',region:'Bát Xát',category:'dry',status:'active',shortDescription:'Măng rừng phơi nắng.',mainImageUrl:'/images/stitch/tea.jpg',themes:['in_season'],variants:[{label:'Túi 500g',price:120000,stock:20,status:'in_stock'}]};
+  // Quyền
+  assert.equal((await f.request(base,{body:{product}})).status,401);
+  assert.equal((await f.request(base,{as:customer,body:{product}})).status,403);
+  assert.equal((await f.request(base,{as:finance,body:{product}})).status,403);
+  // Kiểm tra dữ liệu
+  assert.equal((await f.request(base,{as:ops,body:{product:{...product,variants:[]}}})).status,400);
+  assert.equal((await f.request(base,{as:ops,body:{product:{...product,variants:[{label:'x',price:-5,stock:1,status:'in_stock'}]}}})).status,400);
+  assert.equal((await f.request(base,{as:ops,body:{product:{...product,mainImageUrl:'javascript:alert(1)'}}})).status,400);
+  // Tạo
+  const created=await f.request(base,{as:ops,body:{product}});
+  assert.equal(created.status,201,JSON.stringify(created.data));
+  const p=created.data.product;assert.equal(p.slug,'mang-kho-bat-xat');assert.equal(p.variants[0].price,120000);
+  assert.ok((await f.request(base)).data.products.some(x=>x.id===p.id),'khách thấy sản phẩm mới');
+  assert.equal((await f.request(base,{as:ops,body:{product:{...product,name:'Tên khác',slug:'mang-kho-bat-xat'}}})).status,409,'trùng slug');
+  // Sửa (root làm được) + ẩn
+  const updated=await f.request(`${base}/${p.id}`,{as:root,method:'PUT',body:{product:{...product,name:'Măng khô Bát Xát loại 1',status:'hidden',variants:[{...p.variants[0],price:135000}]}}});
+  assert.equal(updated.status,200,JSON.stringify(updated.data));assert.equal(updated.data.product.variants[0].price,135000);
+  assert.ok(!(await f.request(base)).data.products.some(x=>x.id===p.id),'khách không thấy sản phẩm ẩn');
+  assert.ok((await f.request(base,{as:ops})).data.products.some(x=>x.id===p.id),'admin vẫn thấy sản phẩm ẩn');
+  // Xoá
+  assert.equal((await f.request(`${base}/${p.id}`,{as:customer,method:'DELETE'})).status,403);
+  assert.equal((await f.request(`${base}/${p.id}`,{as:ops,method:'DELETE'})).status,200);
+  assert.equal((await f.request(`${base}/${p.id}`,{as:ops,method:'DELETE'})).status,404);
+  assert.ok(!(await f.request(base,{as:ops})).data.products.some(x=>x.id===p.id));
+});

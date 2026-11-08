@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { Bell, FlaskConical, LogOut } from 'lucide-react';
 import { BrandEmblem, BrandWordmark } from '../components/Brand';
+import { SproutMark } from '../components/layout/SproutMark';
 import { ListBoundary } from '../components/ListBoundary';
 import { Toast } from '../components/Toast';
 import { ACCOUNT_ROLE_LABEL, ADMIN_GROUP_LABEL } from '../domain/types';
@@ -93,16 +94,25 @@ export function AppShell({ portal = false }: { portal?: boolean } = {}) {
   }, [user?.id, state.products]);
 
   return (
-    <div className={`flex min-h-dvh flex-col text-ink ${storefront ? 'shop-shell' : 'bg-stone-100'}`}>
+    <div className={`flex min-h-dvh flex-col text-ink ${storefront ? 'shop-shell' : 'bg-stone-100'} ${portal ? 'staff-portal' : ''}`}>
       <header ref={headerRef} className={storefront ? "shop-site-header" : "staff-header sticky top-0 z-40 bg-forest-950 text-forest-100"}>{storefront ? <StorefrontHeader /> : <>
 
         <div className={`flex w-full items-center gap-1 py-1.5 ${PAGE_X}`}>
           {/* Logo và chữ thương hiệu. Trên điện thoại, tài khoản HTX / Admin / QLNN hiện tên và vai trò thay cho chữ thương hiệu. */}
           <div className="flex min-w-0 flex-1 items-center gap-2.5">
-            <BrandEmblem size={38} />
-            <span className={storefront ? 'flex' : 'hidden sm:flex'}>
-              <BrandWordmark />
-            </span>
+            {portal ? (
+              <a href="/quan-tri" className="sp-brand" aria-label="Đặc Sản Số — Trang quản trị">
+                <SproutMark size={34} />
+                <span className="hidden sm:inline"><b>Đặc Sản Số</b><small>Quản trị</small></span>
+              </a>
+            ) : (
+              <>
+                <BrandEmblem size={38} />
+                <span className={storefront ? 'flex' : 'hidden sm:flex'}>
+                  <BrandWordmark />
+                </span>
+              </>
+            )}
             {user && (
               <span className={`min-w-0 ${storefront ? 'hidden md:block' : 'block'} sm:ml-1 sm:border-l sm:border-champagne-400/30 sm:pl-3`}>
                 <span className="block truncate text-sm font-bold text-white">{user.name}</span>
