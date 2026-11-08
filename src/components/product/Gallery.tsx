@@ -1,21 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Box, RefreshCw, Play, Volume2, VolumeX, Maximize2, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { RefreshCw, Play, Volume2, VolumeX, Maximize2, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { MediaItem, Product, Variant } from '../../mock/types';
 import { ProductPhoto } from './ProductPhoto';
 import { productImageSources, productEmoji } from '../../lib/productImages';
-import { Viewer3D } from './Viewer3D';
 import { Viewer360 } from './Viewer360';
 import { getFeatureFlags } from '../../lib/featureFlags';
 
 export interface GalleryProps {
   product: Product;
   selectedVariant: Variant;
-  onOpen3DViewer?: () => void;
 }
 
 export const Gallery: React.FC<GalleryProps> = ({ product, selectedVariant }) => {
   const [activeIndex, setActiveIndex] = useState(0);
-  const [is3DActive, setIs3DActive] = useState(false);
   const [is360Active, setIs360Active] = useState(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [isVideoMuted, setIsVideoMuted] = useState(true);
@@ -23,7 +20,7 @@ export const Gallery: React.FC<GalleryProps> = ({ product, selectedVariant }) =>
   const flags = getFeatureFlags();
 
   // Sắp xếp media theo thứ tự chuẩn BR-PT-05:
-  // Ảnh chính -> 3D/360° -> Quy cách và nhãn -> Lúc dùng -> Vùng nguyên liệu -> Video
+  // Ảnh chính -> 360° -> Quy cách và nhãn -> Lúc dùng -> Vùng nguyên liệu -> Video
   const groupOrder: Record<string, number> = {
     main: 1,
     spec: 3,
@@ -33,11 +30,11 @@ export const Gallery: React.FC<GalleryProps> = ({ product, selectedVariant }) =>
 
   const sortedMedia = React.useMemo(() => {
     return [...product.media]
-      .filter((m) => m.approvalStatus === 'approved')
+      .filter((m) => m.approvalStatus === 'approved' && m.type !== 'model3d')
       .sort((a, b) => {
-        // 3D và 360 đặt ở vị trí thứ 2
-        const priorityA = a.type === 'model3d' || a.type === 'spin360' ? 2 : groupOrder[a.group] || 9;
-        const priorityB = b.type === 'model3d' || b.type === 'spin360' ? 2 : groupOrder[b.group] || 9;
+        // 360° đặt ở vị trí thứ 2
+        const priorityA = a.type === 'spin360' ? 2 : groupOrder[a.group] || 9;
+        const priorityB = b.type === 'spin360' ? 2 : groupOrder[b.group] || 9;
         if (priorityA !== priorityB) return priorityA - priorityB;
         return a.sortOrder - b.sortOrder;
       });
@@ -76,28 +73,13 @@ export const Gallery: React.FC<GalleryProps> = ({ product, selectedVariant }) =>
     }
   };
 
-  const hasApproved3D = sortedMedia.some((m) => m.type === 'model3d');
-  const modelItem = sortedMedia.find((m) => m.type === 'model3d');
 
   return (
     <div className="relative w-full showcase-cabinet">
       {/* Khung trưng bày chính - Tỷ lệ chuẩn 4:5 */}
       <div className="relative aspect-[4/5] sm:aspect-[1/1] lg:aspect-[4/5] w-full max-w-xl mx-auto overflow-hidden">
-        {/* Nút Xem 3D nổi trên ảnh chính (FR-TKSP-13) */}
-        {hasApproved3D && !is3DActive && !is360Active && (
-          <button
-            type="button"
-            onClick={() => setIs3DActive(true)}
-            aria-label="Xem sản phẩm dưới dạng 3D"
-            className="absolute top-4 right-4 z-30 min-h-[44px] px-3.5 py-1.5 rounded-full bg-[#2F6650]/90 hover:bg-[#35705A] text-[#CDA25A] text-small font-semibold border border-[#B8893B]/40 shadow-xl flex items-center gap-1.5 backdrop-blur-md transition-all active:scale-95 cursor-pointer"
-          >
-            <Box size={18} />
-            <span>Xem 3D</span>
-          </button>
-        )}
-
         {/* Nút mở phóng to Lightbox */}
-        {!is3DActive && !is360Active && (
+        {!is360Active && (
           <button
             type="button"
             onClick={() => setIsLightboxOpen(true)}
@@ -139,25 +121,6 @@ export const Gallery: React.FC<GalleryProps> = ({ product, selectedVariant }) =>
                     </div>
                     {/* Đốm sáng radial phía sau */}
                     <div className="absolute inset-0 bg-radial from-[#CDA25A]/10 to-transparent pointer-events-none" />
-                  </div>
-                )}
-
-                {media.type === 'model3d' && (
-                  <div
-                    onClick={() => setIs3DActive(true)}
-                    className="relative w-full h-full flex flex-col items-center justify-center cursor-pointer group"
-                  >
-                    <div className="w-56 h-72 rounded-3xl bg-[#35705A] border-2 border-dashed border-[#B8893B] flex flex-col items-center justify-center p-4 text-center group-hover:scale-102 transition-transform shadow-2xl">
-                      <div className="w-16 h-16 rounded-full bg-[#B8893B]/20 text-[#CDA25A] flex items-center justify-center mb-3">
-                        <Box size={32} />
-                      </div>
-                      <span className="font-serif text-lg font-bold text-[#FAF7F0]">
-                        Chạm để mở 3D
-                      </span>
-                      <span className="text-caption text-[#A5A5B2] mt-1">
-                        Xoay 360°, phóng to chi tiết góc cạnh
-                      </span>
-                    </div>
                   </div>
                 )}
 
@@ -212,7 +175,7 @@ export const Gallery: React.FC<GalleryProps> = ({ product, selectedVariant }) =>
         )}
 
         {/* Chấm vị trí (Dots indicator) */}
-        {!is3DActive && !is360Active && sortedMedia.length > 1 && (
+        {!is360Active && sortedMedia.length > 1 && (
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 bg-[#2F6650]/60 px-3 py-1.5 rounded-full backdrop-blur-md border border-[#5E9A80]/40">
             {sortedMedia.map((_, idx) => (
               <button
@@ -232,16 +195,6 @@ export const Gallery: React.FC<GalleryProps> = ({ product, selectedVariant }) =>
           </div>
         )}
       </div>
-
-      {/* Viewer 3D toàn màn hình */}
-      {is3DActive && modelItem && (
-        <Viewer3D
-          modelUrl={modelItem.url}
-          posterUrl={modelItem.posterUrl}
-          alt={modelItem.alt}
-          onClose={() => setIs3DActive(false)}
-        />
-      )}
 
       {/* Lightbox xem ảnh toàn màn hình nền chàm */}
       {isLightboxOpen && (
