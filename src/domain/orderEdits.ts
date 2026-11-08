@@ -68,7 +68,7 @@ export function customerEditGift(state: DemoState, actor: Actor, orderId: string
     if (!isValidPhone(normalizePhone(recipient.phone))) return fail(`SĐT người nhận không hợp lệ. ${PHONE_RULE}`);
     const ward = findWard(state, recipient.wardId);
     const wardName = recipient.wardName?.trim() || ward?.name || '';
-    const city = recipient.city?.trim() || 'Hà Nội';
+    const city = recipient.city?.trim();
     if (!wardName || !city) return fail('Vui lòng nhập tỉnh/thành phố và phường/xã của người nhận.');
     const distanceKm = ward?.distanceKm ?? Number.POSITIVE_INFINITY;
     if (order.shipping === 'express' && expressSurchargeFor(distanceKm, order.params.expressTiers) !== order.pricing.expressSurcharge) {

@@ -24,7 +24,7 @@ export function ProductStory({ product }: { product: Product }) {
   return (
     <section aria-labelledby={`story-${product.id}`} className="product-origin-story space-y-4 rounded-2xl border border-forest-200 bg-forest-50/60 p-5 sm:p-6">
       <div className="flex flex-wrap items-end justify-between gap-2 border-b border-forest-200/70 pb-3">
-        <div><p className="mb-1 text-[11px] font-semibold uppercase tracking-[.16em] text-champagne-700">Nguồn gốc & văn hoá</p><h3 id={`story-${product.id}`} className="font-display text-xl font-semibold text-forest-900">Câu chuyện từ vùng đất</h3></div>
+        <div><p className="mb-1 text-xs font-semibold uppercase tracking-[.16em] text-champagne-700">Nguồn gốc & văn hoá</p><h3 id={`story-${product.id}`} className="font-display text-xl font-semibold text-forest-900">Câu chuyện từ vùng đất</h3></div>
         {s.localName && <p className="rounded-full bg-white/80 px-3 py-1 text-xs text-muted">Tên gọi: {s.localName}</p>}
       </div>
       <dl className="space-y-2.5 text-sm">

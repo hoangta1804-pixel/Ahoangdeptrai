@@ -191,3 +191,6 @@ nav[aria-label="Điều hướng khách hàng"]>button:active{transform:scale(.9
 
 /* Kiểm thử tự động: không có chuyển động. */
 .no-motion *,.no-motion ::before,.no-motion ::after{animation:none !important;transition:none !important}
+
+/* Khi tắt chuyển động (kiểm thử tự động) thẻ băng chuyền phải hiện ngay */
+.no-motion .carousel-reveal .carousel-item{opacity:1 !important;transform:none !important}

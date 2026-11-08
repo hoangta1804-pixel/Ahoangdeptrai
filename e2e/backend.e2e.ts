@@ -141,7 +141,7 @@ test('catalog filters, pagination and navigation work on desktop and mobile',asy
     if(width===390)await page.getByRole('button',{name:'Bộ lọc tìm kiếm',exact:true}).click();
     const filters=page.getByRole('complementary',{name:'Bộ lọc sản phẩm'});
     await filters.getByRole('checkbox',{name:/^Bắc Hà/}).check();
-    await page.getByRole('button',{name:'Áp dụng bộ lọc',exact:true}).click();
+    // Catalog filters are applied immediately when changed on both desktop and mobile.
     await expect(page.locator('.catalog-chips')).toContainText('Bắc Hà');
     expect(await page.locator('.catalog-grid .shop-product-card').count()).toBeGreaterThan(0);
     expect(await page.locator('.catalog-grid .shop-product-region').allTextContents()).toEqual(expect.arrayContaining(['Bắc Hà']));

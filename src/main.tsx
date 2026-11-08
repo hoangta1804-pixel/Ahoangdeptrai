@@ -31,6 +31,9 @@ createRoot(document.getElementById('root')!).render(
 
 import '@fontsource/newsreader/400.css';
 import '@fontsource/newsreader/500.css';
+import '@fontsource/newsreader/600.css';
+import '@fontsource/newsreader/700.css';
+import '@fontsource/newsreader/500-italic.css';
 import '@fontsource/newsreader/400-italic.css';
 
 import './storefront.css';

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { addToCart } from '../cart';
 import { placeCheckout, planCheckout } from '../checkout';
+import { customerEditGift } from '../orderEdits';
 import { runScheduledJobs } from '../jobs';
 import { customerCancel } from '../orders';
 import { applyGatewayResult } from '../payment';
@@ -141,7 +142,7 @@ describe('Đặt hàng (mục 5.1–5.4)', () => {
         lines: [line('y-dry', 1, 100_000)],
         addressId: 'addr-1',
         note: '',
-        groupOptions: { [keyY]: { shipping: 'standard', paymentMethod: 'cod', gift: { boxTypeId: 'box', message: 'Chúc mừng', sendToOther: true, recipient: { name: 'Người nhận', phone: '0900000009', wardId: 'w-near', street: '9 đường mẫu' } } } },
+        groupOptions: { [keyY]: { shipping: 'standard', paymentMethod: 'cod', gift: { boxTypeId: 'box', message: 'Chúc mừng', sendToOther: true, recipient: { name: 'Người nhận', phone: '0900000009', wardId: 'w-near', city: 'Hà Nội', street: '9 đường mẫu' } } } },
       },
       T0,
     );
@@ -153,6 +154,40 @@ describe('Đặt hàng (mục 5.1–5.4)', () => {
     const late = planCheckout(s, { customerId: 'cust-1', lines: [line('x-dry', 1, 770_000)], addressId: 'addr-1', note: '', groupOptions: { [keyX]: { shipping: 'express', paymentMethod: 'online' } } }, new Date(2026, 9, 14, 14, 5));
     expect(late.orders[0].express.available).toBe(false);
     expect(late.orders[0].shipping).toBe('standard');
+  });
+
+  it('sửa địa chỉ quà bắt buộc có tỉnh/thành và không tự gán Hà Nội', () => {
+    const result = placeCheckout(
+      makeState(),
+      placeInput([line('y-dry', 1, 100_000)], {
+        [keyY]: {
+          shipping: 'standard',
+          paymentMethod: 'online',
+          gift: {
+            boxTypeId: 'box',
+            message: '',
+            sendToOther: true,
+            recipient: { name: 'Người nhận', phone: '0900000009', wardId: 'w-near', city: 'Lào Cai', street: '9 đường mẫu' },
+          },
+        },
+      }),
+      CUSTOMER,
+      T0,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const order = result.state.orders[0];
+    const missingCity = customerEditGift(result.state, CUSTOMER, order.id, '', {
+      name: 'Người nhận', phone: '0900000009', wardId: 'w-near', city: '', street: '9 đường mẫu',
+    });
+    expect(missingCity.ok).toBe(false);
+    if (!missingCity.ok) expect(missingCity.error).toContain('tỉnh/thành phố');
+
+    const updated = customerEditGift(result.state, CUSTOMER, order.id, '', {
+      name: 'Người nhận', phone: '0900000009', wardId: 'w-near', city: 'Lào Cai', street: '9 đường mẫu',
+    });
+    expect(updated.ok).toBe(true);
+    if (updated.ok) expect(updated.value.orders[0].address.text).toContain('Lào Cai');
   });
 
   it('lời nhắn hộp quà không chứa link hay số điện thoại', () => {
