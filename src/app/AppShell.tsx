@@ -10,8 +10,8 @@ import { useStore } from '../store/AppDataContext';
 import { lazyWithReload } from './chunkReload';
 import { PAGE_X } from './layout';
 import { StorefrontHeader } from '../screens/customer/StorefrontHeader';
-import {api} from '../store/backend';
-import {AccountSecuritySettings} from './PasswordTools';
+import { api } from '../store/backend';
+import { AccountSecuritySettings } from './PasswordTools';
 import { LoginScreen } from './LoginScreen';
 import { ModalHost } from './ModalHost';
 import { useUi } from './UiContext';
@@ -33,15 +33,15 @@ const ShipperScreen = lazy(lazyWithReload(() => import('../screens/shipper/Shipp
 export function AppShell({ portal = false }: { portal?: boolean } = {}) {
   const { state, syncNotice, clearSyncNotice, demoMode } = useStore();
   const { user, logout, openModal, closeModal, showToast } = useUi();
-  const [guestBrowsing, setGuestBrowsing] = useState(!['/dang-nhap','/dang-ky'].includes(window.location.pathname));
+  const [guestBrowsing, setGuestBrowsing] = useState(!['/dang-nhap', '/dang-ky'].includes(window.location.pathname));
   useEffect(() => {
-    const authPath=()=>['/dang-nhap','/dang-ky'].includes(window.location.pathname);
-    const browse=()=>{if(authPath()){history.pushState(null,'','/');window.dispatchEvent(new PopStateEvent('popstate'));}setGuestBrowsing(true);};
-    const login=()=>{closeModal();if(!authPath()){history.pushState(null,'','/dang-nhap');window.dispatchEvent(new PopStateEvent('popstate'));}setGuestBrowsing(false);};
-    const sync=()=>setGuestBrowsing(!authPath());
-    window.addEventListener('browse-catalog',browse);window.addEventListener('show-login',login);window.addEventListener('backend-logout',browse);window.addEventListener('popstate',sync);
-    return()=>{window.removeEventListener('browse-catalog',browse);window.removeEventListener('show-login',login);window.removeEventListener('backend-logout',browse);window.removeEventListener('popstate',sync);};
-  },[]);
+    const authPath = () => ['/dang-nhap', '/dang-ky'].includes(window.location.pathname);
+    const browse = () => { if (authPath()) { history.pushState(null, '', '/'); window.dispatchEvent(new PopStateEvent('popstate')); } setGuestBrowsing(true); };
+    const login = () => { closeModal(); if (!authPath()) { history.pushState(null, '', '/dang-nhap'); window.dispatchEvent(new PopStateEvent('popstate')); } setGuestBrowsing(false); };
+    const sync = () => setGuestBrowsing(!authPath());
+    window.addEventListener('browse-catalog', browse); window.addEventListener('show-login', login); window.addEventListener('backend-logout', browse); window.addEventListener('popstate', sync);
+    return () => { window.removeEventListener('browse-catalog', browse); window.removeEventListener('show-login', login); window.removeEventListener('backend-logout', browse); window.removeEventListener('popstate', sync); };
+  }, []);
   useScrollReveal();
   // Ở cổng quản trị luôn dùng khung nhân viên, không hiện cửa hàng cũ
   const storefront = !portal && (!user || user.role === 'customer');
@@ -79,8 +79,8 @@ export function AppShell({ portal = false }: { portal?: boolean } = {}) {
   // Link chia sẻ sản phẩm (FR-TKSP-05): #/san-pham/<mã>. Chưa đăng nhập thì giữ link, mở sau khi khách đăng nhập.
   useEffect(() => {
     const open = async () => {
-      const lot=window.location.hash.match(/^#\/lo-hang\/([\w-]+)$/);
-      if(lot){if(!state.products.length)return;try{const r=await api('/api/v1/lots/'+lot[1]);openModal({type:'trace_lot',productId:r.product.id,lotId:lot[1]});history.replaceState(null,'',window.location.pathname+window.location.search);}catch(e){showToast(e instanceof Error?e.message:'Không mở được lô hàng.');}return;}
+      const lot = window.location.hash.match(/^#\/lo-hang\/([\w-]+)$/);
+      if (lot) { if (!state.products.length) return; try { const r = await api('/api/v1/lots/' + lot[1]); openModal({ type: 'trace_lot', productId: r.product.id, lotId: lot[1] }); history.replaceState(null, '', window.location.pathname + window.location.search); } catch (e) { showToast(e instanceof Error ? e.message : 'Không mở được lô hàng.'); } return; }
       const m = window.location.hash.match(/^#\/san-pham\/([\w-]+)$/);
       if (!m || (user && user.role !== 'customer') || !state.products.length) return;
       if (state.products.some((p) => p.id === m[1] && p.status === 'active')) openModal({ type: 'product_detail', productId: m[1] });
@@ -161,7 +161,7 @@ export function AppShell({ portal = false }: { portal?: boolean } = {}) {
       </>}</header>
 
       <main key={user?.id ?? (guestBrowsing ? 'guest' : 'login')} className={`page-enter flex w-full flex-1 flex-col ${storefront ? '' : 'staff-main bg-ivory'}`}>
-        {user&&user.role!=='customer'&&<AccountSecuritySettings/>}
+        {user && user.role !== 'customer' && <AccountSecuritySettings />}
         <ListBoundary key={user?.id ?? 'guest'} label="màn này" resetKey={state}>
           <Suspense fallback={<p className="p-6 text-center text-sm text-stone-600">Đang tải…</p>}>
             {portal && !user && <p role="status" className="p-10 text-center text-sm text-stone-600">Đang tải tài khoản…</p>}

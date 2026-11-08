@@ -18,7 +18,7 @@ export type CheckoutSource = { type: 'cart'; productIds?: string[] } | { type: '
 
 export type ModalState =
   | { type: 'product_detail'; productId: string }
-  | { type: 'trace_lot'; productId: string;lotId?:string }
+  | { type: 'trace_lot'; productId: string; lotId?: string }
   | { type: 'cart' }
   /** `addressId`: địa chỉ chọn sẵn, vd. địa chỉ vừa thêm từ bước đặt hàng. */
   | { type: 'checkout'; source: CheckoutSource; addressId?: string }
@@ -159,7 +159,7 @@ export function UiProvider({ children }: { children: ReactNode }) {
       ordersFocus,
       takeOrdersFocus,
       modal,
-      openModal: (next) => { if(!user&&['checkout','cart','favorites','voucher_wallet','season_watch','address_book','invoice_default','review','complaint'].includes(next.type)){showToast('Vui lòng đăng nhập để tiếp tục.');setModal(null);window.dispatchEvent(new Event('show-login'));return;}setModal(next); },
+      openModal: (next) => { if (!user && ['checkout', 'cart', 'favorites', 'voucher_wallet', 'season_watch', 'address_book', 'invoice_default', 'review', 'complaint'].includes(next.type)) { showToast('Vui lòng đăng nhập để tiếp tục.'); setModal(null); window.dispatchEvent(new Event('show-login')); return; } setModal(next); },
       closeModal,
       toast,
       showToast,
