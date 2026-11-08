@@ -15,23 +15,7 @@ export interface OrderState {
 }
 
 export const useOrderStore = (function createOrderStore() {
-  // Bản demo: lưu đơn trên trình duyệt để tải lại trang không mất lịch sử.
-  const STORAGE_KEY = 'dss_order_groups';
-  const load = (): OrderGroup[] => {
-    try {
-      return typeof localStorage !== 'undefined' ? JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]') : [];
-    } catch {
-      return [];
-    }
-  };
-  const save = () => {
-    try {
-      if (typeof localStorage !== 'undefined') localStorage.setItem(STORAGE_KEY, JSON.stringify(orderGroups));
-    } catch {
-      /* bộ nhớ bị chặn: bỏ qua */
-    }
-  };
-  let orderGroups: OrderGroup[] = load();
+  let orderGroups: OrderGroup[] = [];
   let activeOrderGroup: OrderGroup | null = null;
   let listeners: Array<() => void> = [];
 
@@ -152,7 +136,6 @@ export const useOrderStore = (function createOrderStore() {
       cancelOrderGroup,
       simulateLatePaymentArrival,
     };
-    save();
     notify();
   }
 

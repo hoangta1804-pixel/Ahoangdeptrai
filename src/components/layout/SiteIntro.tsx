@@ -1,16 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-const SEEN = 'dss:intro-seen';
 const DURATION = 2600; // thời gian hiển thị trước khi rèm kéo lên
 const LEAVE = 800; // thời gian rèm kéo lên
 
-/** Hiện một lần mỗi phiên; không hiện cho trình duyệt tự động (test). */
+/** Hiện mỗi lần tải trang (mở web hoặc tải lại – F5); chuyển trang trong web thì không hiện.
+ *  Không hiện cho trình duyệt tự động (test). */
 function shouldShow(): boolean {
   try {
     if (navigator.webdriver) return false;
-    if (sessionStorage.getItem(SEEN)) return false;
   } catch {
-    /* sessionStorage bị chặn: vẫn hiện */
+    /* bỏ qua */
   }
   return true;
 }
@@ -30,11 +29,6 @@ export const SiteIntro: React.FC = () => {
     }
     if (phase === 'show') {
       document.documentElement.classList.add('intro-active');
-      try {
-        sessionStorage.setItem(SEEN, '1');
-      } catch {
-        /* bỏ qua */
-      }
       skipRef.current?.focus({ preventScroll: true });
       const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
       const prevOverflow = document.body.style.overflow;
