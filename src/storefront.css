@@ -537,7 +537,7 @@
   box-shadow:0 7px 15px #03251730;
   width:65%}
 .shop-farmer-note>span{
-  font-family:Georgia,serif;
+  font-family:var(--font-display);
   font-size:35px;
   line-height:1;
   color:#d4a373}

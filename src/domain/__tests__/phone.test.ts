@@ -62,7 +62,7 @@ describe('Dùng SĐT 9 số trong các chức năng', () => {
         lines: [line('y-dry', 1, 100_000)],
         addressId: 'addr-1',
         note: '',
-        groupOptions: { [keyY]: { shipping: 'standard', paymentMethod: 'online', gift: { boxTypeId: 'box', message: '', sendToOther: true, recipient: { name: 'Người nhận', phone: '+84 900 000 009', wardId: 'w-near', street: '9 đường mẫu' } } } },
+        groupOptions: { [keyY]: { shipping: 'standard', paymentMethod: 'online', gift: { boxTypeId: 'box', message: '', sendToOther: true, recipient: { name: 'Người nhận', phone: '+84 900 000 009', wardId: 'w-near', city: 'Hà Nội', street: '9 đường mẫu' } } } },
       },
       T0,
     );

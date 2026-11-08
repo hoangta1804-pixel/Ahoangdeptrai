@@ -1,19 +1,10 @@
-/**
- * ĐẶC SẢN SỐ LÀO CAI – prototype.
- * Cấu trúc: src/domain (nghiệp vụ, hàm thuần) · src/data (dữ liệu mẫu) · src/store (localStorage)
- * · src/screens (màn theo vai trò) · src/components (thành phần dùng chung) · src/app (khung app).
- */
-import { StorefrontProvider } from './app/StorefrontContext';
-import { AppShell } from './app/AppShell';
-import { UiProvider } from './app/UiContext';
-import { AppDataProvider } from './store/AppDataContext';
+import { Phase2App } from './app/Phase2App';
 
+/**
+ * ĐẶC SẢN SỐ - TRẢI NGHIỆM CHỌN MUA HÀNG PHASE 2
+ * Bản mẫu bấm thử được theo SRS Phase 2:
+ * "Phòng trưng bày ánh sáng" x "Chợ quê tinh tuyển"
+ */
 export default function App() {
-  return (
-    <AppDataProvider>
-      <UiProvider>
-        <StorefrontProvider><AppShell /></StorefrontProvider>
-      </UiProvider>
-    </AppDataProvider>
-  );
+  return <Phase2App />;
 }

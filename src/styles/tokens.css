@@ -1,0 +1,259 @@
+/* ==========================================================================
+   ĐẶC SẢN SỐ - DESIGN TOKENS (SRS PHASE 2)
+   "Phòng trưng bày ánh sáng" x "Chợ quê tinh tuyển"
+   ========================================================================== */
+
+:root {
+  /* Khung trưng bày tối (Indigo) - 3 tầng độ sâu */
+  --indigo-950: #2F6650;
+  --indigo-900: #35705A;
+  --indigo-800: #4B8A71;
+  --indigo-700: #5E9A80;
+  --indigo-500: #7FB39A;
+
+  /* Nền thông tin / đặt hàng / giỏ (Ivory) */
+  --ivory-50: #FAF7F0;
+  --ivory-100: #F3EEE2;
+  --ivory-200: #E7DFCF;
+  --ivory-300: #D8CCB5;
+
+  /* Nhãn nhỏ, đường kẻ, chữ phụ (Earth) */
+  --earth-700: #6B4A32;
+  --earth-500: #8F6A4D;
+  --earth-400: #A88365;
+  --earth-300: #C2A58D;
+  --earth-200: #E3D3C2;
+  --earth-100: #F2E8DF;
+
+  /* DUY NHẤT MÀU NHẤN: Giá & Nút chính (Brass) */
+  --brass-600: #98702B;
+  --brass-500: #B8893B;
+  --brass-400: #CDA25A;
+  --brass-300: #E0BD7E;
+  --brass-200: #F0D9A9;
+  --brass-100: #FBF4E4;
+
+  /* Chữ trên nền sáng (Ink) */
+  --ink-900: #1B1B1F;
+  --ink-700: #33333A;
+  --ink-600: #4A4A52;
+  --ink-400: #767682;
+  --ink-300: #A5A5B2;
+
+  /* Trạng thái (Dịu, không chói) */
+  --success: #2F6B4F;
+  --success-bg: #EAF4EE;
+  --warning: #B7791F;
+  --warning-bg: #FEF7EA;
+  --danger: #A63D3D;
+  --danger-bg: #FDF1F1;
+
+  /* Thương hiệu theo mùa (xanh rừng cổ điển ở mức điểm xuyết) */
+  --forest-tag: #204C39;
+  --forest-tag-bg: #E8F2EC;
+
+  /* Bo góc */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-card: 22px;
+  --radius-sheet: 28px;
+  --radius-pill: 9999px;
+
+  /* Shadows mềm đa tầng */
+  --shadow-soft: 0 4px 20px -2px rgba(47, 102, 80, 0.06), 0 2px 6px -1px rgba(47, 102, 80, 0.04);
+  --shadow-elevated: 0 12px 36px -4px rgba(47, 102, 80, 0.12), 0 4px 12px -2px rgba(47, 102, 80, 0.06);
+  --shadow-brass: 0 8px 24px -4px rgba(184, 137, 59, 0.35);
+  --shadow-glow: 0 0 40px rgba(205, 162, 90, 0.18);
+
+  /* Phông chữ */
+  --font-serif: 'Newsreader', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Thang cỡ chữ chuẩn theo SRS */
+.text-display {
+  font-family: var(--font-serif);
+  font-size: clamp(2.25rem, 5vw, 4rem); /* 36px mobile -> 64px desktop */
+  line-height: 1.1;
+  font-optical-sizing: auto;
+  letter-spacing: -0.02em;
+}
+
+.text-h1 {
+  font-family: var(--font-serif);
+  font-size: clamp(1.875rem, 3.5vw, 3rem); /* 30px -> 48px */
+  line-height: 1.15;
+  font-optical-sizing: auto;
+  letter-spacing: -0.015em;
+}
+
+.text-h2 {
+  font-family: var(--font-serif);
+  font-size: clamp(1.5rem, 2.5vw, 2.25rem); /* 24px -> 36px */
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.text-h3 {
+  font-family: var(--font-sans);
+  font-size: clamp(1.25rem, 1.8vw, 1.625rem); /* 20px -> 26px */
+  line-height: 1.35;
+  font-weight: 700;
+}
+
+.text-body {
+  font-family: var(--font-sans);
+  font-size: clamp(1rem, 1.2vw, 1.0625rem); /* 16px -> 17px */
+  line-height: 1.6;
+}
+
+.text-small {
+  font-family: var(--font-sans);
+  font-size: 0.875rem; /* 14px */
+  line-height: 1.5;
+}
+
+.text-caption {
+  font-family: var(--font-sans);
+  font-size: 0.75rem; /* 12px - không nhỏ hơn 12px */
+  line-height: 1.4;
+}
+
+/* Tabular nums cho giá tiền */
+.price-tag {
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+  font-weight: 700;
+  color: var(--brass-500);
+}
+
+.price-curr {
+  font-size: 0.82em;
+  margin-left: 2px;
+  font-weight: 600;
+}
+
+/* Nền kính mờ (Glassmorphism) */
+.glass-blur {
+  background: rgba(250, 247, 240, 0.85);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.glass-dark {
+  background: rgba(47, 102, 80, 0.82);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+@supports not (backdrop-filter: blur(20px)) {
+  .glass-blur {
+    background: var(--ivory-50);
+  }
+  .glass-dark {
+    background: var(--indigo-950);
+  }
+}
+
+/* Tôn trọng giảm trong suốt khi máy yếu hoặc tùy chọn hệ thống */
+@media (prefers-reduced-transparency: reduce) {
+  .glass-blur {
+    background: var(--ivory-50) !important;
+    backdrop-filter: none !important;
+  }
+  .glass-dark {
+    background: var(--indigo-950) !important;
+    backdrop-filter: none !important;
+  }
+}
+
+/* Tủ kính trưng bày ánh sáng (Showcase cabinet) */
+.showcase-cabinet {
+  background: radial-gradient(circle at 50% 28%, #3F8D69 0%, #2F7A59 50%, #276B4D 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.showcase-cabinet::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(205, 162, 90, 0.06) 1px, transparent 0);
+  background-size: 24px 24px;
+  pointer-events: none;
+  opacity: 0.4;
+}
+
+/* Scroll snap ngang mượt cho băng chuyền */
+.carousel-snap {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.carousel-snap::-webkit-scrollbar {
+  display: none;
+}
+
+.carousel-item {
+  scroll-snap-align: start;
+  flex-shrink: 0;
+}
+
+/* Băng chuyền: thẻ hiện dần lần lượt khi cuộn tới */
+.carousel-reveal .carousel-item {
+  opacity: 0;
+  transform: translateY(28px) scale(0.98);
+}
+.carousel-reveal.is-visible .carousel-item {
+  animation: carousel-card-in 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(min(var(--i, 0), 6) * 80ms);
+}
+@keyframes carousel-card-in {
+  from { opacity: 0; transform: translateY(28px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Thẻ nhấc nhẹ khi rê chuột */
+.carousel-item > article {
+  transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 260ms ease;
+}
+@media (hover: hover) {
+  .carousel-item > article:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 18px 40px -12px rgba(32, 38, 28, 0.22);
+  }
+}
+
+/* Kéo chuột để lướt */
+@media (hover: hover) and (pointer: fine) {
+  .carousel-snap { cursor: grab; }
+}
+.carousel-snap.is-dragging {
+  cursor: grabbing;
+  scroll-snap-type: none;
+  scroll-behavior: auto;
+  user-select: none;
+}
+.carousel-snap.is-dragging .carousel-item > article { transform: none; }
+.carousel-snap img { -webkit-user-drag: none; user-select: none; }
+
+/* Tôn trọng giảm chuyển động */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .carousel-snap {
+    scroll-behavior: auto;
+  }
+  .carousel-reveal .carousel-item { opacity: 1; transform: none; }
+}

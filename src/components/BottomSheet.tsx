@@ -4,6 +4,7 @@
  * `wide`: sheet nhiều nội dung (chi tiết sản phẩm, chi tiết đơn) rộng hơn trên máy tính để chia 2 cột (xem SheetColumns).
  */
 import { useEffect, useId, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 interface BottomSheetProps {
@@ -29,9 +30,9 @@ export function BottomSheet({ title, onClose, children, footer, closeLabel = 'Đ
     };
   }, [onClose]);
 
-  return (
+  const overlay = (
     <div
-      className="app-sheet-overlay fixed inset-0 z-50 flex flex-col items-center justify-end bg-black/60 md:justify-center md:p-6"
+      className="app-sheet-overlay fixed inset-0 z-[60] flex flex-col items-center justify-end bg-black/60 md:justify-center md:p-6"
       onClick={onClose}
       role="presentation"
     >
@@ -62,6 +63,7 @@ export function BottomSheet({ title, onClose, children, footer, closeLabel = 'Đ
       </div>
     </div>
   );
+  return typeof document !== 'undefined' ? createPortal(overlay, document.body) : overlay;
 }
 
 /**

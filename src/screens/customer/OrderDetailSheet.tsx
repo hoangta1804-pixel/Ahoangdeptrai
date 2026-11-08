@@ -41,7 +41,7 @@ export function OrderDetailSheet({ orderId, onClose }: { orderId: string; onClos
   const [newAddressId, setNewAddressId] = useState('');
   const [newDate, setNewDate] = useState('');
   const [giftMessage, setGiftMessage] = useState('');
-  const [recipient, setRecipient] = useState({ name: '', phone: '', wardId: '', street: '' });
+  const [recipient, setRecipient] = useState({ name: '', phone: '', wardId: '', city: '', street: '' });
   const found = getOrderFor(state, customerActor, orderId);
   if (!found.ok) return null;
   const order = found.value;
@@ -194,7 +194,9 @@ export function OrderDetailSheet({ orderId, onClose }: { orderId: string; onClos
                     <SecondaryButton
                       onClick={() => {
                         setGiftMessage(order.gift!.message);
-                        setRecipient(order.gift!.recipient ?? { name: '', phone: '', wardId: '', street: '' });
+                        setRecipient(order.gift!.recipient
+                          ? { ...order.gift!.recipient, city: order.gift!.recipient.city ?? '' }
+                          : { name: '', phone: '', wardId: '', city: '', street: '' });
                         setEditing('gift');
                       }}
                     >
@@ -266,6 +268,9 @@ export function OrderDetailSheet({ orderId, onClose }: { orderId: string; onClos
                         </Field>
                         <Field label="Số nhà, đường">
                           <Input value={recipient.street} onChange={(e) => setRecipient({ ...recipient, street: e.target.value })} />
+                        </Field>
+                        <Field label="Tỉnh/thành phố">
+                          <Input value={recipient.city} onChange={(e) => setRecipient({ ...recipient, city: e.target.value })} />
                         </Field>
                       </div>
                     )}
